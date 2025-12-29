@@ -11,8 +11,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Procreate Alpha Studio | Academia de Arte Digital para Niños',
   description: 'Transforma el talento de tus hijos en maestría digital. Lecciones de Procreate aplicadas al dibujo tradicional para niños de 9 a 12 años.',
-  keywords: ['arte digital', 'niños', 'procreate', 'dibujo', 'academia', 'educación'],
+  keywords: ['arte digital', 'niños', 'procreate', 'dibujo', 'academia', 'educación', 'iPad', 'clases de arte'],
   authors: [{ name: 'Procreate Alpha Studio' }],
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
   openGraph: {
     title: 'Procreate Alpha Studio | Academia de Arte Digital',
     description: 'La primera academia de arte digital que enseña el proceso real. ¡Inscribe a tu pequeño artista hoy!',
@@ -20,13 +21,20 @@ export const metadata: Metadata = {
     siteName: 'Procreate Alpha Studio',
     images: [
       {
-        url: '/og-image.jpg', // User should provide this eventually
+        url: '/og-image.jpg',
         width: 1200,
         height: 630,
+        alt: 'Procreate Alpha Studio - Academia de Arte Digital'
       },
     ],
     locale: 'es_ES',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Procreate Alpha Studio | Academia de Arte Digital',
+    description: 'Transforma el talento de tus hijos en maestría digital.',
+    images: ['/og-image.jpg'],
   },
 };
 

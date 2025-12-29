@@ -6,6 +6,7 @@
     --foreground: #171717;
     --primary: #0d93f2;
     --primary-hover: #0b7ad1;
+    --amber-shadow: rgba(245, 158, 11, 0.2);
     --surface: #252525;
     --surface-hover: #2f2f2f;
     --neon-violet: #a855f7;
@@ -14,6 +15,15 @@
   .dark {
     --background: #1A1A1A;
     --foreground: #ededed;
+  }
+
+  /* Focus rings for accessibility */
+  :focus-visible {
+    outline: none;
+    ring: 2px;
+    ring-color: var(--primary);
+    ring-offset: 2px;
+    ring-offset-color: var(--background);
   }
 }
 
@@ -32,7 +42,7 @@
 
 /* Custom scrollbar for gallery feel */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -41,19 +51,73 @@
 
 ::-webkit-scrollbar-thumb {
   background: #333;
-  border-radius: 4px;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #444;
 }
 
-@utility avatar-glow {
-  &:hover {
-    box-shadow: 0 0 20px rgba(13, 147, 242, 0.4);
-    transform: scale(1.05);
-    transition: all 0.3s ease;
+/* Transitions & Micro-interactions */
+.page-transition {
+  animation: fadeInSlideUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Refined Avatar Glow with Pulse */
+@utility avatar-glow {
+  position: relative;
+
+  &:after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: var(--primary);
+    opacity: 0.2;
+    z-index: -1;
+    animation: pulseGlow 3s infinite ease-in-out;
+  }
+}
+
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
+}
+
+/* Global Snappy Interactions */
+button,
+a {
+  @apply transition-all duration-200;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+/* Accessibility: Minimum Touch Target */
+.touch-target {
+  @apply min-w-[44px] min-h-[44px] flex items-center justify-center;
 }
 
 body {
@@ -64,16 +128,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes scan {
-  0% {
-    transform: translateY(-100%);
-  }
+/* Skeleton Shimmer */
+.skeleton {
+  @apply bg-[#252525] relative overflow-hidden;
 
-  100% {
-    transform: translateY(400%);
+  &::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: shimmer 1.5s infinite;
   }
 }
 
-.animate-scan {
-  animation: scan 2s infinite ease-in-out;
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
 }

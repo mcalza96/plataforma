@@ -23,8 +23,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Modo Administrador - Procreate Alpha Studio
             </div>
 
-            <Header />
-
             <div className="flex flex-1 overflow-hidden">
                 {/* Admin Sidebar */}
                 <aside className="w-64 bg-surface/50 border-r border-white/5 flex flex-col">
@@ -35,6 +33,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                         >
                             <span className="material-symbols-outlined text-amber-500 group-hover:scale-110 transition-transform">school</span>
                             Gestión de Cursos
+                        </Link>
+                        <Link
+                            href="/admin/users"
+                            className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-sm font-bold group"
+                        >
+                            <span className="material-symbols-outlined text-amber-500 group-hover:scale-110 transition-transform">group</span>
+                            Gestión de Familias
                         </Link>
                         <Link
                             href="/admin/submissions"

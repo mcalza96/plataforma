@@ -21,7 +21,6 @@ export default async function GalleryPage() {
 
     return (
         <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
-            <Header />
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
                 {/* Hero Section */}

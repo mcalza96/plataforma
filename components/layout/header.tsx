@@ -1,9 +1,14 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
+import { cookies } from 'next/headers';
+import NotificationCenter from '@/components/dashboard/NotificationCenter';
 
 export default async function Header() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    const cookieStore = await cookies();
+    const learnerId = cookieStore.get('learner_id')?.value;
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] px-6 py-4">
@@ -20,17 +25,19 @@ export default async function Header() {
                 </Link>
 
                 {/* Navigation - Hidden on mobile, visible on desktop */}
-                <nav className="hidden lg:flex items-center gap-9">
-                    <Link className="text-gray-300 text-sm font-medium leading-normal hover:text-primary transition-colors" href="/dashboard">Misión Control</Link>
-                    <Link className="text-[#90b2cb] text-sm font-medium leading-normal hover:text-white transition-colors" href="/gallery">Galería</Link>
-                    <Link className="text-[#90b2cb] text-sm font-medium leading-normal hover:text-white transition-colors" href="/parent-dashboard">Zona Padres</Link>
-                    <Link className="text-[#90b2cb] text-sm font-medium leading-normal hover:text-white transition-colors" href="/resources">Recursos</Link>
+                <nav className="hidden lg:flex items-center gap-4">
+                    <Link className="px-5 h-11 flex items-center text-gray-400 text-xs font-black uppercase tracking-widest hover:text-primary transition-colors" href="/dashboard">Misión Control</Link>
+                    <Link className="px-5 h-11 flex items-center text-gray-400 text-xs font-black uppercase tracking-widest hover:text-white transition-colors" href="/gallery">Galería</Link>
+                    <Link className="px-5 h-11 flex items-center text-gray-400 text-xs font-black uppercase tracking-widest hover:text-white transition-colors" href="/parent-dashboard">Zona Padres</Link>
+                    <Link className="px-5 h-11 flex items-center text-gray-400 text-xs font-black uppercase tracking-widest hover:text-white transition-colors" href="/resources">Recursos</Link>
                 </nav>
 
                 {/* Right: CTA/Profile */}
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
+                            {learnerId && <NotificationCenter learnerId={learnerId} />}
+
                             <span className="hidden md:block text-[10px] text-gray-500 font-bold uppercase tracking-widest truncate max-w-[120px]">
                                 {user.email?.split('@')[0]}
                             </span>

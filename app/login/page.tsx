@@ -40,42 +40,42 @@ export default function LoginPage() {
 
                 <form action={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-400 ml-1 uppercase tracking-wider">Email</label>
+                        <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-[0.2em]">Email</label>
                         <div className="relative group">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">mail</span>
+                            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">mail</span>
                             <input
                                 name="email"
                                 type="email"
                                 required
                                 placeholder="tu@email.com"
-                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600"
+                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600 font-medium"
                             />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-bold text-gray-400 ml-1 uppercase tracking-wider">Contraseña</label>
+                        <label className="text-[10px] font-black text-gray-400 ml-2 uppercase tracking-[0.2em]">Contraseña</label>
                         <div className="relative group">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock</span>
+                            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock</span>
                             <input
                                 name="password"
                                 type="password"
                                 required
                                 placeholder="••••••••"
-                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600"
+                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600 font-medium"
                             />
                         </div>
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl text-sm font-medium flex items-center gap-3">
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-5 rounded-2xl text-sm font-bold flex items-center gap-3 animate-in shake duration-300">
                             <span className="material-symbols-outlined">error</span>
                             {error}
                         </div>
                     )}
 
                     {message && (
-                        <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-2xl text-sm font-medium flex items-center gap-3">
+                        <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-5 rounded-2xl text-sm font-bold flex items-center gap-3">
                             <span className="material-symbols-outlined">check_circle</span>
                             {message}
                         </div>
@@ -84,36 +84,36 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
+                        className="w-full h-16 bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 active:scale-95"
                     >
                         {loading ? (
                             <span className="material-symbols-outlined animate-spin">progress_activity</span>
                         ) : (
                             <>
                                 <span>{isSignUp ? 'Crear Cuenta' : 'Entrar al Estudio'}</span>
-                                <span className="material-symbols-outlined">arrow_forward</span>
+                                <span className="material-symbols-outlined font-black">arrow_forward</span>
                             </>
                         )}
                     </button>
                 </form>
 
-                <div className="mt-8 text-center text-gray-400 font-medium">
+                <div className="mt-10 text-center">
                     {isSignUp ? (
-                        <p>
+                        <p className="text-gray-400 font-bold text-sm">
                             ¿Ya tienes cuenta?{' '}
                             <button
                                 onClick={() => setIsSignUp(false)}
-                                className="text-primary hover:text-primary-hover font-bold"
+                                className="text-primary hover:text-white font-black uppercase tracking-widest text-xs ml-1 transition-colors h-11 px-4"
                             >
                                 Inicia sesión
                             </button>
                         </p>
                     ) : (
-                        <p>
+                        <p className="text-gray-400 font-bold text-sm">
                             ¿No tienes cuenta?{' '}
                             <button
                                 onClick={() => setIsSignUp(true)}
-                                className="text-primary hover:text-primary-hover font-bold"
+                                className="text-primary hover:text-white font-black uppercase tracking-widest text-xs ml-1 transition-colors h-11 px-4"
                             >
                                 Regístrate
                             </button>

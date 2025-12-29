@@ -2,15 +2,27 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
 import Header from '@/components/layout/header';
 import Image from 'next/image';
+import OptimizedImage from '@/components/ui/OptimizedImage';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (user) {
+    const cookieStore = await cookies();
+    const learnerId = cookieStore.get('learner_id')?.value;
+
+    if (learnerId) {
+      redirect('/dashboard');
+    } else {
+      redirect('/select-profile');
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#1A1A1A] text-white selection:bg-primary/30">
-      <Header />
-
       {/* HERO SECTION */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-neon-violet/10 blur-[120px] rounded-full animate-pulse"></div>
@@ -36,14 +48,14 @@ export default async function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
               <Link
                 href={user ? "/dashboard" : "/login"}
-                className="w-full sm:w-auto px-10 py-5 bg-primary hover:bg-primary-hover text-white font-black text-lg rounded-2xl transition-all shadow-[0_10px_30px_rgba(13,147,242,0.3)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-10 py-5 bg-primary hover:bg-primary-hover text-white font-black text-lg rounded-2xl transition-all shadow-[0_10px_30px_rgba(13,147,242,0.3)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3 touch-target"
               >
                 {user ? 'Volver a Misión Control' : 'Empezar Misión'}
                 <span className="material-symbols-outlined font-bold">rocket_launch</span>
               </Link>
               <Link
                 href="#metodo"
-                className="w-full sm:w-auto px-10 py-5 bg-white/5 hover:bg-white/10 text-white font-bold text-lg rounded-2xl transition-all border border-white/10"
+                className="w-full sm:w-auto px-10 py-5 bg-white/5 hover:bg-white/10 text-white font-bold text-lg rounded-2xl transition-all border border-white/10 touch-target"
               >
                 Conocer el Método
               </Link>
@@ -162,7 +174,7 @@ export default async function LandingPage() {
           <div className="pt-12">
             <Link
               href={user ? "/dashboard" : "/login"}
-              className="bg-white text-black px-12 py-6 rounded-2xl font-black text-xl hover:bg-primary hover:text-white transition-all shadow-2xl active:scale-95 inline-flex"
+              className="bg-white text-black px-12 py-6 rounded-2xl font-black text-xl hover:bg-primary hover:text-white transition-all shadow-2xl active:scale-95 inline-flex touch-target"
             >
               ¡Quiero Unirme a la Academia!
             </Link>

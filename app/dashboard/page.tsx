@@ -4,6 +4,7 @@ import { getCoursesWithProgress, getLearnerById, CourseWithProgress } from '@/li
 import { getInstructorFeedback } from '@/lib/parent';
 import CourseCard from '@/components/dashboard/CourseCard';
 import Link from 'next/link';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 export default async function DashboardPage() {
     const cookieStore = await cookies();
@@ -24,9 +25,12 @@ export default async function DashboardPage() {
     ]);
 
     // Dividimos en misiones activas (con progreso > 0) y nuevas
-    const activeMissions = courses.filter(c => c.progress && c.progress.completed_steps > 0);
-    const newChallenges = courses.filter(c => !c.progress || c.progress.completed_steps === 0);
-    const recentFeedback = feedback.slice(0, 1); // Only show the most recent message as a notification
+    const courseList = Array.isArray(courses) ? courses : [];
+    const feedbackList = Array.isArray(feedback) ? feedback : [];
+
+    const activeMissions = courseList.filter(c => c.progress && c.progress.completed_steps > 0);
+    const newChallenges = courseList.filter(c => !c.progress || c.progress.completed_steps === 0);
+    const recentFeedback = feedbackList.slice(0, 1);
 
     return (
         <main className="flex-1 flex justify-center py-8 px-4 sm:px-10 lg:px-20 bg-[#121e26]">
@@ -134,10 +138,14 @@ export default async function DashboardPage() {
                                 key={course.id}
                                 className="group flex flex-col sm:flex-row overflow-hidden rounded-2xl bg-[#121e26] border border-[#223949] hover:bg-surface-dark transition-colors cursor-pointer"
                             >
-                                <div
-                                    className="w-full sm:w-48 aspect-video sm:aspect-auto bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${course.thumbnail_url}')` }}
-                                />
+                                <div className="w-full sm:w-48 aspect-video sm:aspect-auto relative bg-neutral-900">
+                                    <OptimizedImage
+                                        src={course.thumbnail_url}
+                                        alt={course.title}
+                                        fill
+                                        className="object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                </div>
                                 <div className="p-5 flex flex-col justify-center flex-1 gap-2">
                                     <div className="flex items-start justify-between">
                                         <div className="flex flex-col gap-1 text-left">

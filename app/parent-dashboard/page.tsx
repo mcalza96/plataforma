@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { getLearnerFullStats, getInstructorFeedback, getLearnerAchievements } from '@/lib/parent';
 import { getLearnerById } from '@/lib/courses';
 import Header from '@/components/layout/header';
-import Image from 'next/image';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 export default async function ParentDashboardPage() {
     const cookieStore = await cookies();
@@ -24,20 +24,19 @@ export default async function ParentDashboardPage() {
 
     return (
         <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
-            <Header />
 
             <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
                 {/* Parent Hero Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                     <div className="flex items-center gap-6">
-                        <div className="relative w-24 h-24 rounded-full border-4 border-surface overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.2)]">
-                            {learner.avatar_url ? (
-                                <Image src={learner.avatar_url} alt={learner.display_name} fill className="object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-neutral-800 text-gray-500">
-                                    <span className="material-symbols-outlined text-4xl">person</span>
-                                </div>
-                            )}
+                        <div className="relative w-24 h-24 rounded-[2rem] border-4 border-surface overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.2)] avatar-glow bg-neutral-900">
+                            <OptimizedImage
+                                src={learner.avatar_url || ''}
+                                alt={learner.display_name}
+                                fill
+                                className="object-cover"
+                                fallbackIcon="person"
+                            />
                         </div>
                         <div>
                             <span className="text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1 block">Estás supervisando a:</span>

@@ -1,0 +1,160 @@
+'use server';
+
+import { createClient } from './supabase-server';
+import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
+
+// Shared protection check
+async function checkAdmin() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // In production this should be in an env var. Fallback for safety.
+    const adminEmail = process.env.ADMIN_EMAIL || 'mca@test.com';
+
+    if (!user || user.email !== adminEmail) {
+        throw new Error('Acceso no autorizado. Se requieren permisos de administrador.');
+    }
+}
+
+// --- Schemas ---
+
+export const CourseSchema = z.object({
+    id: z.string().uuid().optional(),
+    title: z.string().min(5, 'El título debe ser más inspirador (mín. 5 caracteres)'),
+    description: z.string().min(20, 'Describe mejor la misión para motivar a los alumnos (mín. 20 caracteres)'),
+    level_required: z.coerce.number().min(1, 'Nivel mín. 1').max(10, 'Nivel máx. 10'),
+    category: z.string().min(1, 'Selecciona una categoría para el estudio'),
+    thumbnail_url: z.string().url('URL de miniatura inválida').optional().or(z.literal('')),
+    is_published: z.boolean().optional(),
+});
+
+export const LessonSchema = z.object({
+    id: z.string().uuid().optional(),
+    course_id: z.string().uuid('ID de misión inválido'),
+    title: z.string().min(5, 'El título de la fase es muy corto (mín. 5 caracteres)'),
+    video_url: z.string().url('Necesitamos una URL de video (MP4/Loom) válida'),
+    description: z.string().optional().or(z.literal('')),
+    thumbnail_url: z.string().url('URL de miniatura inválida').optional().or(z.literal('')),
+    download_url: z.string().url('Formato de link de recursos inválido').optional().or(z.literal('')),
+    total_steps: z.coerce.number().min(1, 'Mínimo 1 paso LEGO').max(20, 'Máximo 20 pasos LEGO'),
+    order: z.coerce.number().min(1, 'El orden debe ser positivo'),
+});
+
+export type ActionResponse<T = any> =
+    | { success: true; data: T }
+    | { success: false; error: string; issues?: z.ZodIssue[] };
+
+// --- Actions ---
+
+/**
+ * Crea o actualiza un curso (Misión)
+ */
+export async function upsertCourse(data: z.infer<typeof CourseSchema>): Promise<ActionResponse> {
+    try {
+        await checkAdmin();
+        const validated = CourseSchema.parse(data);
+        const supabase = await createClient();
+
+        const { data: result, error } = await supabase
+            .from('courses')
+            .upsert({
+                ...validated,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        revalidatePath('/admin/courses');
+        revalidatePath('/dashboard');
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error in upsertCourse:', error);
+        if (error instanceof z.ZodError) {
+            return {
+                success: false,
+                error: 'Error de validación: Revisa los campos resaltados.',
+                issues: error.issues
+            };
+        }
+        return { success: false, error: error.message || 'Error inesperado al guardar el curso' };
+    }
+}
+
+/**
+ * Crea o actualiza una lección
+ */
+export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<ActionResponse> {
+    try {
+        await checkAdmin();
+        const validated = LessonSchema.parse(data);
+        const supabase = await createClient();
+
+        const { data: result, error } = await supabase
+            .from('lessons')
+            .upsert({
+                ...validated,
+                updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        revalidatePath(`/admin/courses/${validated.course_id}`);
+        revalidatePath(`/lessons/${validated.course_id}`);
+        revalidatePath('/dashboard');
+
+        return { success: true, data: result };
+    } catch (error: any) {
+        console.error('Error in upsertLesson:', error);
+        if (error instanceof z.ZodError) {
+            return {
+                success: false,
+                error: 'Error de validación en la fase.',
+                issues: error.issues
+            };
+        }
+        return { success: false, error: error.message || 'Error inesperado al guardar la lección' };
+    }
+}
+
+/**
+ * Elimina un curso y sus dependencias (vía cascada en DB o manual)
+ */
+export async function deleteCourse(courseId: string): Promise<ActionResponse<void>> {
+    try {
+        await checkAdmin();
+        const supabase = await createClient();
+
+        const { error } = await supabase.from('courses').delete().eq('id', courseId);
+        if (error) throw error;
+
+        revalidatePath('/admin/courses');
+        revalidatePath('/dashboard');
+        return { success: true, data: undefined };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'No se pudo eliminar el curso' };
+    }
+}
+
+/**
+ * Elimina una lección
+ */
+export async function deleteLesson(lessonId: string, courseId: string): Promise<ActionResponse<void>> {
+    try {
+        await checkAdmin();
+        const supabase = await createClient();
+
+        const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
+        if (error) throw error;
+
+        revalidatePath(`/admin/courses/${courseId}`);
+        revalidatePath('/dashboard');
+        return { success: true, data: undefined };
+    } catch (error: any) {
+        return { success: false, error: error.message || 'No se pudo eliminar la lección' };
+    }
+}

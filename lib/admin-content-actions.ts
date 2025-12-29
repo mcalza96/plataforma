@@ -1,12 +1,10 @@
 'use server';
-
-import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { getUserRole } from './auth-utils';
+import { getCourseService, getLessonService } from './di';
 
-import { validateAdmin } from './auth-utils';
-
-// --- Schemas ---
+// --- Schemas (Validación de entrada HTTP) ---
 
 export const CourseSchema = z.object({
     id: z.string().uuid().optional(),
@@ -34,63 +32,48 @@ export type ActionResponse<T = any> =
     | { success: true; data: T }
     | { success: false; error: string; issues?: z.ZodIssue[] };
 
-// --- Actions ---
+// --- Actions (Thin Controllers) ---
 
 /**
  * Crea o actualiza un curso (Misión)
  */
 export async function upsertCourse(data: z.infer<typeof CourseSchema>): Promise<ActionResponse> {
     try {
-        await validateAdmin();
         const validated = CourseSchema.parse(data);
-        const supabase = await createClient();
+        const role = await getUserRole();
 
-        const { data: result, error } = await supabase
-            .from('courses')
-            .upsert({
-                ...validated,
-                updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
+        const service = getCourseService();
+        const result = await service.createOrUpdateCourse(validated, role);
 
         revalidatePath('/admin/courses');
         revalidatePath('/dashboard');
+
         return { success: true, data: result };
     } catch (error: any) {
-        console.error('Error in upsertCourse:', error);
+        console.error('Error in upsertCourse action:', error);
+
         if (error instanceof z.ZodError) {
             return {
                 success: false,
-                error: 'Error de validación: Revisa los campos resaltados.',
+                error: 'Error de validación en los datos del curso.',
                 issues: error.issues
             };
         }
+
         return { success: false, error: error.message || 'Error inesperado al guardar el curso' };
     }
 }
 
 /**
- * Crea o actualiza una lección
+ * Crea o actualiza una lección (Fase)
  */
 export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<ActionResponse> {
     try {
-        await validateAdmin();
         const validated = LessonSchema.parse(data);
-        const supabase = await createClient();
+        const role = await getUserRole();
 
-        const { data: result, error } = await supabase
-            .from('lessons')
-            .upsert({
-                ...validated,
-                updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
+        const service = getLessonService();
+        const result = await service.upsertLesson(validated, role);
 
         revalidatePath(`/admin/courses/${validated.course_id}`);
         revalidatePath(`/lessons/${validated.course_id}`);
@@ -98,7 +81,8 @@ export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<
 
         return { success: true, data: result };
     } catch (error: any) {
-        console.error('Error in upsertLesson:', error);
+        console.error('Error in upsertLesson action:', error);
+
         if (error instanceof z.ZodError) {
             return {
                 success: false,
@@ -106,25 +90,27 @@ export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<
                 issues: error.issues
             };
         }
+
         return { success: false, error: error.message || 'Error inesperado al guardar la lección' };
     }
 }
 
 /**
- * Elimina un curso y sus dependencias (vía cascada en DB o manual)
+ * Elimina un curso
  */
 export async function deleteCourse(courseId: string): Promise<ActionResponse<void>> {
     try {
-        await validateAdmin();
-        const supabase = await createClient();
+        const role = await getUserRole();
+        const service = getCourseService();
 
-        const { error } = await supabase.from('courses').delete().eq('id', courseId);
-        if (error) throw error;
+        await service.deleteCourse(courseId, role);
 
         revalidatePath('/admin/courses');
         revalidatePath('/dashboard');
+
         return { success: true, data: undefined };
     } catch (error: any) {
+        console.error('Error in deleteCourse action:', error);
         return { success: false, error: error.message || 'No se pudo eliminar el curso' };
     }
 }
@@ -134,16 +120,17 @@ export async function deleteCourse(courseId: string): Promise<ActionResponse<voi
  */
 export async function deleteLesson(lessonId: string, courseId: string): Promise<ActionResponse<void>> {
     try {
-        await validateAdmin();
-        const supabase = await createClient();
+        const role = await getUserRole();
+        const service = getLessonService();
 
-        const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
-        if (error) throw error;
+        await service.deleteLesson(lessonId, role);
 
         revalidatePath(`/admin/courses/${courseId}`);
         revalidatePath('/dashboard');
+
         return { success: true, data: undefined };
     } catch (error: any) {
+        console.error('Error in deleteLesson action:', error);
         return { success: false, error: error.message || 'No se pudo eliminar la lección' };
     }
 }

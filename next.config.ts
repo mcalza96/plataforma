@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         hostname: 'api.dicebear.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'svblfbukttxudkhgyrap.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
     ],
   },
 };

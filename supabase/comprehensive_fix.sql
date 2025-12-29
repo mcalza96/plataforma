@@ -101,9 +101,7 @@ END $$;
 -- 5. FIX DE RECURSIÓN INFINITA EN 'PROFILES'
 -- Reemplazamos las políticas que causaban recursión con la función is_admin()
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Admins can view all profiles" ON public.profiles;
-DROP POLICY IF EXISTS "Los padres pueden ver su propio perfil" ON public.profiles;
-
+DROP POLICY IF EXISTS "Users can view own or admins all" ON public.profiles;
 CREATE POLICY "Users can view own or admins all" 
 ON public.profiles FOR SELECT 
 TO authenticated 
@@ -111,6 +109,7 @@ USING (auth.uid() = id OR public.is_admin());
 
 DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Los padres pueden actualizar su propio perfil" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own or admins all" ON public.profiles;
 
 CREATE POLICY "Users can update own or admins all" 
 ON public.profiles FOR UPDATE 

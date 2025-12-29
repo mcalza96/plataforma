@@ -4,7 +4,10 @@ export interface Lesson {
     id: string;
     course_id: string;
     title: string;
+    description: string | null;
+    thumbnail_url: string | null;
     video_url: string;
+    download_url: string | null;
     order: number;
     total_steps: number;
 }
@@ -107,6 +110,11 @@ export async function getLearnerById(learnerId: string) {
     return data;
 }
 
+export interface CourseWithLessons extends CourseWithProgress {
+    lessons: Lesson[];
+    learnerProgress: LearnerProgress[];
+}
+
 export async function getCourseWithLessonsAndProgress(courseId: string, learnerId: string): Promise<CourseWithLessons | null> {
     const supabase = await createClient();
 
@@ -169,4 +177,22 @@ export async function toggleStepCompletion(learnerId: string, lessonId: string, 
     }
 
     return { success: true };
+}
+
+export async function getNextLesson(courseId: string, currentOrder: number): Promise<Lesson | null> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('course_id', courseId)
+        .gt('order', currentOrder)
+        .order('order', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error fetching next lesson:', error);
+        return null;
+    }
+    return data;
 }

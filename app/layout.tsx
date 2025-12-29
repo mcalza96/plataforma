@@ -9,8 +9,25 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Procreate Alpha Studio",
-  description: "EdTech para futuros artistas (9-12 años)",
+  title: 'Procreate Alpha Studio | Academia de Arte Digital para Niños',
+  description: 'Transforma el talento de tus hijos en maestría digital. Lecciones de Procreate aplicadas al dibujo tradicional para niños de 9 a 12 años.',
+  keywords: ['arte digital', 'niños', 'procreate', 'dibujo', 'academia', 'educación'],
+  authors: [{ name: 'Procreate Alpha Studio' }],
+  openGraph: {
+    title: 'Procreate Alpha Studio | Academia de Arte Digital',
+    description: 'La primera academia de arte digital que enseña el proceso real. ¡Inscribe a tu pequeño artista hoy!',
+    url: 'https://procreatealpha.studio',
+    siteName: 'Procreate Alpha Studio',
+    images: [
+      {
+        url: '/og-image.jpg', // User should provide this eventually
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'es_ES',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getCoursesWithProgress, getLearnerById, CourseWithProgress } from '@/lib/courses';
+import { getInstructorFeedback } from '@/lib/parent';
 import CourseCard from '@/components/dashboard/CourseCard';
 import Link from 'next/link';
 
@@ -17,11 +18,15 @@ export default async function DashboardPage() {
         return redirect('/select-profile');
     }
 
-    const courses = await getCoursesWithProgress(learnerId);
+    const [courses, feedback] = await Promise.all([
+        getCoursesWithProgress(learnerId),
+        getInstructorFeedback(learnerId)
+    ]);
 
     // Dividimos en misiones activas (con progreso > 0) y nuevas
     const activeMissions = courses.filter(c => c.progress && c.progress.completed_steps > 0);
     const newChallenges = courses.filter(c => !c.progress || c.progress.completed_steps === 0);
+    const recentFeedback = feedback.slice(0, 1); // Only show the most recent message as a notification
 
     return (
         <main className="flex-1 flex justify-center py-8 px-4 sm:px-10 lg:px-20 bg-[#121e26]">
@@ -49,6 +54,27 @@ export default async function DashboardPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Professor Feedback Notification */}
+                {recentFeedback.length > 0 && (
+                    <div className="bg-gradient-to-r from-primary/20 to-neon-violet/20 border border-white/10 rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center shrink-0 border-2 border-primary/30">
+                            <span className="material-symbols-outlined text-3xl text-primary">chat_bubble</span>
+                        </div>
+                        <div className="flex-1 text-center sm:text-left">
+                            <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">Nuevo mensaje de tu Instructor</p>
+                            <p className="text-white text-lg font-medium leading-tight">
+                                "{recentFeedback[0].content}"
+                            </p>
+                        </div>
+                        <Link
+                            href="/parent-dashboard" // Parents can see all history, or we could have a child view later
+                            className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shrink-0"
+                        >
+                            Ver todo
+                        </Link>
+                    </div>
+                )}
 
                 {/* Active Missions Section */}
                 {activeMissions.length > 0 && (

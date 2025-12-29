@@ -1,10 +1,11 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getLearnerSubmissions } from '@/lib/storage-actions';
-import { getLearnerById } from '@/lib/courses';
+import { getLearnerById } from '@/lib/data/courses';
 import Header from '@/components/layout/header';
 import UploadZone from '@/components/gallery/UploadZone';
 import Image from 'next/image';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default async function GalleryPage() {
     const cookieStore = await cookies();
@@ -60,13 +61,13 @@ export default async function GalleryPage() {
                     </div>
 
                     {submissions.length === 0 ? (
-                        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-16 text-center">
-                            <div className="w-20 h-20 bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 text-gray-600">
-                                <span className="material-symbols-outlined text-5xl">folder_open</span>
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-300">Aún no has subido ninguna obra</h3>
-                            <p className="text-gray-500 mt-2">Exporta tu primer time-lapse desde Procreate y súbelo para comenzar tu portfolio.</p>
-                        </div>
+                        <EmptyState
+                            icon="folder_open"
+                            title="Aún no tienes obras en tu galería"
+                            description="Exporta tu primer time-lapse desde Procreate y súbelo para comenzar tu portfolio profesional."
+                            actionLabel="Subir mi primera obra"
+                            actionHref="#upload-zone" // Assuming ID for scroll
+                        />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                             {submissions.map((submission) => (

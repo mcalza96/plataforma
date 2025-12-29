@@ -6,13 +6,11 @@ import { User } from '@supabase/supabase-js';
 import { signOut } from '@/lib/auth-actions';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
+import { LearnerDTO } from '@/lib/data/courses';
+
 interface UserMenuProps {
     user: User;
-    learner?: {
-        id: string;
-        display_name: string;
-        avatar_url: string;
-    } | null;
+    learner?: LearnerDTO | null;
     role: 'admin' | 'instructor' | 'user';
 }
 

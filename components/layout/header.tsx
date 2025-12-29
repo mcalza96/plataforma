@@ -3,9 +3,9 @@ import { createClient } from '@/lib/supabase-server';
 import { cookies } from 'next/headers';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
-import { getLearnerById } from '@/lib/courses';
+import { getLearnerById } from '@/lib/data/courses';
 import HeaderNav from './HeaderNav';
-import Breadcrumbs from '../ui/Breadcrumbs';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export default async function Header() {
     const supabase = await createClient();

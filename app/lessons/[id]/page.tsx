@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getCourseWithLessonsAndProgress } from '@/lib/courses';
+import { getCourseWithLessonsAndProgress } from '@/lib/data/courses';
 import LessonHeader from '@/components/dashboard/LessonHeader';
 import LessonClient from './lesson-client';
 

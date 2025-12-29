@@ -6,6 +6,7 @@ import { useState } from 'react';
 interface OptimizedImageProps extends Omit<ImageProps, 'onLoadingComplete'> {
     containerClassName?: string;
     fallbackIcon?: string;
+    aspectRatio?: string;
 }
 
 export default function OptimizedImage({
@@ -14,15 +15,18 @@ export default function OptimizedImage({
     containerClassName = "",
     fallbackIcon = "palette",
     className = "",
+    aspectRatio = "",
     ...props
 }: OptimizedImageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(false);
 
+    // If fill is used, we often want the container to handle the aspect ratio
+    // but we apply it here to the skeleton to reserve space precisely.
     return (
-        <div className={`relative overflow-hidden bg-[#1F1F1F] ${containerClassName}`}>
+        <div className={`relative overflow-hidden bg-[#1F1F1F] ${aspectRatio} ${containerClassName}`}>
             {isLoading && !error && (
-                <div className="absolute inset-0 skeleton z-10" />
+                <div className={`absolute inset-0 skeleton z-10 ${aspectRatio}`} />
             )}
 
             {error ? (

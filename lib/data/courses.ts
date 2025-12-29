@@ -1,6 +1,9 @@
-import { createClient } from './supabase-server';
+import 'server-only';
+import { createClient } from '../supabase-server';
+import { cache } from 'react';
 
-export interface Lesson {
+// Interfaces / DTOs
+export interface LessonDTO {
     id: string;
     course_id: string;
     title: string;
@@ -12,7 +15,7 @@ export interface Lesson {
     total_steps: number;
 }
 
-export interface LearnerProgress {
+export interface LearnerProgressDTO {
     id: string;
     learner_id: string;
     lesson_id: string;
@@ -20,7 +23,7 @@ export interface LearnerProgress {
     is_completed: boolean;
 }
 
-export interface CourseWithProgress {
+export interface CourseCardDTO {
     id: string;
     title: string;
     description: string;
@@ -34,24 +37,31 @@ export interface CourseWithProgress {
     };
 }
 
-export interface CourseWithLessons extends CourseWithProgress {
-    lessons: Lesson[];
-    learnerProgress: LearnerProgress[];
+export interface CourseDetailDTO extends CourseCardDTO {
+    lessons: LessonDTO[];
+    learnerProgress: LearnerProgressDTO[];
 }
 
-export async function getCoursesWithProgress(learnerId: string) {
+export interface LearnerDTO {
+    id: string;
+    display_name: string;
+    level: number;
+    avatar_url?: string;
+}
+
+/**
+ * Fetch all courses with progress for a specific learner.
+ * Optimized with React.cache for per-request memoization.
+ */
+export const getCoursesWithProgress = cache(async (learnerId: string): Promise<CourseCardDTO[]> => {
     const supabase = await createClient();
 
-    // Obtenemos todos los cursos
     const { data: courses, error: coursesError } = await supabase
         .from('courses')
         .select(`
-      *,
-      lessons (
-        id,
-        total_steps
-      )
-    `)
+            *,
+            lessons (id, total_steps)
+        `)
         .order('created_at', { ascending: true });
 
     if (coursesError) {
@@ -59,7 +69,6 @@ export async function getCoursesWithProgress(learnerId: string) {
         return [];
     }
 
-    // Obtenemos el progreso del alumno para las lecciones
     const { data: progress, error: progressError } = await supabase
         .from('learner_progress')
         .select('*')
@@ -69,13 +78,10 @@ export async function getCoursesWithProgress(learnerId: string) {
         console.error('Error fetching progress:', progressError);
     }
 
-    // Combinamos los datos
     return courses.map((course: any) => {
-        // Calculamos el total de pasos del curso y los completados
         const courseLessons = course.lessons || [];
         const totalSteps = courseLessons.reduce((acc: number, lesson: any) => acc + lesson.total_steps, 0);
 
-        // Buscamos el progreso para las lecciones de este curso
         const courseProgress = progress?.filter((p: any) =>
             courseLessons.some((l: any) => l.id === p.lesson_id)
         ) || [];
@@ -84,41 +90,27 @@ export async function getCoursesWithProgress(learnerId: string) {
         const isCompleted = courseProgress.length > 0 && courseProgress.every((p: any) => p.is_completed);
 
         return {
-            ...course,
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            thumbnail_url: course.thumbnail_url,
+            level_required: course.level_required,
+            category: course.category,
             progress: {
                 completed_steps: completedSteps,
-                total_steps: totalSteps || 5, // Fallback a 5 si no hay lecciones aún para visualización
+                total_steps: totalSteps || 5,
                 is_completed: isCompleted
             }
         };
     });
-}
+});
 
-export async function getLearnerById(learnerId: string) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('learners')
-        .select('*')
-        .eq('id', learnerId)
-        .single();
-
-    if (error) {
-        console.error('Error fetching learner:', error);
-        return null;
-    }
-
-    return data;
-}
-
-export interface CourseWithLessons extends CourseWithProgress {
-    lessons: Lesson[];
-    learnerProgress: LearnerProgress[];
-}
-
-export async function getCourseWithLessonsAndProgress(courseId: string, learnerId: string): Promise<CourseWithLessons | null> {
+/**
+ * Fetch a single course with its lessons and learner progress.
+ */
+export const getCourseWithLessonsAndProgress = cache(async (courseId: string, learnerId: string): Promise<CourseDetailDTO | null> => {
     const supabase = await createClient();
 
-    // Fetch course details with lessons
     const { data: course, error: courseError } = await supabase
         .from('courses')
         .select(`
@@ -136,7 +128,6 @@ export async function getCourseWithLessonsAndProgress(courseId: string, learnerI
     // Sort lessons by 'order'
     course.lessons.sort((a: any, b: any) => a.order - b.order);
 
-    // Fetch progress for this learner and this course's lessons
     const lessonIds = course.lessons.map((l: any) => l.id);
     const { data: progress, error: progressError } = await supabase
         .from('learner_progress')
@@ -149,37 +140,45 @@ export async function getCourseWithLessonsAndProgress(courseId: string, learnerI
     }
 
     return {
-        ...course,
-        learnerProgress: progress || []
+        id: course.id,
+        title: course.title,
+        description: course.description,
+        thumbnail_url: course.thumbnail_url,
+        level_required: course.level_required,
+        category: course.category,
+        lessons: course.lessons,
+        learnerProgress: progress || [],
+        progress: {
+            completed_steps: (progress || []).reduce((acc: number, p: any) => acc + (p.completed_steps || 0), 0),
+            total_steps: course.lessons.reduce((acc: number, l: any) => acc + l.total_steps, 0),
+            is_completed: (progress || []).length > 0 && (progress || []).every((p: any) => p.is_completed)
+        }
     };
-}
+});
 
-export async function toggleStepCompletion(learnerId: string, lessonId: string, completedSteps: number, totalSteps: number) {
+/**
+ * Fetch learner profile by ID.
+ */
+export const getLearnerById = cache(async (learnerId: string): Promise<LearnerDTO | null> => {
     const supabase = await createClient();
-
-    const isCompleted = completedSteps >= totalSteps;
-
-    const { error } = await supabase
-        .from('learner_progress')
-        .upsert({
-            learner_id: learnerId,
-            lesson_id: lessonId,
-            completed_steps: completedSteps,
-            is_completed: isCompleted,
-            last_watched_at: new Date().toISOString()
-        }, {
-            onConflict: 'learner_id,lesson_id'
-        });
+    const { data, error } = await supabase
+        .from('learners')
+        .select('*')
+        .eq('id', learnerId)
+        .single();
 
     if (error) {
-        console.error('Error updating progress:', error);
-        throw new Error(error.message);
+        console.error('Error fetching learner:', error);
+        return null;
     }
 
-    return { success: true };
-}
+    return data;
+});
 
-export async function getNextLesson(courseId: string, currentOrder: number): Promise<Lesson | null> {
+/**
+ * Fetch the next lesson in the course sequence.
+ */
+export const getNextLesson = cache(async (courseId: string, currentOrder: number): Promise<LessonDTO | null> => {
     const supabase = await createClient();
     const { data, error } = await supabase
         .from('lessons')
@@ -195,4 +194,4 @@ export async function getNextLesson(courseId: string, currentOrder: number): Pro
         return null;
     }
     return data;
-}
+});

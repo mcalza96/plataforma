@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useOptimistic } from 'react';
 import { toggleStepCompletion } from '@/lib/lesson-actions';
-import { Lesson, LearnerProgress } from '@/lib/courses';
+import { LessonDTO as Lesson, LearnerProgressDTO as LearnerProgress } from '@/lib/data/courses';
+import { useToast } from '@/context/ToastContext';
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import LegoProgressBar from '@/components/dashboard/LegoProgressBar';
 
 interface LessonClientProps {
     courseId: string;
@@ -17,11 +19,18 @@ interface LessonClientProps {
 
 export default function LessonClient({ courseId, learnerId, lesson, initialProgress, nextLessonId }: LessonClientProps) {
     const router = useRouter();
+    const { showToast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [completedSteps, setCompletedSteps] = useState(initialProgress?.completed_steps || 0);
     const [showCelebration, setShowCelebration] = useState(false);
 
-    const isLessonComplete = completedSteps >= lesson.total_steps;
+    // Optimistic state for completed steps
+    const [optimisticSteps, setOptimisticSteps] = useOptimistic(
+        completedSteps,
+        (state, newCount: number) => newCount
+    );
+
+    const isLessonComplete = optimisticSteps >= lesson.total_steps;
 
     const steps = Array.from({ length: lesson.total_steps }, (_, i) => ({
         id: i + 1,
@@ -29,8 +38,8 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
         description: 'Sigue las instrucciones del video para completar este paso.',
     }));
 
-    const handleStepToggle = (stepIndex: number) => {
-        const isCurrentlyCompleted = stepIndex <= completedSteps;
+    const handleStepToggle = async (stepIndex: number) => {
+        const isCurrentlyCompleted = stepIndex <= optimisticSteps;
         let newCount = completedSteps;
 
         if (isCurrentlyCompleted) {
@@ -41,16 +50,20 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
             newCount = stepIndex;
         }
 
-        setCompletedSteps(newCount);
-
-        // Check if just completed the whole lesson
+        // Check if just completed the whole lesson (optimistically)
         if (newCount >= lesson.total_steps && !isLessonComplete) {
             setShowCelebration(true);
             setTimeout(() => setShowCelebration(false), 3000);
         }
 
         startTransition(async () => {
-            await toggleStepCompletion(learnerId, lesson.id, newCount, lesson.total_steps, courseId);
+            setOptimisticSteps(newCount);
+            try {
+                await toggleStepCompletion(learnerId, lesson.id, newCount, lesson.total_steps, courseId);
+                setCompletedSteps(newCount);
+            } catch (error) {
+                showToast("No pudimos guardar tu progreso. Inténtalo de nuevo.", "error");
+            }
         });
     };
 
@@ -66,16 +79,33 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
         <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#1A1A1A]">
             {/* Celebration Overlay */}
             {showCelebration && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-primary/20 backdrop-blur-sm animate-in fade-in duration-500 pointer-events-none">
-                    <div className="text-center animate-bounce">
-                        <span className="material-symbols-outlined text-9xl text-white drop-shadow-[0_0_30px_rgba(13,147,242,0.8)]">emoji_events</span>
-                        <h2 className="text-4xl font-black text-white mt-4 uppercase tracking-tighter">¡Misión Cumplida!</h2>
+                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 pointer-events-none overflow-hidden">
+                    <div className="relative z-10 text-center animate-bounce-snappy">
+                        <span className="material-symbols-outlined text-[120px] text-primary drop-shadow-[0_0_50px_rgba(13,147,242,0.8)]">emoji_events</span>
+                        <h2 className="text-5xl font-black text-white mt-6 uppercase tracking-tighter drop-shadow-lg leading-none">¡Misión Cumplida!</h2>
+                        <p className="text-primary font-bold tracking-[0.3em] uppercase mt-4 text-sm">Nivel Superado</p>
+                    </div>
+                    {/* CSS Particles */}
+                    <div className="absolute inset-0 particles">
+                        {Array.from({ length: 30 }).map((_, i) => (
+                            <div key={i} className="particle" style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                                animationDelay: `${Math.random() * 3}s`,
+                                backgroundColor: i % 2 === 0 ? '#0d93f2' : '#a855f7',
+                                width: `${Math.random() * 10 + 4}px`,
+                                height: `${Math.random() * 10 + 4}px`,
+                            }}></div>
+                        ))}
                     </div>
                 </div>
             )}
 
             {/* Left Column: Video Player Area (70%) */}
-            <div className="flex-1 lg:basis-[70%] flex flex-col bg-black relative group/player">
+            <div
+                className="flex-1 lg:basis-[70%] flex flex-col bg-black relative group/player"
+                style={{ viewTransitionName: `course-image-${courseId}` }}
+            >
                 <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
                     {/* Native Video Player as per .cursorrules */}
                     <video
@@ -108,8 +138,11 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
                         <h3 className="text-xl font-bold text-white">Pasos Atómicos</h3>
                         <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider transition-colors duration-500 ${isLessonComplete ? 'bg-green-500/20 text-green-400' : 'bg-primary/20 text-primary'
                             }`}>
-                            {completedSteps} de {lesson.total_steps} Completados
+                            {optimisticSteps} de {lesson.total_steps} Completados
                         </span>
+                    </div>
+                    <div className="mb-4">
+                        <LegoProgressBar completedSteps={optimisticSteps} totalSteps={lesson.total_steps} />
                     </div>
                     <p className="text-sm text-gray-400">Sigue los pasos para completar tu obra maestra.</p>
                 </div>
@@ -117,8 +150,8 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
                 {/* Scrollable List */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
                     {steps.map((step, index) => {
-                        const isCompleted = index < completedSteps;
-                        const isActive = index === completedSteps;
+                        const isCompleted = index < optimisticSteps;
+                        const isActive = index === optimisticSteps;
 
                         return (
                             <div
@@ -170,7 +203,7 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
                         <div className="space-y-3">
                             <button
                                 onClick={handleNextLesson}
-                                className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_20px_rgba(34,197,94,0.4)] animate-in slide-in-from-bottom-2"
+                                className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_20px_rgba(34,197,94,0.4)] animate-in slide-in-from-bottom-2 btn-shine"
                             >
                                 <span className="material-symbols-outlined font-bold">celebration</span>
                                 <span className="text-lg uppercase">¡Misión Cumplida! {nextLessonId ? 'Siguiente Lección' : 'Volver a Base'}</span>
@@ -190,7 +223,7 @@ export default function LessonClient({ courseId, learnerId, lesson, initialProgr
                                     href={lesson.download_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_14px_rgba(13,147,242,0.4)] active:scale-95"
+                                    className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_14px_rgba(13,147,242,0.4)] active:scale-95 btn-shine"
                                 >
                                     <span className="material-symbols-outlined leading-none">download</span>
                                     <span className="text-lg">Descargar Pinceles</span>

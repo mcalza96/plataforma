@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getLearnerById } from '@/lib/courses';
+import { getLearnerById } from '@/lib/data/courses';
 import { cookies } from 'next/headers';
 
 interface LessonHeaderProps {

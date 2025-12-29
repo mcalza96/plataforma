@@ -1,9 +1,10 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getLearnerFullStats, getInstructorFeedback, getLearnerAchievements } from '@/lib/parent';
-import { getLearnerById } from '@/lib/courses';
+import { getLearnerById } from '@/lib/data/courses';
 import Header from '@/components/layout/header';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import StatCard from '@/components/ui/StatCard';
 
 export default async function ParentDashboardPage() {
     const cookieStore = await cookies();
@@ -51,18 +52,27 @@ export default async function ParentDashboardPage() {
 
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl text-center min-w-[120px]">
-                            <p className="text-3xl font-black text-white">{stats.hoursPracticed}</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Horas de Vuelo</p>
-                        </div>
-                        <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl text-center min-w-[120px]">
-                            <p className="text-3xl font-black text-white">{stats.totalProjects}</p>
-                            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Obras Creadas</p>
-                        </div>
-                        <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl text-center min-w-[120px] hidden lg:block border-primary/20 bg-primary/5">
-                            <p className="text-3xl font-black text-primary">{stats.completedLections}</p>
-                            <p className="text-[10px] text-primary/70 uppercase font-bold tracking-widest mt-1">Metas Logradas</p>
-                        </div>
+                        <StatCard
+                            value={stats.hoursPracticed}
+                            label="Horas de Vuelo"
+                            icon="schedule"
+                            variant="default"
+                            className="text-center"
+                        />
+                        <StatCard
+                            value={stats.totalProjects}
+                            label="Obras Creadas"
+                            icon="palette"
+                            variant="default"
+                            className="text-center"
+                        />
+                        <StatCard
+                            value={stats.completedLections}
+                            label="Metas Logradas"
+                            icon="trophy"
+                            variant="primary"
+                            className="hidden lg:block text-center"
+                        />
                     </div>
                 </div>
 

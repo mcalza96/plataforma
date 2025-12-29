@@ -17,15 +17,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     return (
-        <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
-            {/* Admin Banner */}
-            <div className="bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.3em] py-1 text-center">
+        <div className="min-h-screen bg-[#1A1A1A] text-white">
+            {/* Admin Banner - Fixed at the very top */}
+            <div className="admin-banner fixed top-0 left-0 right-0 z-[110] bg-amber-500 text-black text-[10px] font-black uppercase tracking-[0.3em] py-1 text-center h-6">
                 Modo Administrador - Procreate Alpha Studio
             </div>
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* Admin Sidebar */}
-                <aside className="w-64 bg-surface/50 border-r border-white/5 flex flex-col">
+            <div className="flex flex-col lg:flex-row">
+                {/* Admin Sidebar - Fixed on Desktop */}
+                <aside className="
+                    fixed left-0 top-0 bottom-0 w-64 bg-surface/50 border-r border-white/5 
+                    hidden lg:flex flex-col z-40 pt-admin-safe overflow-y-auto
+                ">
                     <nav className="flex-1 p-4 space-y-2">
                         <Link
                             href="/admin/courses"
@@ -68,9 +71,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                     </div>
                 </aside>
 
-                {/* Admin Content */}
-                <main className="flex-1 overflow-y-auto bg-[#1A1A1A] p-8">
-                    {children}
+                {/* Admin Content - Adjusted for fixed elements */}
+                <main className="flex-1 lg:ml-64 pt-admin-safe min-h-screen bg-[#1A1A1A]">
+                    <div className="p-8">
+                        {children}
+                    </div>
                 </main>
             </div>
         </div>

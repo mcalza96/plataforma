@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server';
 import Link from 'next/link';
+import EmptyState from '@/components/ui/EmptyState';
 
 export default async function AdminCoursesPage() {
     const supabase = await createClient();
@@ -63,13 +64,13 @@ export default async function AdminCoursesPage() {
                 ))}
 
                 {(!courses || courses.length === 0) && (
-                    <div className="text-center py-20 bg-white/[0.02] border-2 border-dashed border-white/5 rounded-3xl">
-                        <div className="w-20 h-20 bg-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 text-gray-700">
-                            <span className="material-symbols-outlined text-5xl">school</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-1">Tu academia está vacía</h3>
-                        <p className="text-gray-500">Crea tu primer curso para que los alumnos puedan empezar a aprender.</p>
-                    </div>
+                    <EmptyState
+                        icon="school"
+                        title="Tu academia está vacía"
+                        description="Crea tu primer curso para que los alumnos puedan empezar a aprender."
+                        actionLabel="Nueva Misión"
+                        actionHref="/admin/courses/new"
+                    />
                 )}
             </div>
         </div>

@@ -1,5 +1,22 @@
 import { createClient } from './supabase-server';
 
+export interface Lesson {
+    id: string;
+    course_id: string;
+    title: string;
+    video_url: string;
+    order: number;
+    total_steps: number;
+}
+
+export interface LearnerProgress {
+    id: string;
+    learner_id: string;
+    lesson_id: string;
+    completed_steps: number;
+    is_completed: boolean;
+}
+
 export interface CourseWithProgress {
     id: string;
     title: string;
@@ -12,6 +29,11 @@ export interface CourseWithProgress {
         total_steps: number;
         is_completed: boolean;
     };
+}
+
+export interface CourseWithLessons extends CourseWithProgress {
+    lessons: Lesson[];
+    learnerProgress: LearnerProgress[];
 }
 
 export async function getCoursesWithProgress(learnerId: string) {
@@ -83,4 +105,68 @@ export async function getLearnerById(learnerId: string) {
     }
 
     return data;
+}
+
+export async function getCourseWithLessonsAndProgress(courseId: string, learnerId: string): Promise<CourseWithLessons | null> {
+    const supabase = await createClient();
+
+    // Fetch course details with lessons
+    const { data: course, error: courseError } = await supabase
+        .from('courses')
+        .select(`
+            *,
+            lessons (*)
+        `)
+        .eq('id', courseId)
+        .single();
+
+    if (courseError || !course) {
+        console.error('Error fetching course details:', courseError);
+        return null;
+    }
+
+    // Sort lessons by 'order'
+    course.lessons.sort((a: any, b: any) => a.order - b.order);
+
+    // Fetch progress for this learner and this course's lessons
+    const lessonIds = course.lessons.map((l: any) => l.id);
+    const { data: progress, error: progressError } = await supabase
+        .from('learner_progress')
+        .select('*')
+        .eq('learner_id', learnerId)
+        .in('lesson_id', lessonIds);
+
+    if (progressError) {
+        console.error('Error fetching learner progress:', progressError);
+    }
+
+    return {
+        ...course,
+        learnerProgress: progress || []
+    };
+}
+
+export async function toggleStepCompletion(learnerId: string, lessonId: string, completedSteps: number, totalSteps: number) {
+    const supabase = await createClient();
+
+    const isCompleted = completedSteps >= totalSteps;
+
+    const { error } = await supabase
+        .from('learner_progress')
+        .upsert({
+            learner_id: learnerId,
+            lesson_id: lessonId,
+            completed_steps: completedSteps,
+            is_completed: isCompleted,
+            last_watched_at: new Date().toISOString()
+        }, {
+            onConflict: 'learner_id,lesson_id'
+        });
+
+    if (error) {
+        console.error('Error updating progress:', error);
+        throw new Error(error.message);
+    }
+
+    return { success: true };
 }

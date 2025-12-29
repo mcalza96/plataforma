@@ -12,13 +12,13 @@ export default async function SelectProfilePage() {
     }
 
     // Fetch learners for the current user
-    const { data: learners, error } = await supabase
+    const { data: learners, error: fetchError } = await supabase
         .from('learners')
         .select('*')
         .order('created_at', { ascending: true });
 
-    if (error) {
-        console.error('Error fetching learners:', error);
+    if (fetchError) {
+        throw new Error(`Error fetching learners: ${fetchError.message} (Code: ${fetchError.code})`);
     }
 
     return (

@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getCoursesWithProgress, getLearnerById, CourseWithProgress } from '@/lib/courses';
 import CourseCard from '@/components/dashboard/CourseCard';
+import Link from 'next/link';
 
 export default async function DashboardPage() {
     const cookieStore = await cookies();

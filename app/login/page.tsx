@@ -1,87 +1,125 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithMagicLink } from '@/lib/auth-actions';
+import { signIn, signUp } from '@/lib/auth-actions';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
+    const [isSignUp, setIsSignUp] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [message, setMessage] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    async function handleSubmit(formData: FormData) {
         setLoading(true);
+        setError(null);
         setMessage(null);
 
-        try {
-            await signInWithMagicLink(email);
-            setMessage({ type: 'success', text: '¡Enlace enviado! Revisa tu correo electrónico.' });
-        } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Error al enviar el enlace.' });
-        } finally {
+        const result = isSignUp ? await signUp(formData) : await signIn(formData);
+
+        if (result && 'error' in result) {
+            setError(result.error as string);
+            setLoading(false);
+        } else if (result && 'success' in result) {
+            setMessage(result.success as string);
             setLoading(false);
         }
-    };
+    }
 
     return (
-        <main className="min-h-screen flex flex-col items-center justify-center p-6 bg-background-dark relative overflow-hidden">
-            {/* Background Ambient Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none"></div>
-
-            <div className="w-full max-w-md z-10">
-                <div className="text-center mb-10">
-                    <div className="inline-flex bg-primary/10 p-4 rounded-2xl text-primary mb-6">
+        <main className="min-h-screen flex items-center justify-center p-6 bg-[#1A1A1A]">
+            <div className="w-full max-w-md bg-[#252525] rounded-3xl p-10 shadow-2xl border border-white/5">
+                <div className="flex flex-col items-center mb-10">
+                    <div className="bg-primary/10 p-4 rounded-2xl mb-4 text-primary">
                         <span className="material-symbols-outlined text-4xl">palette</span>
                     </div>
-                    <h1 className="text-4xl font-black tracking-tight text-white mb-3">
-                        Bienvenido, Artista
-                    </h1>
-                    <p className="text-gray-400">
-                        Ingresa tu email para acceder a tu estudio creativo.
+                    <h1 className="text-3xl font-black text-white tracking-tight mb-2">Procreate Studio</h1>
+                    <p className="text-gray-400 text-center font-medium">
+                        {isSignUp ? 'Crea una cuenta de padre' : 'Bienvenido de nuevo, Artista'}
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="bg-surface border border-white/5 p-8 rounded-2xl shadow-2xl space-y-6">
-                    <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                            Correo Electrónico
-                        </label>
-                        <input
-                            id="email"
-                            type="email"
-                            placeholder="tu@email.com"
-                            required
-                            className="w-full px-4 py-3 bg-background-dark border border-white/10 rounded-xl text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
+                <form action={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-400 ml-1 uppercase tracking-wider">Email</label>
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">mail</span>
+                            <input
+                                name="email"
+                                type="email"
+                                required
+                                placeholder="tu@email.com"
+                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600"
+                            />
+                        </div>
                     </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-gray-400 ml-1 uppercase tracking-wider">Contraseña</label>
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-primary transition-colors">lock</span>
+                            <input
+                                name="password"
+                                type="password"
+                                required
+                                placeholder="••••••••"
+                                className="w-full bg-[#1A1A1A] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-gray-600"
+                            />
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-2xl text-sm font-medium flex items-center gap-3">
+                            <span className="material-symbols-outlined">error</span>
+                            {error}
+                        </div>
+                    )}
+
+                    {message && (
+                        <div className="bg-green-500/10 border border-green-500/20 text-green-500 p-4 rounded-2xl text-sm font-medium flex items-center gap-3">
+                            <span className="material-symbols-outlined">check_circle</span>
+                            {message}
+                        </div>
+                    )}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-12 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-primary hover:bg-primary-hover disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl transition-all shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2"
                     >
                         {loading ? (
-                            <span className="animate-pulse">Enviando...</span>
+                            <span className="material-symbols-outlined animate-spin">progress_activity</span>
                         ) : (
                             <>
-                                <span>Enviar Enlace Mágico</span>
-                                <span className="material-symbols-outlined text-xl">auto_awesome</span>
+                                <span>{isSignUp ? 'Crear Cuenta' : 'Entrar al Estudio'}</span>
+                                <span className="material-symbols-outlined">arrow_forward</span>
                             </>
                         )}
                     </button>
-
-                    {message && (
-                        <div className={`p-4 rounded-xl text-sm text-center ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                            {message.text}
-                        </div>
-                    )}
                 </form>
 
-                <p className="text-center text-gray-500 text-sm mt-8">
-                    ¿No tienes una cuenta? <span className="text-primary hover:underline cursor-pointer">Contáctanos</span>
-                </p>
+                <div className="mt-8 text-center text-gray-400 font-medium">
+                    {isSignUp ? (
+                        <p>
+                            ¿Ya tienes cuenta?{' '}
+                            <button
+                                onClick={() => setIsSignUp(false)}
+                                className="text-primary hover:text-primary-hover font-bold"
+                            >
+                                Inicia sesión
+                            </button>
+                        </p>
+                    ) : (
+                        <p>
+                            ¿No tienes cuenta?{' '}
+                            <button
+                                onClick={() => setIsSignUp(true)}
+                                className="text-primary hover:text-primary-hover font-bold"
+                            >
+                                Regístrate
+                            </button>
+                        </p>
+                    )}
+                </div>
             </div>
         </main>
     );

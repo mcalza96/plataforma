@@ -12,9 +12,11 @@ import {
 import ResourceUploader from '@/components/admin/ResourceUploader';
 import StepEditor from '@/components/admin/StepEditor';
 
+import { Course, Lesson } from '@/lib/domain/course';
+
 interface CourseFormProps {
-    course: any;
-    lessons: any[];
+    course: Course | null;
+    lessons: Lesson[];
 }
 
 export default function CourseForm({ course, lessons: initialLessons }: CourseFormProps) {
@@ -74,7 +76,7 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
     const handleSaveLesson = async () => {
         if (!lessonFormData) return;
         startTransition(async () => {
-            const payload = { ...lessonFormData, course_id: course.id };
+            const payload = { ...lessonFormData, course_id: course?.id };
             const result = await upsertLesson(payload);
             if (result.success) {
                 showMessage('success', 'Fase de misión sincronizada');
@@ -105,7 +107,7 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
     const handleDeleteLesson = (lessonId: string) => {
         if (!confirm('¿Seguro que quieres eliminar esta fase?')) return;
         startTransition(async () => {
-            const result = await deleteLesson(lessonId, course.id);
+            const result = await deleteLesson(lessonId, course?.id || '');
             if (result.success) {
                 showMessage('success', 'Fase eliminada');
                 setLessons(prev => prev.filter(l => l.id !== lessonId));
@@ -303,8 +305,8 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
                                         key={lesson.id}
                                         onClick={() => setSelectedLessonId(lesson.id)}
                                         className={`w-full group relative flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 text-left ${selectedLessonId === lesson.id
-                                                ? 'bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/10'
-                                                : 'bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/10'
+                                            ? 'bg-amber-500 border-amber-500 text-black shadow-lg shadow-amber-500/10'
+                                            : 'bg-white/5 border-white/5 text-white hover:bg-white/10 hover:border-white/10'
                                             }`}
                                     >
                                         <div className={`size-10 rounded-xl flex items-center justify-center font-black text-sm italic ${selectedLessonId === lesson.id ? 'bg-black/10 text-black' : 'bg-neutral-800 text-amber-500'

@@ -1,7 +1,7 @@
 'use server';
 
-import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
+import { getLessonService } from './di';
 
 export async function toggleStepCompletion(
     learnerId: string,
@@ -10,29 +10,16 @@ export async function toggleStepCompletion(
     totalSteps: number,
     courseId: string
 ) {
-    const supabase = await createClient();
+    try {
+        const service = getLessonService();
+        await service.markStepComplete(learnerId, lessonId, completedSteps, totalSteps);
 
-    const isCompleted = completedSteps >= totalSteps;
+        revalidatePath(`/lessons/${courseId}`);
+        revalidatePath('/dashboard');
 
-    const { error } = await supabase
-        .from('learner_progress')
-        .upsert({
-            learner_id: learnerId,
-            lesson_id: lessonId,
-            completed_steps: completedSteps,
-            is_completed: isCompleted,
-            last_watched_at: new Date().toISOString()
-        }, {
-            onConflict: 'learner_id,lesson_id'
-        });
-
-    if (error) {
-        console.error('Error updating progress:', error);
-        throw new Error(error.message);
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in toggleStepCompletion action:', error);
+        return { success: false, error: error.message || 'Error updating progress' };
     }
-
-    revalidatePath(`/lessons/${courseId}`);
-    revalidatePath('/dashboard');
-
-    return { success: true };
 }

@@ -4,7 +4,10 @@ import {
     Lesson,
     Learner,
     UpsertCourseInput,
-    Course
+    Course,
+    FamilyDTO,
+    LearnerStats,
+    LearnerAchievement
 } from '../domain/course';
 
 /**
@@ -46,4 +49,71 @@ export interface ICourseRepository {
      * Delete a course.
      */
     deleteCourse(courseId: string): Promise<void>;
+
+    /**
+     * Get all families (profiles) with their learners.
+     */
+    getFamilies(): Promise<FamilyDTO[]>;
+
+    /**
+     * Get a specific family by ID.
+     */
+    getFamilyById(id: string): Promise<FamilyDTO | null>;
+
+    /**
+     * Update learner level.
+     */
+    updateLearnerLevel(learnerId: string, newLevel: number): Promise<void>;
+
+    /**
+     * Update user role.
+     */
+    updateUserRole(userId: string, newRole: string): Promise<void>;
+
+    /**
+     * Get full stats for a learner.
+     */
+    getLearnerFullStats(learnerId: string): Promise<LearnerStats>;
+
+    /**
+     * Get achievements for a learner.
+     */
+    getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]>;
+
+    /**
+     * Create a new learner.
+     */
+    createLearner(data: {
+        parentId: string;
+        displayName: string;
+        avatarUrl: string;
+    }): Promise<Learner>;
+
+    /**
+     * Ensure a parent profile exists.
+     */
+    ensureProfileExists(data: {
+        id: string;
+        email: string;
+        fullName: string;
+    }): Promise<void>;
+
+    /**
+     * Get all learners for a specific parent.
+     */
+    getLearnersByParentId(parentId: string): Promise<Learner[]>;
+
+    /**
+     * Get all courses (admin view).
+     */
+    getAllCourses(): Promise<Course[]>;
+
+    /**
+     * Get global stats for admin.
+     */
+    getGlobalStats(): Promise<{
+        totalLearners: number;
+        totalSubmissions: number;
+        totalCourses: number;
+    }>;
 }

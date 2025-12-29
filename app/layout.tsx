@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/header";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -9,11 +8,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://procreatealpha.studio'),
   title: 'Procreate Alpha Studio | Academia de Arte Digital para Niños',
   description: 'Transforma el talento de tus hijos en maestría digital. Lecciones de Procreate aplicadas al dibujo tradicional para niños de 9 a 12 años.',
   keywords: ['arte digital', 'niños', 'procreate', 'dibujo', 'academia', 'educación', 'iPad', 'clases de arte'],
   authors: [{ name: 'Procreate Alpha Studio' }],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0',
   openGraph: {
     title: 'Procreate Alpha Studio | Academia de Arte Digital',
     description: 'La primera academia de arte digital que enseña el proceso real. ¡Inscribe a tu pequeño artista hoy!',
@@ -38,6 +37,13 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 import { ToastProvider } from "@/context/ToastContext";
 
 export default function RootLayout({
@@ -57,7 +63,6 @@ export default function RootLayout({
         className={`${inter.variable} font-sans antialiased bg-background-dark text-white min-h-screen flex flex-col`}
       >
         <ToastProvider>
-          <Header />
           {children}
         </ToastProvider>
       </body>

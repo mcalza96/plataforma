@@ -1,25 +1,17 @@
-import { createClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
 import ProfilesClient from './profiles-client';
+import { getAuthUser } from '@/lib/infrastructure/auth-utils';
+import { getCourseService } from '@/lib/di';
 
 export default async function SelectProfilePage() {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     if (!user) {
         return redirect('/login');
     }
 
-    // Fetch learners for the current user
-    const { data: learners, error: fetchError } = await supabase
-        .from('learners')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-    if (fetchError) {
-        throw new Error(`Error fetching learners: ${fetchError.message} (Code: ${fetchError.code})`);
-    }
+    const service = getCourseService();
+    const learners = await service.getLearnersByParentId(user.id);
 
     return (
         <main className="flex-grow flex flex-col justify-center py-12 px-6 relative">

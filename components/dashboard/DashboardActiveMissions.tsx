@@ -1,4 +1,5 @@
-import { getCoursesWithProgress, CourseCardDTO as CourseWithProgress } from '@/lib/data/courses';
+import { getCoursesWithProgress } from '@/lib/data/courses';
+import { CourseCardDTO as CourseWithProgress } from '@/lib/domain/course';
 import CourseCard from '@/components/dashboard/CourseCard';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';

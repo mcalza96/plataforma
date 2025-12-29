@@ -1,13 +1,22 @@
-import { createClient } from './supabase-server';
+'use server';
+import { createClient } from './supabase/supabase-server';
 
 export type AppRole = 'admin' | 'instructor' | 'user';
+
+/**
+ * Obtiene el usuario autenticado actual
+ */
+export async function getAuthUser() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+}
 
 /**
  * Obtiene el rol del usuario actual desde la base de datos
  */
 export async function getUserRole(): Promise<AppRole> {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     if (!user) return 'user';
 
@@ -17,6 +26,7 @@ export async function getUserRole(): Promise<AppRole> {
         return 'admin';
     }
 
+    const supabase = await createClient();
     const { data: profile } = await supabase
         .from('profiles')
         .select('role')

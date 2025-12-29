@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
+import { getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
 import { cookies } from 'next/headers';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
@@ -8,21 +8,15 @@ import HeaderNav from './HeaderNav';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 export default async function Header() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const [user, role] = await Promise.all([
+        getAuthUser(),
+        getUserRole()
+    ]);
 
     const cookieStore = await cookies();
     const learnerId = cookieStore.get('learner_id')?.value;
 
-    const [profileData, learner] = await Promise.all([
-        user ? supabase.from('profiles').select('role').eq('id', user.id).single() : Promise.resolve({ data: null }),
-        learnerId ? getLearnerById(learnerId) : Promise.resolve(null)
-    ]);
-
-    // Fallback de "Super Admin" por email (Blindaje mientras se estabiliza la DB)
-    const adminEmails = ['marcelo.calzadilla@jitdata.cl', 'admin@procreatealpha.studio'];
-    const isSuperAdmin = user?.email && adminEmails.includes(user.email);
-    const role = isSuperAdmin ? 'admin' : (profileData.data?.role || 'user');
+    const learner = learnerId ? await getLearnerById(learnerId) : null;
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] px-6 py-4 group/header">
@@ -44,7 +38,7 @@ export default async function Header() {
                     </Link>
 
                     <div className="hidden xl:block">
-                        <Breadcrumbs />
+                        {role !== 'admin' && <Breadcrumbs />}
                     </div>
                 </div>
 

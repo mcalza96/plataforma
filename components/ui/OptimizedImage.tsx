@@ -3,7 +3,7 @@
 import Image, { ImageProps } from 'next/image';
 import { useState } from 'react';
 
-interface OptimizedImageProps extends Omit<ImageProps, 'onLoadingComplete'> {
+interface OptimizedImageProps extends Omit<ImageProps, 'onLoad'> {
     containerClassName?: string;
     fallbackIcon?: string;
     aspectRatio?: string;
@@ -38,7 +38,7 @@ export default function OptimizedImage({
                     src={src}
                     alt={alt}
                     className={`transition-all duration-700 ${isLoading ? 'blur-lg scale-110 opacity-0' : 'blur-0 scale-100 opacity-100'} ${className}`}
-                    onLoadingComplete={() => setIsLoading(false)}
+                    onLoad={() => setIsLoading(false)}
                     onError={() => {
                         setIsLoading(false);
                         setError(true);

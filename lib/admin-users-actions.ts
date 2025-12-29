@@ -1,56 +1,35 @@
 'use server';
 
-import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-
-import { validateAdmin } from './auth-utils';
+import { getCourseService } from './di';
+import { getAuthUser, getUserRole } from './infrastructure/auth-utils';
 
 /**
  * Obtiene todas las familias (profiles) con sus alumnos relacionados
  */
 export async function getFamilies() {
-    await validateAdmin();
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-            *,
-            learners (*)
-        `)
-        .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+        const role = await getUserRole();
+        const service = getCourseService();
+        return await service.getFamilies(role);
+    } catch (error: any) {
         console.error('Error fetching families:', error);
-        throw new Error('No se pudieron obtener las familias.');
+        throw new Error(error.message || 'No se pudieron obtener las familias.');
     }
-
-    return data;
 }
 
 /**
  * Obtiene una familia específica por ID con sus alumnos
  */
 export async function getFamilyById(id: string) {
-    await validateAdmin();
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-            *,
-            learners (*)
-        `)
-        .eq('id', id)
-        .single();
-
-    if (error) {
+    try {
+        const role = await getUserRole();
+        const service = getCourseService();
+        return await service.getFamilyById(id, role);
+    } catch (error: any) {
         console.error('Error fetching family:', error);
-        throw new Error('No se pudo encontrar la familia solicitada.');
+        throw new Error(error.message || 'No se pudo encontrar la familia solicitada.');
     }
-
-    return data;
 }
 
 /**
@@ -58,19 +37,10 @@ export async function getFamilyById(id: string) {
  */
 export async function updateLearnerLevel(learnerId: string, profileId: string, newLevel: number) {
     try {
-        await validateAdmin();
+        const role = await getUserRole();
+        const service = getCourseService();
 
-        if (newLevel < 1 || newLevel > 10) {
-            throw new Error('El nivel debe estar entre 1 y 10.');
-        }
-
-        const supabase = await createClient();
-        const { error } = await supabase
-            .from('learners')
-            .update({ level: newLevel })
-            .eq('id', learnerId);
-
-        if (error) throw error;
+        await service.updateLearnerLevel(learnerId, newLevel, role);
 
         revalidatePath(`/admin/users/${profileId}`);
         revalidatePath('/admin/users');
@@ -83,27 +53,19 @@ export async function updateLearnerLevel(learnerId: string, profileId: string, n
     }
 }
 
+
+
 /**
  * Actualiza el rol de un usuario
  */
 export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'instructor' | 'user') {
     try {
-        await validateAdmin();
+        const role = await getUserRole();
+        const user = await getAuthUser();
+        const currentUserId = user?.id || '';
 
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        // Evitar que el admin se quite el rol a sí mismo
-        if (user?.id === targetUserId && newRole !== 'admin') {
-            throw new Error('No puedes quitarte el rol de administrador a ti mismo.');
-        }
-
-        const { error } = await supabase
-            .from('profiles')
-            .update({ role: newRole })
-            .eq('id', targetUserId);
-
-        if (error) throw error;
+        const service = getCourseService();
+        await service.updateUserRole(targetUserId, newRole, currentUserId, role);
 
         revalidatePath(`/admin/users/${targetUserId}`);
         revalidatePath('/admin/users');
@@ -114,3 +76,4 @@ export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'i
         return { success: false, error: error.message || 'Error al actualizar el rol.' };
     }
 }
+

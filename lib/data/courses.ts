@@ -9,14 +9,8 @@ import {
     LearnerProgress
 } from '../domain/course';
 
-// Re-export types to avoid breaking consumers depending on lib/data/courses.ts
-export type {
-    CourseCardDTO,
-    CourseDetailDTO,
-    Lesson as LessonDTO,
-    Learner as LearnerDTO,
-    LearnerProgress as LearnerProgressDTO
-};
+// Loaders only below. Types are imported from @/lib/domain/course.
+
 
 /**
  * Fetch all courses with progress for a specific learner.

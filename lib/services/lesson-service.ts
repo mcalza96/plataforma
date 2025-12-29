@@ -1,5 +1,5 @@
 import { ILessonRepository } from '../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput } from '../domain/course';
+import { Lesson, UpsertLessonInput, Submission, Achievement } from '../domain/course';
 
 /**
  * Domain service for Lesson operations.
@@ -44,5 +44,82 @@ export class LessonService {
             // Aquí necesitaríamos obtener la lección primero o tener un upsert parcial
             // Por simplicidad en este sprint, asumimos que el repo maneja el orden
         }
+    }
+
+    async markStepComplete(
+        learnerId: string,
+        lessonId: string,
+        completedSteps: number,
+        totalSteps: number
+    ): Promise<void> {
+        // Business logic: Determine if the lesson is fully completed
+        const isCompleted = completedSteps >= totalSteps;
+
+        return this.lessonRepository.markStepComplete(
+            learnerId,
+            lessonId,
+            completedSteps,
+            isCompleted
+        );
+    }
+
+    async getAdminSubmissions(filter: 'pending' | 'reviewed', userRole: string): Promise<Submission[]> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden revisar entregas.');
+        }
+        return this.lessonRepository.getAdminSubmissions(filter);
+    }
+
+    async getSubmissionDetail(id: string, userRole: string): Promise<Submission | null> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden ver el detalle de entregas.');
+        }
+        return this.lessonRepository.getSubmissionDetail(id);
+    }
+
+    async submitReview(data: {
+        submissionId: string;
+        learnerId: string;
+        content: string;
+        badgeId?: string | null;
+    }, userRole: string): Promise<void> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden enviar revisiones.');
+        }
+        return this.lessonRepository.submitReview(data);
+    }
+
+    async getAvailableBadges(): Promise<Achievement[]> {
+        return this.lessonRepository.getAvailableBadges();
+    }
+
+    async getLearnerFeedback(learnerId: string): Promise<any[]> {
+        return this.lessonRepository.getLearnerFeedback(learnerId);
+    }
+
+    async getUnreadFeedbackCount(learnerId: string): Promise<number> {
+        return this.lessonRepository.getUnreadFeedbackCount(learnerId);
+    }
+
+    async markFeedbackAsRead(messageId: string): Promise<void> {
+        return this.lessonRepository.markFeedbackAsRead(messageId);
+    }
+
+    async createSubmission(data: {
+        learnerId: string;
+        lessonId: string | null;
+        title: string;
+        fileUrl: string;
+        category: string;
+    }): Promise<Submission> {
+        return this.lessonRepository.createSubmission(data);
+    }
+
+    async getLearnerSubmissions(learnerId: string): Promise<Submission[]> {
+        return this.lessonRepository.getLearnerSubmissions(learnerId);
+    }
+
+    async getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
+        return this.lessonRepository.getLessonsByCourseId(courseId);
     }
 }

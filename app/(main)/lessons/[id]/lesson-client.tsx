@@ -1,6 +1,6 @@
 'use client';
 
-import { LessonDTO as Lesson, LearnerProgressDTO as LearnerProgress } from '@/lib/data/courses';
+import { LessonDTO as Lesson, LearnerProgressDTO as LearnerProgress } from '@/lib/domain/course';
 import { useLessonController } from '@/hooks/use-lesson-controller';
 
 // Pure Components

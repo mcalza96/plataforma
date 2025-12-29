@@ -1,20 +1,17 @@
 'use server';
 
-import { createClient } from '@/lib/supabase-server';
+import { createClient } from './infrastructure/supabase/supabase-server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-const authSchema = z.object({
-    email: z.string().email('Email inválido'),
-    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-});
+import { AuthSchema } from './validations';
 
 export async function signUp(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const validated = authSchema.safeParse({ email, password });
+    const validated = AuthSchema.safeParse({ email, password });
     if (!validated.success) {
         return { error: validated.error.issues[0].message };
     }
@@ -39,7 +36,7 @@ export async function signIn(formData: FormData) {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const validated = authSchema.safeParse({ email, password });
+    const validated = AuthSchema.safeParse({ email, password });
     if (!validated.success) {
         return { error: validated.error.issues[0].message };
     }

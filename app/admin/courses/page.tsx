@@ -1,13 +1,10 @@
-import { createClient } from '@/lib/supabase-server';
+import { getCourseService } from '@/lib/di';
 import Link from 'next/link';
 import EmptyState from '@/components/ui/EmptyState';
 
 export default async function AdminCoursesPage() {
-    const supabase = await createClient();
-    const { data: courses } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const service = getCourseService();
+    const courses = await service.getAllCourses();
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">

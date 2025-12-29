@@ -1,82 +1,37 @@
 'use server';
 
-import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-
-import { validateAdmin } from './auth-utils';
-
-// --- Schemas ---
-
-const FeedbackSchema = z.object({
-    submissionId: z.string().uuid(),
-    learnerId: z.string().uuid(),
-    content: z.string().min(10, 'El feedback debe ser constructivo (min 10 caracteres)'),
-    badgeId: z.string().uuid().optional().nullable(),
-});
+import { getLessonService } from './di';
+import { getUserRole, validateAdmin } from './infrastructure/auth-utils';
+import { FeedbackSchema } from './validations';
 
 /**
  * Obtiene las entregas filtradas para el administrador
  */
 export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pending') {
-    await validateAdmin();
-    const supabase = await createClient();
-
-    const query = supabase
-        .from('submissions')
-        .select(`
-            *,
-            learners (
-                id,
-                display_name,
-                avatar_url,
-                level
-            ),
-            lessons (
-                id,
-                title
-            )
-        `)
-        .order('created_at', { ascending: filter === 'pending' });
-
-    if (filter === 'pending') {
-        query.eq('is_reviewed', false);
-    } else {
-        query.eq('is_reviewed', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-        console.error('Error fetching submissions:', error);
+    try {
+        const role = await getUserRole();
+        const service = getLessonService();
+        return await service.getAdminSubmissions(filter, role);
+    } catch (error: any) {
+        console.error('Error in getAdminSubmissions action:', error);
         return [];
     }
-
-    return data;
 }
 
 /**
  * Obtiene el detalle de una entrega específica
  */
 export async function getSubmissionDetail(id: string) {
-    await validateAdmin();
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from('submissions')
-        .select(`
-            *,
-            learners (
-                *,
-                profiles (email)
-            ),
-            lessons (*)
-        `)
-        .eq('id', id)
-        .single();
-
-    if (error) throw error;
-    return data;
+    try {
+        const role = await getUserRole();
+        const service = getLessonService();
+        return await service.getSubmissionDetail(id, role);
+    } catch (error: any) {
+        console.error('Error in getSubmissionDetail action:', error);
+        throw error;
+    }
 }
 
 /**
@@ -84,40 +39,11 @@ export async function getSubmissionDetail(id: string) {
  */
 export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
     try {
-        await validateAdmin();
         const validated = FeedbackSchema.parse(data);
-        const supabase = await createClient();
+        const role = await getUserRole();
+        const service = getLessonService();
 
-        // 1. Insert feedback message
-        const { error: msgError } = await supabase
-            .from('feedback_messages')
-            .insert({
-                learner_id: validated.learnerId,
-                parent_id: (await supabase.from('learners').select('parent_id').eq('id', validated.learnerId).single()).data?.parent_id,
-                sender_name: 'Instructor Procreate Studio',
-                content: validated.content,
-                is_read_by_learner: false
-            });
-
-        if (msgError) throw msgError;
-
-        // 2. Award badge if selected
-        if (validated.badgeId) {
-            await supabase
-                .from('learner_achievements')
-                .upsert({
-                    learner_id: validated.learnerId,
-                    achievement_id: validated.badgeId
-                }, { onConflict: 'learner_id,achievement_id' });
-        }
-
-        // 3. Mark submission as reviewed
-        const { error: subError } = await supabase
-            .from('submissions')
-            .update({ is_reviewed: true })
-            .eq('id', validated.submissionId);
-
-        if (subError) throw subError;
+        await service.submitReview(validated, role);
 
         revalidatePath('/admin/submissions');
         revalidatePath(`/admin/submissions/${validated.submissionId}`);
@@ -127,7 +53,7 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
 
         return { success: true };
     } catch (error: any) {
-        console.error('Error in submitReview:', error);
+        console.error('Error in submitReview action:', error);
         return { success: false, error: error.message || 'Error al enviar la revisión' };
     }
 }
@@ -136,50 +62,54 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
  * Obtiene todas las insignias disponibles
  */
 export async function getAvailableBadges() {
-    const supabase = await createClient();
-    const { data } = await supabase.from('achievements').select('*').order('level_required');
-    return data || [];
+    try {
+        const service = getLessonService();
+        return await service.getAvailableBadges();
+    } catch (error: any) {
+        console.error('Error in getAvailableBadges action:', error);
+        return [];
+    }
 }
 
 /**
  * Obtiene el historial de feedback de un alumno
  */
 export async function getLearnerFeedback(learnerId: string) {
-    const supabase = await createClient();
-    const { data } = await supabase
-        .from('feedback_messages')
-        .select('*')
-        .eq('learner_id', learnerId)
-        .order('created_at', { ascending: false });
-    return data || [];
+    try {
+        const service = getLessonService();
+        return await service.getLearnerFeedback(learnerId);
+    } catch (error: any) {
+        console.error('Error in getLearnerFeedback action:', error);
+        return [];
+    }
 }
 
 /**
  * Obtiene el historial de un alumno con conteo de no leídos
  */
 export async function getUnreadFeedbackCount(learnerId: string) {
-    const supabase = await createClient();
-    const { count, error } = await supabase
-        .from('feedback_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('learner_id', learnerId)
-        .eq('is_read_by_learner', false);
-
-    if (error) return 0;
-    return count || 0;
+    try {
+        const service = getLessonService();
+        return await service.getUnreadFeedbackCount(learnerId);
+    } catch (error: any) {
+        console.error('Error in getUnreadFeedbackCount action:', error);
+        return 0;
+    }
 }
 
 /**
  * Marca un mensaje como leído por el alumno
  */
 export async function markFeedbackAsRead(messageId: string) {
-    const supabase = await createClient();
-    const { error } = await supabase
-        .from('feedback_messages')
-        .update({ is_read_by_learner: true })
-        .eq('id', messageId);
+    try {
+        const service = getLessonService();
+        await service.markFeedbackAsRead(messageId);
 
-    if (error) throw error;
-    revalidatePath('/dashboard');
-    return { success: true };
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in markFeedbackAsRead action:', error);
+        throw error;
+    }
 }
+

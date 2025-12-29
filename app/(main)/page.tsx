@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
+import { getAuthUser } from '@/lib/infrastructure/auth-utils';
 import Header from '@/components/layout/header';
 import Image from 'next/image';
 import OptimizedImage from '@/components/ui/OptimizedImage';
@@ -7,8 +7,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export default async function LandingPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   if (user) {
     const cookieStore = await cookies();

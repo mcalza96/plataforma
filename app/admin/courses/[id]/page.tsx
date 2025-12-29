@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import CourseForm from './course-form';
+import CourseForm from './CourseForm';
+import { getCourseService, getLessonService } from '@/lib/di';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -9,30 +9,21 @@ interface PageProps {
 
 export default async function EditCoursePage({ params }: PageProps) {
     const { id } = await params;
-    const supabase = await createClient();
 
     let course = null;
     let lessons: any[] = [];
 
     if (id !== 'new') {
-        const { data: courseData, error } = await supabase
-            .from('courses')
-            .select('*')
-            .eq('id', id)
-            .single();
+        const courseService = getCourseService();
+        const lessonService = getLessonService();
 
-        if (error || !courseData) {
+        course = await courseService.getCourseById(id);
+
+        if (!course) {
             return notFound();
         }
-        course = courseData;
 
-        const { data: lessonData } = await supabase
-            .from('lessons')
-            .select('*')
-            .eq('course_id', id)
-            .order('order', { ascending: true });
-
-        lessons = lessonData || [];
+        lessons = await lessonService.getLessonsByCourseId(id);
     }
 
     return (

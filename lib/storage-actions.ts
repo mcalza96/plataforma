@@ -1,7 +1,7 @@
 'use server';
-
-import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
+import { getLessonService } from './di';
+import { createClient } from './infrastructure/supabase/supabase-server';
 
 export async function uploadSubmission(formData: FormData) {
     const supabase = await createClient();
@@ -21,7 +21,7 @@ export async function uploadSubmission(formData: FormData) {
     const fileName = `${learnerId}/${Date.now()}.${fileExt}`;
     const filePath = `submissions/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
         .from('art-portfolio')
         .upload(filePath, file, {
             contentType: file.type,
@@ -40,48 +40,31 @@ export async function uploadSubmission(formData: FormData) {
 
     const fileUrl = urlData.publicUrl;
 
-    // 3. Insert into Database
-    const { data: dbData, error: dbError } = await supabase
-        .from('submissions')
-        .insert({
-            learner_id: learnerId,
-            lesson_id: lessonId || null,
+    // 3. Insert into Database via Service
+    try {
+        const service = getLessonService();
+        const dbData = await service.createSubmission({
+            learnerId,
+            lessonId,
             title: title || 'Mi Obra Maestra',
-            file_url: fileUrl,
-            category: category || 'General',
-            thumbnail_url: null // In future, we could generate thumbnails
-        })
-        .select()
-        .single();
+            fileUrl,
+            category: category || 'General'
+        });
 
-    if (dbError) {
-        console.error('Error inserting submission:', dbError);
+        revalidatePath('/gallery');
+        revalidatePath('/dashboard');
+
+        return { success: true, submission: dbData };
+    } catch (dbError) {
+        console.error('Error in uploadSubmission database phase:', dbError);
         // Clean up uploaded file if DB insert fails
         await supabase.storage.from('art-portfolio').remove([filePath]);
         throw new Error('Error al registrar la entrega en la base de datos');
     }
-
-    revalidatePath('/gallery');
-    revalidatePath('/dashboard');
-
-    return { success: true, submission: dbData };
 }
 
 export async function getLearnerSubmissions(learnerId: string) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from('submissions')
-        .select(`
-            *,
-            lessons (title)
-        `)
-        .eq('learner_id', learnerId)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching submissions:', error);
-        return [];
-    }
-
-    return data;
+    const service = getLessonService();
+    return await service.getLearnerSubmissions(learnerId);
 }
+

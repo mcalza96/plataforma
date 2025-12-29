@@ -1,6 +1,6 @@
 import { ILessonRepository } from '../../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput } from '../../domain/course';
-import { createClient } from '../../supabase-server';
+import { Lesson, UpsertLessonInput, Submission, Achievement } from '../../domain/course';
+import { createClient } from './supabase-server';
 
 /**
  * Supabase implementation of the ILessonRepository.
@@ -74,5 +74,208 @@ export class SupabaseLessonRepository implements ILessonRepository {
         }
 
         return data?.order || 0;
+    }
+
+    async markStepComplete(
+        learnerId: string,
+        lessonId: string,
+        completedSteps: number,
+        isCompleted: boolean
+    ): Promise<void> {
+        const supabase = await createClient();
+
+        const { error } = await supabase
+            .from('learner_progress')
+            .upsert({
+                learner_id: learnerId,
+                lesson_id: lessonId,
+                completed_steps: completedSteps,
+                is_completed: isCompleted,
+                last_watched_at: new Date().toISOString()
+            }, {
+                onConflict: 'learner_id,lesson_id'
+            });
+
+        if (error) {
+            console.error('Error updating progress in repository:', error);
+            throw new Error('Could not update progress');
+        }
+    }
+
+    async getAdminSubmissions(filter: 'pending' | 'reviewed'): Promise<Submission[]> {
+        const supabase = await createClient();
+
+        const query = supabase
+            .from('submissions')
+            .select(`
+                *,
+                learners (id, display_name, avatar_url, level),
+                lessons (id, title)
+            `)
+            .order('created_at', { ascending: filter === 'pending' });
+
+        if (filter === 'pending') {
+            query.eq('is_reviewed', false);
+        } else {
+            query.eq('is_reviewed', true);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching submissions in repository:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    async getSubmissionDetail(id: string): Promise<Submission | null> {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from('submissions')
+            .select(`
+                *,
+                learners (*, profiles (email)),
+                lessons (*)
+            `)
+            .eq('id', id)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async submitReview(data: {
+        submissionId: string;
+        learnerId: string;
+        content: string;
+        badgeId?: string | null;
+    }): Promise<void> {
+        const supabase = await createClient();
+
+        // 1. Get parent_id
+        const { data: learnerData } = await supabase
+            .from('learners')
+            .select('parent_id')
+            .eq('id', data.learnerId)
+            .single();
+
+        // 2. Insert feedback message
+        const { error: msgError } = await supabase
+            .from('feedback_messages')
+            .insert({
+                learner_id: data.learnerId,
+                parent_id: learnerData?.parent_id,
+                sender_name: 'Instructor Procreate Studio',
+                content: data.content,
+                is_read_by_learner: false
+            });
+
+        if (msgError) throw msgError;
+
+        // 3. Award badge if selected
+        if (data.badgeId) {
+            await supabase
+                .from('learner_achievements')
+                .upsert({
+                    learner_id: data.learnerId,
+                    achievement_id: data.badgeId
+                }, { onConflict: 'learner_id,achievement_id' });
+        }
+
+        // 4. Mark submission as reviewed (if provided)
+        if (data.submissionId && data.submissionId !== '00000000-0000-0000-0000-000000000000') {
+            const { error: subError } = await supabase
+                .from('submissions')
+                .update({ is_reviewed: true })
+                .eq('id', data.submissionId);
+
+            if (subError) throw subError;
+        }
+    }
+
+    async getAvailableBadges(): Promise<Achievement[]> {
+        const supabase = await createClient();
+        const { data } = await supabase.from('achievements').select('*').order('level_required');
+        return data || [];
+    }
+
+    async getLearnerFeedback(learnerId: string): Promise<any[]> {
+        const supabase = await createClient();
+        const { data } = await supabase
+            .from('feedback_messages')
+            .select('*')
+            .eq('learner_id', learnerId)
+            .order('created_at', { ascending: false });
+        return data || [];
+    }
+
+    async getUnreadFeedbackCount(learnerId: string): Promise<number> {
+        const supabase = await createClient();
+        const { count, error } = await supabase
+            .from('feedback_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('learner_id', learnerId)
+            .eq('is_read_by_learner', false);
+
+        if (error) return 0;
+        return count || 0;
+    }
+
+    async markFeedbackAsRead(messageId: string): Promise<void> {
+        const supabase = await createClient();
+        const { error } = await supabase
+            .from('feedback_messages')
+            .update({ is_read_by_learner: true })
+            .eq('id', messageId);
+
+        if (error) throw error;
+    }
+
+    async createSubmission(data: {
+        learnerId: string;
+        lessonId: string | null;
+        title: string;
+        fileUrl: string;
+        category: string;
+    }): Promise<Submission> {
+        const supabase = await createClient();
+        const { data: dbData, error: dbError } = await supabase
+            .from('submissions')
+            .insert({
+                learner_id: data.learnerId,
+                lesson_id: data.lessonId || null,
+                title: data.title || 'Mi Obra Maestra',
+                file_url: data.fileUrl,
+                category: data.category || 'General',
+                thumbnail_url: null
+            })
+            .select()
+            .single();
+
+        if (dbError) {
+            console.error('Error inserting submission in repository:', dbError);
+            throw new Error('Error al registrar la entrega en la base de datos');
+        }
+
+        return dbData;
+    }
+
+    async getLearnerSubmissions(learnerId: string): Promise<Submission[]> {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from('submissions')
+            .select(`
+                *,
+                lessons (title)
+            `)
+            .eq('learner_id', learnerId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching submissions in repository:', error);
+            return [];
+        }
+
+        return data || [];
     }
 }

@@ -1,5 +1,12 @@
 import { ICourseRepository } from '../repositories/course-repository';
-import { UpsertCourseInput, Course } from '../domain/course';
+import {
+    UpsertCourseInput,
+    Course,
+    FamilyDTO,
+    LearnerStats,
+    LearnerAchievement,
+    Learner
+} from '../domain/course';
 
 /**
  * Domain service for Course operations.
@@ -36,5 +43,71 @@ export class CourseService {
 
     async getCourseById(id: string): Promise<Course | null> {
         return this.courseRepository.getCourseById(id);
+    }
+
+    async getFamilies(userRole: string): Promise<FamilyDTO[]> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden ver la lista de familias.');
+        }
+        return this.courseRepository.getFamilies();
+    }
+
+    async getFamilyById(id: string, userRole: string): Promise<FamilyDTO | null> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden ver el detalle de una familia.');
+        }
+        return this.courseRepository.getFamilyById(id);
+    }
+
+    async updateLearnerLevel(learnerId: string, newLevel: number, userRole: string): Promise<void> {
+        if (userRole !== 'admin') {
+            throw new Error('Solo los administradores pueden actualizar el nivel de los alumnos.');
+        }
+
+        if (newLevel < 1 || newLevel > 10) {
+            throw new Error('El nivel debe estar entre 1 y 10.');
+        }
+
+        return this.courseRepository.updateLearnerLevel(learnerId, newLevel);
+    }
+
+    async updateUserRole(targetUserId: string, targetNewRole: string, currentUserId: string, currentUserRole: string): Promise<void> {
+        if (currentUserRole !== 'admin') {
+            throw new Error('Solo los administradores pueden cambiar roles.');
+        }
+
+        if (currentUserId === targetUserId && targetNewRole !== 'admin') {
+            throw new Error('No puedes quitarte el rol de administrador a ti mismo.');
+        }
+
+        return this.courseRepository.updateUserRole(targetUserId, targetNewRole);
+    }
+
+    async getLearnerFullStats(learnerId: string): Promise<LearnerStats> {
+        return this.courseRepository.getLearnerFullStats(learnerId);
+    }
+
+    async getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]> {
+        return this.courseRepository.getLearnerAchievements(learnerId);
+    }
+
+    async createLearner(data: { parentId: string; displayName: string; avatarUrl: string }): Promise<Learner> {
+        return this.courseRepository.createLearner(data);
+    }
+
+    async ensureProfileExists(data: { id: string; email: string; fullName: string }): Promise<void> {
+        return this.courseRepository.ensureProfileExists(data);
+    }
+
+    async getLearnersByParentId(parentId: string): Promise<Learner[]> {
+        return this.courseRepository.getLearnersByParentId(parentId);
+    }
+
+    async getAllCourses(): Promise<Course[]> {
+        return this.courseRepository.getAllCourses();
+    }
+
+    async getGlobalStats() {
+        return this.courseRepository.getGlobalStats();
     }
 }

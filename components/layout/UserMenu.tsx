@@ -6,7 +6,7 @@ import { User } from '@supabase/supabase-js';
 import { signOut } from '@/lib/auth-actions';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
-import { LearnerDTO } from '@/lib/data/courses';
+import { LearnerDTO } from '@/lib/domain/course';
 
 interface UserMenuProps {
     user: User;

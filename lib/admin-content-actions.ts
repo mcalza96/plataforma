@@ -1,32 +1,10 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getUserRole } from './auth-utils';
+import { getUserRole, validateAdmin } from './infrastructure/auth-utils';
 import { getCourseService, getLessonService } from './di';
 
-// --- Schemas (Validación de entrada HTTP) ---
-
-export const CourseSchema = z.object({
-    id: z.string().uuid().optional(),
-    title: z.string().min(5, 'El título debe ser más inspirador (mín. 5 caracteres)'),
-    description: z.string().min(20, 'Describe mejor la misión para motivar a los alumnos (mín. 20 caracteres)'),
-    level_required: z.coerce.number().min(1, 'Nivel mín. 1').max(10, 'Nivel máx. 10'),
-    category: z.string().min(1, 'Selecciona una categoría para el estudio'),
-    thumbnail_url: z.string().url('URL de miniatura inválida').optional().or(z.literal('')),
-    is_published: z.boolean().optional(),
-});
-
-export const LessonSchema = z.object({
-    id: z.string().uuid().optional(),
-    course_id: z.string().uuid('ID de misión inválido'),
-    title: z.string().min(5, 'El título de la fase es muy corto (mín. 5 caracteres)'),
-    video_url: z.string().url('Necesitamos una URL de video (MP4/Loom) válida'),
-    description: z.string().optional().or(z.literal('')),
-    thumbnail_url: z.string().url('URL de miniatura inválida').optional().or(z.literal('')),
-    download_url: z.string().url('Formato de link de recursos inválido').optional().or(z.literal('')),
-    total_steps: z.coerce.number().min(1, 'Mínimo 1 paso LEGO').max(20, 'Máximo 20 pasos LEGO'),
-    order: z.coerce.number().min(1, 'El orden debe ser positivo'),
-});
+import { CourseSchema, LessonSchema } from './validations';
 
 export type ActionResponse<T = any> =
     | { success: true; data: T }

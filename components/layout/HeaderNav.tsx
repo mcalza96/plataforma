@@ -26,7 +26,7 @@ export default function HeaderNav({ hasUser, hasLearner, isAdmin }: HeaderNavPro
 
     return (
         <div className="flex items-center gap-6">
-            <NavLinks items={navItems} />
+            {!isAdminRoute && <NavLinks items={navItems} />}
 
             {isAdminRoute && (
                 <Link

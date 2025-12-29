@@ -1,13 +1,9 @@
-import { createClient } from '@/lib/supabase-server';
+import { getCourseService } from '@/lib/di';
 import StatCard from '@/components/ui/StatCard';
 
 export default async function AdminStatsPage() {
-    const supabase = await createClient();
-
-    // Quick counts
-    const { count: totalLearners } = await supabase.from('learners').select('*', { count: 'exact', head: true });
-    const { count: totalSubmissions } = await supabase.from('submissions').select('*', { count: 'exact', head: true });
-    const { count: totalCourses } = await supabase.from('courses').select('*', { count: 'exact', head: true });
+    const service = getCourseService();
+    const { totalLearners, totalSubmissions, totalCourses } = await service.getGlobalStats();
 
     return (
         <div className="space-y-10 animate-in fade-in duration-500 pb-20">

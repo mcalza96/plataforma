@@ -10,8 +10,8 @@
     --surface: #252525;
     --surface-hover: #2f2f2f;
     --neon-violet: #a855f7;
-    /* Spacing for mobile/iPad */
-    --admin-header-height: 6rem;
+    /* Base (Mobile/Tablet) - Banner (24px) + Floating Header (~88px) + Spacing (20px) */
+    --admin-header-height: 9rem;
 
     /* Tailwind v4 Theme Tokens - Moved to :root to silence lints */
     --color-primary: var(--primary);
@@ -28,14 +28,7 @@
 
   @media (min-width: 1024px) {
     :root {
-      /* Total space: Banner (24px) + Padding (32px) - Header hidden on Admin */
-      --admin-header-height: 3.5rem;
-    }
-
-    /* Surgical Fix: Hide Global Header on Desktop Admin to prevent overlap and noise */
-    body:has(.admin-banner) header,
-    body:has(.admin-banner) .group\/header {
-      display: none !important;
+      --admin-header-height: 0;
     }
   }
 
@@ -134,14 +127,6 @@ a {
 /* Admin Layout Spacing */
 .pt-admin-safe {
   padding-top: var(--admin-header-height);
-}
-
-/* Ensure global header moves down when admin banner is present */
-/* We target the header fixed in RootLayout */
-header:has(+ main .admin-banner),
-body:has(.admin-banner) header {
-  top: 24px !important;
-  transition: top 0.3s ease;
 }
 
 @media (max-width: 1023px) {

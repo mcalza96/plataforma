@@ -29,7 +29,7 @@ export default function CourseCard({
     };
 
     return (
-        <article className="group relative flex flex-col overflow-hidden rounded-2xl bg-surface-dark border border-[#223949] shadow-lg hover:shadow-[0_0_20px_rgba(0,0,0,0.4)] hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
+        <article className="group relative flex flex-col overflow-hidden rounded-2xl bg-surface-dark border border-[#223949] shadow-lg hover:shadow-[0_0_30px_rgba(13,147,242,0.15)] hover:border-primary/50 transition-all duration-300 interactive-hover">
             <div className="relative w-full aspect-[4/3] overflow-hidden bg-black">
                 <OptimizedImage
                     src={thumbnailUrl}
@@ -61,7 +61,7 @@ export default function CourseCard({
 
                 <Link
                     href={`/lessons/${id}`}
-                    className={`w-full mt-2 h-11 rounded-xl bg-[#223949] text-white text-sm font-black transition-all flex items-center justify-center gap-2 group/btn shadow-lg ${variant === 'secondary' ? 'hover:bg-secondary' : 'hover:bg-primary'}`}
+                    className={`w-full mt-2 h-11 rounded-xl bg-[#223949] text-white text-sm font-black transition-all flex items-center justify-center gap-2 group/btn shadow-lg click-shrink ${variant === 'secondary' ? 'hover:bg-secondary' : 'hover:bg-primary'}`}
                 >
                     <span>{status === 'Nuevo' ? 'Empezar' : 'Continuar'}</span>
                     <span className="material-symbols-outlined !text-[20px] group-hover/btn:translate-x-1 transition-transform">

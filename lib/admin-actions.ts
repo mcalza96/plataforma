@@ -3,21 +3,10 @@
 import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
 
-// Protection check repeated here for security
-async function checkAdmin() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const adminEmail = process.env.ADMIN_EMAIL || 'mca@test.com';
-    if (!user || user.email !== adminEmail) {
-        throw new Error('No autorizado');
-    }
-}
-
-// Migrated to lib/admin-content-actions.ts
-// upsertCourse, deleteCourse, upsertLesson, deleteLesson have been removed from here.
+import { validateAdmin } from './auth-utils';
 
 export async function sendFeedback(learnerId: string, content: string) {
-    await checkAdmin();
+    await validateAdmin();
     const supabase = await createClient();
 
     // Get learner to find parent_id

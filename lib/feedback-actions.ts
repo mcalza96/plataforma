@@ -4,16 +4,7 @@ import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-// Shared protection check
-async function checkAdmin() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const adminEmail = process.env.ADMIN_EMAIL || 'mca@test.com';
-
-    if (!user || user.email !== adminEmail) {
-        throw new Error('No autorizado');
-    }
-}
+import { validateAdmin } from './auth-utils';
 
 // --- Schemas ---
 
@@ -28,7 +19,7 @@ const FeedbackSchema = z.object({
  * Obtiene las entregas filtradas para el administrador
  */
 export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pending') {
-    await checkAdmin();
+    await validateAdmin();
     const supabase = await createClient();
 
     const query = supabase
@@ -68,7 +59,7 @@ export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pend
  * Obtiene el detalle de una entrega específica
  */
 export async function getSubmissionDetail(id: string) {
-    await checkAdmin();
+    await validateAdmin();
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -93,7 +84,7 @@ export async function getSubmissionDetail(id: string) {
  */
 export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
     try {
-        await checkAdmin();
+        await validateAdmin();
         const validated = FeedbackSchema.parse(data);
         const supabase = await createClient();
 

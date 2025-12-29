@@ -1,6 +1,7 @@
 import { getFamilyById } from '@/lib/admin-users-actions';
 import Link from 'next/link';
 import LearnerLevelControl from './level-control';
+import RoleSelector from '@/components/admin/RoleSelector';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -47,7 +48,7 @@ export default async function FamilyDetailPage({ params }: PageProps) {
                             </div>
                         </div>
 
-                        <div className="pt-8 border-t border-white/5">
+                        <div className="pt-8 border-t border-white/5 space-y-6">
                             <div className="p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
                                 <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-2">Estado de Cuenta</p>
                                 <p className="text-white text-sm font-bold flex items-center gap-2">
@@ -55,6 +56,12 @@ export default async function FamilyDetailPage({ params }: PageProps) {
                                     Activa
                                 </p>
                             </div>
+
+                            <RoleSelector
+                                userId={family.id}
+                                currentRole={family.role || 'user'}
+                                userName={family.email || 'Usuario'}
+                            />
                         </div>
                     </div>
                 </div>

@@ -72,10 +72,19 @@ export async function middleware(request: NextRequest) {
 
     // 3. Protección de Admin (Blindaje nivel middleware)
     if (user && isAdminRoute) {
-        // Obtenemos el email del admin del entorno o usamos el fallback seguro
-        const adminEmail = process.env.ADMIN_EMAIL || 'mca@test.com';
-        if (user.email !== adminEmail) {
-            console.warn(`Intento de acceso no autorizado a ruta admin por: ${user.email}`);
+        // Consultar el perfil del usuario para verificar el rol
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        // Fallback de "Super Admin" por email (Blindaje mientras se estabiliza la DB)
+        const adminEmails = ['marcelo.calzadilla@jitdata.cl', 'admin@procreatealpha.studio'];
+        const isSuperAdmin = user.email && adminEmails.includes(user.email);
+
+        if (profile?.role !== 'admin' && !isSuperAdmin) {
+            console.warn(`Intento de acceso no autorizado a ruta admin por: ${user.email} (Rol: ${profile?.role})`);
             return redirectWithCookies('/dashboard');
         }
     }

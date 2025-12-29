@@ -4,18 +4,7 @@ import { createClient } from './supabase-server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-// Shared protection check
-async function checkAdmin() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // In production this should be in an env var. Fallback for safety.
-    const adminEmail = process.env.ADMIN_EMAIL || 'mca@test.com';
-
-    if (!user || user.email !== adminEmail) {
-        throw new Error('Acceso no autorizado. Se requieren permisos de administrador.');
-    }
-}
+import { validateAdmin } from './auth-utils';
 
 // --- Schemas ---
 
@@ -52,7 +41,7 @@ export type ActionResponse<T = any> =
  */
 export async function upsertCourse(data: z.infer<typeof CourseSchema>): Promise<ActionResponse> {
     try {
-        await checkAdmin();
+        await validateAdmin();
         const validated = CourseSchema.parse(data);
         const supabase = await createClient();
 
@@ -88,7 +77,7 @@ export async function upsertCourse(data: z.infer<typeof CourseSchema>): Promise<
  */
 export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<ActionResponse> {
     try {
-        await checkAdmin();
+        await validateAdmin();
         const validated = LessonSchema.parse(data);
         const supabase = await createClient();
 
@@ -126,7 +115,7 @@ export async function upsertLesson(data: z.infer<typeof LessonSchema>): Promise<
  */
 export async function deleteCourse(courseId: string): Promise<ActionResponse<void>> {
     try {
-        await checkAdmin();
+        await validateAdmin();
         const supabase = await createClient();
 
         const { error } = await supabase.from('courses').delete().eq('id', courseId);
@@ -145,7 +134,7 @@ export async function deleteCourse(courseId: string): Promise<ActionResponse<voi
  */
 export async function deleteLesson(lessonId: string, courseId: string): Promise<ActionResponse<void>> {
     try {
-        await checkAdmin();
+        await validateAdmin();
         const supabase = await createClient();
 
         const { error } = await supabase.from('lessons').delete().eq('id', lessonId);

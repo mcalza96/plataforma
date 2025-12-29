@@ -38,6 +38,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from "@/context/ToastContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -54,8 +56,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-sans antialiased bg-background-dark text-white min-h-screen flex flex-col`}
       >
-        <Header />
-        {children}
+        <ToastProvider>
+          <Header />
+          {children}
+        </ToastProvider>
       </body>
     </html>
   );

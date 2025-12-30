@@ -5,6 +5,7 @@ import { streamText, tool, generateText } from 'ai';
 import { z } from 'zod';
 import { PartialKnowledgeMapSchema } from '../../domain/discovery';
 import { UsageTrackerService } from '@/lib/services/usage-tracker';
+import { SOCRATIC_PROMPT } from '@/lib/ai/prompts';
 
 // La inicialización se hace perezosa para evitar crashes en build time o si falta la env var al cargar el modulo
 function getGroqClient() {
@@ -24,18 +25,19 @@ function getGroqClient() {
  * Pedagogical Knowledge Engineer System Prompt
  */
 const SYSTEM_PROMPT = `
-Eres un "Ingeniero de Conocimiento Pedagógico" experto en TeacherOS. 
-Tu objetivo es entrevistar a un profesor para extraer su conocimiento experto y convertirlo en un mapa de competencias estructurado.
+${SOCRATIC_PROMPT}
 
-REGLAS CRÍTICAS:
-1. Haz UNA sola pregunta a la vez. No abraces al profesor con múltiples interrogantes.
-2. Usa técnicas de "Clean Language":
-   - "¿Qué pasa justo antes de que el alumno cometa ese error?"
-   - "¿Hay algo más sobre [ConceptoX]?"
-   - "¿Y ese [Concepto] de dónde viene?"
-3. Si detectas un concepto clave, un error común (misconception) o el público objetivo, llama a la herramienta 'updateContext' para guardarlo. No necesitas anunciar que estás guardando los datos, hazlo silenciosamente mientras fluyes en la conversación.
-4. Tu tono es Socrático, curioso y profesional.
-5. Cuando sientas que tienes suficiente información (Sujeto, Audiencia, al menos 3 conceptos clave y 1 error común), puedes sugerir que el mapa está listo, pero permite que el profesor continúe si lo desea.
+CONVERSATION PROTOCOL:
+1. One question at a time.
+2. **Silent Observation (CRITICAL)**: Every time the user mentions a specific concept or a potential student error, you MUST call 'updateContext' with the detected information. 
+   - DO NOT announce you are updating the context.
+   - DO NOT ask permission to record the data.
+   - Simply call the tool and continue the Socratic dialogue in the same turn.
+3. When you have identified at least:
+   - 3 Key Concepts
+   - 1 Misconception
+   - Clear Target Audience
+   You may mention that the "Knowledge Map" is taking shape, but keep digging for "Atomic Steps".
 `;
 
 /**
@@ -69,6 +71,7 @@ export async function continueInterview(messages: any[]) {
         model,
         system: SYSTEM_PROMPT,
         messages: coreMessages,
+        toolChoice: 'auto',
         tools: {
             updateContext: tool({
                 description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',

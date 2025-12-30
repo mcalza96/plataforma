@@ -27,31 +27,62 @@ export function useCopilotSession(
         keyConcepts: [],
         identifiedMisconceptions: []
     });
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-    const body = useMemo(() => ({
-        lessonId,
-        externalContext
-    }), [lessonId, externalContext]);
-
-    const handleToolCall = useCallback(({ toolCall }: { toolCall: any }) => {
+    const handleToolCall = useCallback(async ({ toolCall }: { toolCall: any }) => {
         const args = toolCall.args;
         if (!args) return;
 
         if (toolCall.toolName === 'updateContext') {
             const mapArgs = args as PartialKnowledgeMap;
-            setLiveContext(prev => ({
-                ...prev,
-                ...mapArgs,
-                keyConcepts: Array.from(new Set([...(prev.keyConcepts || []), ...(mapArgs.keyConcepts || [])])),
-                identifiedMisconceptions: [...(prev.identifiedMisconceptions || []), ...(mapArgs.identifiedMisconceptions || [])]
-            }));
+
+            // 1. Update Local State (Additive & Deduplicated)
+            setLiveContext(prev => {
+                // Merge concepts
+                const newConcepts = Array.from(new Set([...(prev.keyConcepts || []), ...(mapArgs.keyConcepts || [])]));
+
+                // Merge misconceptions (deduplicate by error text)
+                const existingErrors = new Set(prev.identifiedMisconceptions?.map(m => m.error));
+                const uniqueNewMisconceptions = (mapArgs.identifiedMisconceptions || [])
+                    .filter(m => !existingErrors.has(m.error));
+
+                const mergedMisconceptions = [
+                    ...(prev.identifiedMisconceptions || []),
+                    ...uniqueNewMisconceptions
+                ];
+
+                return {
+                    ...prev,
+                    ...mapArgs, // Keeps subject, audience, etc. (latest wins)
+                    keyConcepts: newConcepts,
+                    identifiedMisconceptions: mergedMisconceptions
+                };
+            });
+
+            // 2. Persist to DB (Server Action)
+            try {
+                setIsSyncing(true);
+                const { saveDiscoveryContext } = await import('@/lib/ai-actions');
+                await saveDiscoveryContext(lessonId, mapArgs);
+                setLastSyncedAt(new Date());
+            } catch (err) {
+                console.error("[useCopilotSession] Persistence failed:", err);
+            } finally {
+                setIsSyncing(false);
+            }
         }
 
         if (toolCall.toolName === 'generateSteps') {
             const stepArgs = args as { steps: { title: string }[] };
             onApplySuggestions?.(stepArgs.steps);
         }
-    }, [onApplySuggestions]);
+    }, [lessonId, onApplySuggestions]);
+
+    const body = useMemo(() => ({
+        lessonId,
+        externalContext
+    }), [lessonId, externalContext]);
 
     const {
         messages,
@@ -92,6 +123,8 @@ export function useCopilotSession(
         isLoading,
         error,
         liveContext,
+        isSyncing,
+        lastSyncedAt,
         clearChat,
         append
     };

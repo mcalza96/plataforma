@@ -51,36 +51,8 @@ export async function POST(req: Request) {
                 );
 
             case 'PEDAGOGICAL_QUERY':
-                const pedagogicalSystemPrompt = `
-Eres un "Ingeniero de Conocimiento Pedagógico experto en Modelado Cognitivo". 
-Tu misión es desglosar el conocimiento en "Pasos Atómicos", identificar "Misconceptions" y optimizar la estructura del aprendizaje basándote exclusivamente en el dominio técnico que el usuario proporcione.
-Manten un tono profesional, analítico y directo.
-
-CRITICAL: You must ALWAYS provide a helpful text response to the user. Even if you call the 'updateContext' tool, do not send ONLY the tool call. Your response MUST include text for the teacher.
-
-${SOCRATIC_PROMPT}
-`;
-                const pedagogicalResult = streamText({
-                    model,
-                    system: pedagogicalSystemPrompt,
-                    messages: coreMessages,
-
-                    tools: {
-                        updateContext: tool({
-                            description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',
-                            parameters: PartialKnowledgeMapSchema,
-                            execute: async (params: any) => {
-                                return { success: true, updatedFields: Object.keys(params) };
-                            },
-                        } as any),
-                    },
-                });
-                return pedagogicalResult.toUIMessageStreamResponse({
-                    headers: {
-                        'x-ai-intent': intent,
-                        'x-ai-reasoning': reasoning
-                    }
-                });
+                const { continueInterview } = await import('@/lib/application/services/discovery-service');
+                return await continueInterview(coreMessages);
 
             case 'CHAT':
             default:

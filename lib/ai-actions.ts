@@ -1,144 +1,93 @@
 'use server';
 
-import { DiagnosisSchema } from './validations';
-import { getAIOrchestratorService } from './di';
-import { validateAdmin } from './infrastructure/auth-utils';
-import { ActionResponse } from './admin-content-actions';
-import { z } from 'zod';
-import { checkRateLimit } from '@/lib/infrastructure/rate-limit';
+import { createClient } from './infrastructure/supabase/supabase-server';
+import { PartialKnowledgeMap } from './domain/discovery';
 
 /**
- * Genera una propuesta de camino de aprendizaje personalizado
- * a partir de las notas/diagnóstico del profesor.
+ * Persists the discovered pedagogical context into the database.
+ * Updates the course/lesson metadata and upserts competency/misconception nodes.
  */
-export async function generateCustomPath(data: z.infer<typeof DiagnosisSchema>): Promise<ActionResponse> {
-    // Rate Limit Check
-    // In a real app, use the authenticated user ID. Here we mock it or use IP if available.
-    const identifier = "mock-user-id";
-    const { success } = await checkRateLimit(identifier, 'diagnostic');
-
-    if (!success) {
-        return {
-            success: false,
-            error: "Has alcanzado tu límite de velocidad cognitiva por hoy (Rate Limit Exceeded)."
-        };
-    }
+export async function saveDiscoveryContext(lessonId: string, context: PartialKnowledgeMap) {
+    const supabase = await createClient();
 
     try {
-        // 1. Seguridad: Solo admin/instructor
-        await validateAdmin();
+        // 1. Get Course ID from Lesson
+        const { data: lesson, error: lessonError } = await supabase
+            .from('lessons')
+            .select('course_id')
+            .eq('id', lessonId)
+            .single();
 
-        // 2. Validación de datos
-        const validated = DiagnosisSchema.parse(data);
-
-        // 3. Orquestación de IA
-        const aiService = getAIOrchestratorService();
-        const proposal = await aiService.generatePath(validated);
-
-        // Track Usage (Async, fire and forget)
-        import('@/lib/services/usage-tracker').then(({ UsageTrackerService }) => {
-            const inputTokens = JSON.stringify(validated).length / 4; // Rough estimation
-            const outputTokens = JSON.stringify(proposal).length / 4;
-            UsageTrackerService.track({
-                userId: 'mock-user-id', // Replace with real ID
-                model: 'gemini-1.5-pro',
-                tokensInput: Math.ceil(inputTokens),
-                tokensOutput: Math.ceil(outputTokens),
-                featureUsed: 'diagnostic'
-            });
-        });
-
-        return {
-            success: true,
-            data: proposal
-        };
-    } catch (error: any) {
-        console.error('Error generating AI path:', error);
-
-        if (error instanceof z.ZodError) {
-            return {
-                success: false,
-                error: 'Datos de diagnóstico inválidos.',
-                issues: error.issues
-            };
+        if (lessonError || !lesson) {
+            console.error('[saveDiscoveryContext] Error fetching lesson:', lessonError);
+            return { success: false, error: 'Lesson not found' };
         }
 
-        return {
-            success: false,
-            error: error.message || 'Error inesperado al orquestar la IA'
-        };
-    }
-}
+        const courseId = lesson.course_id;
 
-/**
- * Persiste el camino de aprendizaje personalizado para un alumno.
- * Implementa Copy-on-Write (CoW) para preservar la biblioteca global.
- */
-export async function commitCustomPath(data: {
-    learner_id: string;
-    modules: any[];
-}): Promise<ActionResponse> {
-    try {
-        await validateAdmin();
-        const { learner_id, modules } = data;
+        // 2. Update Course metadata if identified
+        if (context.subject || context.targetAudience) {
+            const updates: any = {};
+            if (context.subject) updates.category = context.subject; // Mapping subject to category
+            // We could also update title if needed, but let's stick to category/description for now to avoid overwriting the main title unless explicit
 
-        // Carga dinámica de dependencias para evitar ciclos en compilación
-        const { getContentRepository } = await import('./di');
-        const contentRepo = getContentRepository();
-        const { createClient } = await import('./infrastructure/supabase/supabase-server');
-        const supabase = await createClient();
+            await supabase
+                .from('courses')
+                .update(updates)
+                .eq('id', courseId);
+        }
 
-        const pathNodes = [];
-        let previousNodeId = null;
+        // 3. Upsert Key Concepts (Competencies)
+        if (context.keyConcepts && context.keyConcepts.length > 0) {
+            for (const concept of context.keyConcepts) {
+                // Basic Upsert by title
+                const { data: existing } = await supabase
+                    .from('competency_nodes')
+                    .select('id')
+                    .eq('title', concept)
+                    .eq('node_type', 'competency')
+                    .limit(1);
 
-        for (const mod of modules) {
-            let finalContentId = mod.content_id;
-
-            // Lógica Copy-on-Write (CoW)
-            if (mod.has_custom_edits) {
-                const { getUserId } = await import('./infrastructure/auth-utils');
-                const userId = await getUserId();
-
-                const clonedALO = await contentRepo.createContent({
-                    ...mod.original_alo,
-                    title: mod.title_override || mod.original_alo.title,
-                    description: mod.description_override || mod.original_alo.description,
-                    is_public: false, // Personalizaciones son siempre privadas
-                }, userId || '');
-
-                finalContentId = clonedALO.id;
+                if (!existing || existing.length === 0) {
+                    await supabase
+                        .from('competency_nodes')
+                        .insert({
+                            title: concept,
+                            node_type: 'competency',
+                            metadata: { courseId } // Link to course in metadata
+                        });
+                }
             }
-
-            // Inserción del nodo en el camino del alumno
-            const { data: node, error } = await supabase
-                .from('path_nodes')
-                .insert({
-                    learner_id,
-                    content_id: finalContentId,
-                    title_override: mod.title_override,
-                    description_override: mod.description_override,
-                    order: mod.order,
-                    parent_node_id: previousNodeId
-                })
-                .select()
-                .single();
-
-            const typedNode = node as any; // Cast manual para evitar el error de inferencia circular
-            if (error) throw error;
-            pathNodes.push(typedNode);
-            previousNodeId = typedNode.id;
         }
 
-        return {
-            success: true,
-            data: pathNodes
-        };
+        // 4. Upsert Misconceptions
+        if (context.identifiedMisconceptions && context.identifiedMisconceptions.length > 0) {
+            for (const m of context.identifiedMisconceptions) {
+                const { data: existing } = await supabase
+                    .from('competency_nodes')
+                    .select('id')
+                    .eq('title', m.error)
+                    .eq('node_type', 'misconception')
+                    .limit(1);
 
-    } catch (error: any) {
-        console.error('Error committing custom path:', error);
-        return {
-            success: false,
-            error: error.message || 'Error al persistir el camino personalizado'
-        };
+                if (!existing || existing.length === 0) {
+                    await supabase
+                        .from('competency_nodes')
+                        .insert({
+                            title: m.error,
+                            node_type: 'misconception',
+                            metadata: {
+                                courseId,
+                                refutationStrategy: m.refutation
+                            }
+                        });
+                }
+            }
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('[saveDiscoveryContext] Critical error:', error);
+        return { success: false, error: 'Internal server error' };
     }
 }

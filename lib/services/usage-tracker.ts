@@ -13,6 +13,7 @@ const RATES: Record<string, { input: number; output: number }> = {
     'gemini-1.5-pro': { input: 0.00125, output: 0.00375 },
     'gemini-1.5-flash': { input: 0.0001, output: 0.0003 },
     'gpt-4o': { input: 0.005, output: 0.015 },
+    'llama-3.3-70b-versatile': { input: 0.0006, output: 0.0018 }, // Mock Groq rates
 };
 
 export class UsageTrackerService {
@@ -25,6 +26,19 @@ export class UsageTrackerService {
             const costInput = (tokensInput / 1000) * rates.input;
             const costOutput = (tokensOutput / 1000) * rates.output;
             const totalCost = costInput + costOutput;
+
+            // Check for Supabase config
+            const sUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const sKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+            if (!sUrl || !sKey || sUrl.includes('your-project-url')) {
+                console.warn("[UsageTracker] Supabase credentials missing/invalid. Skipping DB log.", {
+                    hasUrl: !!sUrl,
+                    isPlaceholder: sUrl?.includes('your-project-url'),
+                    hasKey: !!sKey
+                });
+                return;
+            }
 
             const supabase = await createServiceRoleClient(); // Use service role preferably for logs
 

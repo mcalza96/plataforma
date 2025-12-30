@@ -3,6 +3,9 @@
 -- ========================================================
 
 -- 1. EXTENSIONES Y FUNCIONES AUXILIARES
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 2. ROLES Y SEGURIDAD BASE
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -14,7 +17,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. TABLA DE PERFILES
+-- 3. TABLA DE PERFILES
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -38,7 +41,7 @@ TO authenticated
 USING (auth.uid() = id OR public.is_admin())
 WITH CHECK (auth.uid() = id OR public.is_admin());
 
--- 3. TABLA DE ALUMNOS (LEARNERS)
+-- 4. TABLA DE ALUMNOS (LEARNERS)
 CREATE TABLE IF NOT EXISTS public.learners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -59,7 +62,92 @@ CREATE POLICY "Los padres pueden gestionar sus propios alumnos"
 ON public.learners FOR ALL
 USING (auth.uid() = parent_id OR public.is_admin());
 
--- 4. TABLA DE CURSOS
+-- 5. MOTOR DE COMPETENCIAS (KNOWLEDGE GRAPH)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'node_type_enum') THEN
+        CREATE TYPE node_type_enum AS ENUM ('competency', 'misconception', 'bridge');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'relation_type_enum') THEN
+        CREATE TYPE relation_type_enum AS ENUM ('prerequisite', 'misconception_of', 'remedies');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'path_node_status_enum') THEN
+        CREATE TYPE path_node_status_enum AS ENUM ('locked', 'available', 'completed', 'infected');
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.competency_nodes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    embedding vector(1536),
+    node_type node_type_enum NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.competency_edges (
+    source_id UUID REFERENCES public.competency_nodes(id) ON DELETE CASCADE,
+    target_id UUID REFERENCES public.competency_nodes(id) ON DELETE CASCADE,
+    relation_type relation_type_enum NOT NULL,
+    weight FLOAT DEFAULT 1.0,
+    PRIMARY KEY (source_id, target_id, relation_type)
+);
+
+ALTER TABLE public.competency_nodes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.competency_edges ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public nodes are readable by all"
+ON public.competency_nodes FOR SELECT
+TO authenticated, anon
+USING (created_by IS NULL OR public.is_admin());
+
+CREATE POLICY "Users can manage their own private nodes"
+ON public.competency_nodes FOR ALL
+TO authenticated
+USING (auth.uid() = created_by OR public.is_admin())
+WITH CHECK (auth.uid() = created_by OR public.is_admin());
+
+-- 6. MOTOR DE EVALUACIÓN DIAGNÓSTICA
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'probe_type_enum') THEN
+        CREATE TYPE probe_type_enum AS ENUM ('multiple_choice_rationale', 'phenomenological_checklist');
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.diagnostic_probes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    competency_id UUID NOT NULL REFERENCES public.competency_nodes(id) ON DELETE CASCADE,
+    type probe_type_enum NOT NULL,
+    stem TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.probe_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    probe_id UUID NOT NULL REFERENCES public.diagnostic_probes(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    is_correct BOOLEAN NOT NULL DEFAULT FALSE,
+    diagnoses_misconception_id UUID REFERENCES public.competency_nodes(id) ON DELETE SET NULL,
+    feedback TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.diagnostic_probes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.probe_options ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Probes are readable by everyone authenticated"
+ON public.diagnostic_probes FOR SELECT TO authenticated USING (TRUE);
+
+CREATE POLICY "Admins can manage probes"
+ON public.diagnostic_probes FOR ALL TO authenticated USING (public.is_admin());
+
+-- 7. TABLA DE CURSOS Y LECCIONES
 CREATE TABLE IF NOT EXISTS public.courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -73,19 +161,6 @@ CREATE TABLE IF NOT EXISTS public.courses (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Cualquier usuario puede ver cursos" 
-ON public.courses FOR SELECT 
-USING (true);
-
-CREATE POLICY "Admins can manage courses" 
-ON public.courses FOR ALL
-TO authenticated
-USING (public.is_admin())
-WITH CHECK (public.is_admin());
-
--- 5. TABLA DE LECCIONES
 CREATE TABLE IF NOT EXISTS public.lessons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
@@ -101,19 +176,15 @@ CREATE TABLE IF NOT EXISTS public.lessons (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Cualquier usuario puede ver lecciones" 
-ON public.lessons FOR SELECT 
-USING (true);
+CREATE POLICY "Cualquier usuario puede ver cursos" ON public.courses FOR SELECT USING (true);
+CREATE POLICY "Admins can manage courses" ON public.courses FOR ALL TO authenticated USING (public.is_admin());
+CREATE POLICY "Cualquier usuario puede ver lecciones" ON public.lessons FOR SELECT USING (true);
+CREATE POLICY "Admins can manage lessons" ON public.lessons FOR ALL TO authenticated USING (public.is_admin());
 
-CREATE POLICY "Admins can manage lessons" 
-ON public.lessons FOR ALL
-TO authenticated
-USING (public.is_admin())
-WITH CHECK (public.is_admin());
-
--- 6. PROGRESO DEL ALUMNO
+-- 8. PROGRESO Y LOGS
 CREATE TABLE IF NOT EXISTS public.learner_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   learner_id UUID NOT NULL REFERENCES public.learners(id) ON DELETE CASCADE,
@@ -126,15 +197,28 @@ CREATE TABLE IF NOT EXISTS public.learner_progress (
   UNIQUE(learner_id, lesson_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.ai_usage_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    model TEXT NOT NULL,
+    tokens_input INTEGER DEFAULT 0,
+    tokens_output INTEGER DEFAULT 0,
+    cost_estimated NUMERIC(10, 6),
+    feature_used TEXT NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE public.learner_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Gestion de progreso" 
 ON public.learner_progress FOR ALL 
-USING (
-  learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid() OR public.is_admin())
-);
+USING (learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid() OR public.is_admin()));
 
--- 7. TRIGGER PARA PERFILES
+CREATE POLICY "Admins can view all logs" ON public.ai_usage_logs 
+FOR SELECT USING (public.is_admin());
+
+-- 9. TRIGGERS
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN

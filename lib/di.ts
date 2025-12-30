@@ -76,7 +76,7 @@ export function getCourseService(): CourseService {
  */
 export function getLessonService(): LessonService {
     if (!lessonService) {
-        lessonService = new LessonService(getLessonRepository());
+        lessonService = new LessonService(getLessonRepository(), getCourseReader());
     }
     return lessonService;
 }

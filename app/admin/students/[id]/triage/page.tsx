@@ -42,7 +42,6 @@ export default function TriagePage() {
         setInsights(prev => prev.filter(i => i.id !== id));
         // Logic to update node status or insert new node
         setNodes(prev => prev.map(n => n.id === '2' ? { ...n, status: 'available' } : n));
-        console.log(`Approved intervention ${id}`);
     };
 
     const handleIgnore = (id: string) => {

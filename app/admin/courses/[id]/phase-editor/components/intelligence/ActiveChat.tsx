@@ -18,6 +18,7 @@ export function ActiveChat({ session }: ActiveChatProps) {
     const {
         messages,
         isLoading,
+        error,
         append
     } = session;
 
@@ -70,14 +71,19 @@ export function ActiveChat({ session }: ActiveChatProps) {
                                 <div className={`text-[10px] font-black uppercase tracking-widest opacity-30 ${m.role === 'user' ? 'text-right mr-2' : 'ml-2'}`}>
                                     {m.role === 'user' ? 'Arquitecto' : 'Copilot'}
                                 </div>
-                                <div className={`rounded-3xl px-6 py-4 text-[13px] leading-relaxed shadow-2xl ${m.role === 'user'
+                                <div className={`rounded-3xl px-6 py-4 text-[13px] leading-relaxed shadow-2xl whitespace-pre-wrap ${m.role === 'user'
                                     ? 'bg-white text-black font-medium'
-                                    : 'bg-white/5 text-white/80 border border-white/5'
+                                    : 'bg-[#222] text-white border border-white/5'
                                     }`}>
                                     {m.role === 'user' ? (
                                         m.content
                                     ) : (
-                                        <TypewriterText text={m.content} speed={0.01} />
+                                        // Si es el último mensaje y está cargando, no usamos Typewriter para no interrumpir el stream
+                                        (isLoading && idx === messages.length - 1) ? (
+                                            <span>{m.content}</span>
+                                        ) : (
+                                            <TypewriterText text={m.content} speed={0.01} />
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -97,6 +103,20 @@ export function ActiveChat({ session }: ActiveChatProps) {
                             </div>
                         </motion.div>
                     )}
+
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-[11px] font-medium flex items-center gap-3"
+                        >
+                            <span className="material-symbols-outlined text-sm">error</span>
+                            <div className="flex-1">
+                                <p className="font-bold uppercase tracking-wider mb-0.5">Error de Conexión</p>
+                                {error.message || 'El servicio de IA no responde. Verifica tu conexión o API Key.'}
+                            </div>
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </div>
 
@@ -107,15 +127,16 @@ export function ActiveChat({ session }: ActiveChatProps) {
                     className="relative group"
                 >
                     <input
-                        className="w-full rounded-2xl border border-white/5 bg-[#1A1A1A] p-5 pr-16 text-xs text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-amber-500/30 transition-all shadow-2xl"
+                        className="w-full rounded-2xl border border-white/5 bg-[#1A1A1A] p-5 pr-20 text-xs text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-amber-500/30 transition-all shadow-2xl disabled:opacity-50"
                         value={localInput}
-                        placeholder="Escribe tu respuesta..."
+                        placeholder={isLoading ? "El Copilot está pensando..." : "Escribe tu respuesta..."}
                         onChange={(e) => setLocalInput(e.target.value)}
+                        disabled={isLoading}
                     />
                     <button
                         type="submit"
                         disabled={isLoading || !localInput.trim()}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-white text-black rounded-xl p-2.5 flex items-center justify-center hover:bg-amber-500 disabled:opacity-30 transition-all active:scale-90"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white text-black rounded-xl p-2.5 flex items-center justify-center hover:bg-amber-500 disabled:opacity-30 transition-all active:scale-90 z-10"
                     >
                         <span className="material-symbols-outlined text-lg">arrow_upward</span>
                     </button>

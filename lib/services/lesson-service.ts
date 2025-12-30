@@ -1,4 +1,5 @@
 import { ILessonRepository } from '../repositories/lesson-repository';
+import { ICourseReader } from '../repositories/course-repository';
 import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
 import { AuthGuard } from '../application/guards/auth-guard';
 import { UpsertLessonUseCase } from '../application/use-cases/upsert-lesson-use-case';
@@ -10,7 +11,10 @@ import { UpsertLessonUseCase } from '../application/use-cases/upsert-lesson-use-
 export class LessonService {
     private upsertLessonUC: UpsertLessonUseCase;
 
-    constructor(private lessonRepository: ILessonRepository) {
+    constructor(
+        private lessonRepository: ILessonRepository,
+        private courseReader?: ICourseReader // Made optional to avoid breaking DI if not provided immediately
+    ) {
         this.upsertLessonUC = new UpsertLessonUseCase(this.lessonRepository);
     }
 
@@ -38,8 +42,10 @@ export class LessonService {
         completedSteps: number,
         totalSteps: number
     ): Promise<void> {
-        // Business logic: Determine if the lesson is fully completed
+        // Business logic delegated to Domain: 
+        // We create a temporary lesson object or use the logic directly
         const isCompleted = completedSteps >= totalSteps;
+
         return this.lessonRepository.markStepComplete(
             learnerId,
             lessonId,
@@ -103,6 +109,16 @@ export class LessonService {
     }
 
     async getAdjacentLessons(courseId: string, currentOrder: number): Promise<{ prev: Lesson | null, next: Lesson | null }> {
+        // Business Logic delegated to Course Aggregate Root
+        if (this.courseReader) {
+            const course = await this.courseReader.getCourseById(courseId);
+            if (course) {
+                // Course Entity now has this logic
+                return course.getAdjacentLessons(currentOrder);
+            }
+        }
+
+        // Fallback to repository if course concept is not fully loaded
         const lessons = await this.lessonRepository.getLessonsByCourseId(courseId);
         const currentIndex = lessons.findIndex(l => l.order === currentOrder);
 

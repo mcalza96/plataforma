@@ -49,3 +49,50 @@ export class LessonOrder {
         return this.value;
     }
 }
+
+export class LearnerLevel {
+    private readonly value: number;
+
+    constructor(value: number) {
+        if (!Number.isInteger(value) || value < 1 || value > 10) {
+            throw new Error('El nivel debe estar entre 1 y 10.');
+        }
+        this.value = value;
+    }
+
+    toNumber(): number {
+        return this.value;
+    }
+}
+
+export class SkillPercentage {
+    private readonly value: number;
+
+    constructor(value: number) {
+        if (value < 0 || value > 100) {
+            throw new Error('El porcentaje de habilidad debe estar entre 0 y 100.');
+        }
+        this.value = value;
+    }
+
+    toNumber(): number {
+        return this.value;
+    }
+}
+
+export class Email {
+    private readonly value: string;
+
+    constructor(value: string) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!value || !emailPattern.test(value)) {
+            throw new Error('Email inválido');
+        }
+        this.value = value.toLowerCase().trim();
+    }
+
+    toString(): string {
+        return this.value;
+    }
+}
+

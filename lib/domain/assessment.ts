@@ -1,3 +1,4 @@
+import { z } from 'zod';
 /**
  * Assessment types for Diagnostic Probes
  */
@@ -60,3 +61,24 @@ export interface IAssessmentRepository {
     getProbeById(id: string): Promise<DiagnosticProbe | null>;
     deleteProbe(id: string): Promise<void>;
 }
+
+// --- Domain Schemas (Zod) ---
+
+export const DiagnosisSchema = z.object({
+    learner_profile: z.object({
+        age: z.coerce.number().min(3).max(99),
+        style: z.string().min(3, 'El estilo de aprendizaje es requerido'),
+    }),
+    subject: z.string().min(3, 'La materia es requerida'),
+    identified_gaps: z.array(z.string()).min(1, 'Debes identificar al menos una brecha de aprendizaje'),
+});
+
+export const ProposalSchema = z.object({
+    suggested_title: z.string(),
+    rationale: z.string(),
+    modules: z.array(z.object({
+        content_id: z.string().uuid(),
+        order: z.number(),
+        reason: z.string(),
+    })),
+});

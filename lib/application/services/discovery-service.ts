@@ -1,13 +1,24 @@
 'use server';
 
 import { createGroq } from '@ai-sdk/groq';
-import { streamText, tool } from 'ai';
+import { streamText, tool, generateText } from 'ai';
 import { z } from 'zod';
 import { PartialKnowledgeMapSchema } from '../../domain/discovery';
+import { UsageTrackerService } from '@/lib/services/usage-tracker';
 
-const groq = createGroq({
-    apiKey: process.env.GROQ_API_KEY || '',
-});
+// La inicialización se hace perezosa para evitar crashes en build time o si falta la env var al cargar el modulo
+function getGroqClient() {
+    const apiKey = process.env.GROQ_API_KEY;
+    console.log("[DiscoveryService] API Key Status:", !!apiKey);
+
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY no está configurada en el servidor. Verifica tu archivo .env.local");
+    }
+
+    return createGroq({
+        apiKey,
+    });
+}
 
 /**
  * Pedagogical Knowledge Engineer System Prompt
@@ -31,12 +42,33 @@ REGLAS CRÍTICAS:
  * Continues the discovery interview using Vercel AI SDK.
  */
 export async function continueInterview(messages: any[]) {
+    const groq = getGroqClient();
     const model = groq('llama-3.3-70b-versatile');
+
+    // Normalizar mensajes para cumplir con el esquema CoreMessage[] del AI SDK
+    const coreMessages = messages.map(m => {
+        // Si ya tiene content string, lo usamos
+        if (typeof m.content === 'string' && m.content.length > 0) {
+            return { role: m.role, content: m.content };
+        }
+        // Si tiene parts (formato del cliente), extraemos el texto
+        if (Array.isArray(m.parts)) {
+            const text = m.parts
+                .filter((p: any) => p.type === 'text')
+                .map((p: any) => p.text)
+                .join('\n');
+            return { role: m.role, content: text };
+        }
+        // Fallback
+        return { role: m.role, content: m.content || '' };
+    });
+
+    console.log("[DiscoveryService] CoreMessages for AI:", JSON.stringify(coreMessages, null, 2));
 
     const result = streamText({
         model,
         system: SYSTEM_PROMPT,
-        messages,
+        messages: coreMessages,
         tools: {
             updateContext: tool({
                 description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',
@@ -44,22 +76,24 @@ export async function continueInterview(messages: any[]) {
                 execute: async (params: any) => {
                     return { success: true, updatedFields: Object.keys(params) };
                 },
-            }) as any,
+            } as any),
         },
         onFinish: async ({ usage }) => {
-            if (!usage) return;
-            import('@/lib/services/usage-tracker').then(({ UsageTrackerService }) => {
+            try {
+                if (!usage) return;
                 const u = usage as any;
                 UsageTrackerService.track({
                     userId: 'mock-user-id',
                     model: 'llama-3.3-70b-versatile',
-                    tokensInput: u.promptTokens || u.inputTokens || 0,
-                    tokensOutput: u.completionTokens || u.outputTokens || 0,
+                    tokensInput: u.inputTokens || u.promptTokens || 0,
+                    tokensOutput: u.outputTokens || u.completionTokens || 0,
                     featureUsed: 'chat'
-                });
-            });
+                }).catch(e => console.error("[DiscoveryService] Async tracking error:", e));
+            } catch (trackError) {
+                console.error("[DiscoveryService] Failed to initialize usage tracking:", trackError);
+            }
         },
     });
 
-    return result.toTextStreamResponse();
+    return result.toUIMessageStreamResponse();
 }

@@ -10,8 +10,10 @@ import {
     FamilyDTO,
     LearnerStats,
     LearnerAchievement,
-    Learner
+    Learner,
+    Profile
 } from '../domain/course';
+import { LearnerLevel } from '../domain/value-objects';
 import { AuthGuard } from '../application/guards/auth-guard';
 import { SaveCourseUseCase } from '../application/use-cases/save-course-use-case';
 import { PublishCourseUseCase } from '../application/use-cases/publish-course-use-case';
@@ -65,9 +67,10 @@ export class CourseService {
 
     async updateLearnerLevel(learnerId: string, newLevel: number, userRole: string): Promise<void> {
         AuthGuard.check(userRole, ['admin']);
-        if (newLevel < 1 || newLevel > 10) {
-            throw new Error('El nivel debe estar entre 1 y 10.');
-        }
+
+        // Delegated to Value Object validation
+        new LearnerLevel(newLevel);
+
         return this.learnerRepository.updateLearnerLevel(learnerId, newLevel);
     }
 

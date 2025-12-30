@@ -16,17 +16,14 @@ export function TypewriterText({
     className = "",
     onComplete
 }: TypewriterTextProps) {
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true });
-
-    const words = text.split(" ");
+    const words = text.split(/(\s+)/); // Preserve all whitespace and newlines
 
     const container = {
         hidden: { opacity: 0 },
-        visible: (i = 1) => ({
+        visible: {
             opacity: 1,
-            transition: { staggerChildren: speed, delayChildren: 0.04 * i },
-        }),
+            transition: { staggerChildren: speed },
+        },
     };
 
     const child = {
@@ -41,7 +38,7 @@ export function TypewriterText({
         },
         hidden: {
             opacity: 0,
-            y: 5,
+            y: 2,
             transition: {
                 type: "spring",
                 damping: 12,
@@ -52,18 +49,17 @@ export function TypewriterText({
 
     return (
         <motion.div
-            ref={ref}
-            style={{ display: "inline-block", overflow: "hidden" }}
+            style={{ display: "inline" }}
             variants={container}
             initial="hidden"
-            animate={isInView ? "visible" : "hidden"}
+            animate="visible"
             className={className}
             onAnimationComplete={() => onComplete && onComplete()}
         >
             {words.map((word, index) => (
                 <motion.span
-                    variants={child}
-                    style={{ display: "inline-block", marginRight: "0.25em" }}
+                    variants={child as any}
+                    style={{ display: "inline" }}
                     key={index}
                 >
                     {word}

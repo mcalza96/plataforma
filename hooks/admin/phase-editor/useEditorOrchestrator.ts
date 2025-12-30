@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useContextController } from './useContextController';
 import { useTimelineController } from './useTimelineController';
-import { useCopilotSession } from './useCopilotSession';
+import { useCopilotSession, generateStepsFromSuggestions } from './useCopilotSession';
 import { Lesson } from '@/lib/domain/course';
 import { validatePhase } from '@/lib/validators/phase-editor';
 import { useAutoSave } from '@/hooks/use-auto-save';
@@ -20,8 +20,8 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
 
     // Bridge Method: Handle applying AI suggestions with visual feedback
-    const handleApplySuggestions = (suggestions: { title: string }[]) => {
-        const newSteps = copilot.generateStepsFromSuggestions(suggestions);
+    const handleApplySuggestions = useCallback((suggestions: { title: string }[]) => {
+        const newSteps = generateStepsFromSuggestions(suggestions);
         timeline.addGeneratedSteps(newSteps);
 
         // UX: Scroll to the newly created content smoothly
@@ -36,12 +36,17 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
                 }
             }, 100);
         }
-    };
+    }, [timeline]);
 
     // Instance the copilot with dynamic external context awareness
-    const copilot = useCopilotSession(
+    const externalContext = useMemo(() => ({
+        selectedBlockId,
+        currentSteps: timeline.steps
+    }), [selectedBlockId, timeline.steps]);
+
+    const copilotInstance = useCopilotSession(
         initialLesson.id,
-        { selectedBlockId, currentSteps: timeline.steps },
+        externalContext,
         handleApplySuggestions
     );
 
@@ -62,35 +67,46 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
     );
 
     // Bridge Method: Focus a block and notify the system
-    const focusBlock = (id: string | null) => {
+    const focusBlock = useCallback((id: string | null) => {
         setSelectedBlockId(id);
-        // We could also trigger specific AI insights here if needed
-    };
-
-
+    }, []);
 
     // Bridge Method: Save all changes manually
-    const handleManualSave = () => {
+    const handleManualSave = useCallback(() => {
         if (isValid) {
             context.saveContext(timeline.steps);
         }
-    };
+    }, [isValid, context, timeline.steps]);
+
+    const copilotExport = useMemo(() => ({
+        ...copilotInstance,
+        onApplySuggestions: handleApplySuggestions
+    }), [copilotInstance, handleApplySuggestions]);
+
+    const uiExport = useMemo(() => ({
+        selectedBlockId,
+        focusBlock,
+        contextErrors,
+        stepErrors,
+        isValid,
+        autoSaveStatus,
+        handleManualSave
+    }), [
+        selectedBlockId,
+        focusBlock,
+        contextErrors,
+        stepErrors,
+        isValid,
+        autoSaveStatus,
+        handleManualSave
+    ]);
 
     return {
         context,
         timeline,
-        copilot: {
-            ...copilot,
-            onApplySuggestions: handleApplySuggestions
-        },
-        ui: {
-            selectedBlockId,
-            focusBlock,
-            contextErrors,
-            stepErrors,
-            isValid,
-            autoSaveStatus,
-            handleManualSave
-        }
+        copilot: copilotExport,
+        ui: uiExport
     };
 }
+
+export type EditorOrchestrator = ReturnType<typeof useEditorOrchestrator>;

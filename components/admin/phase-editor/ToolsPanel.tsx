@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import DiscoveryChat from '../copilot/DiscoveryChat';
 import ResourceUploader from '../ResourceUploader';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
 
 interface ToolsPanelProps {
+    copilotSession: CopilotSessionHelper;
     onApplyAI: (suggestions: { title: string }[]) => void;
     onUpdateDownload: (url: string) => void;
     downloadUrl: string | null;
@@ -14,7 +16,7 @@ interface ToolsPanelProps {
 /**
  * ISP: ToolsPanel consolidates auxiliary workflows like AI generation and downloadable resources.
  */
-export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl, lessonId }: ToolsPanelProps) {
+export function ToolsPanel({ copilotSession, onApplyAI, onUpdateDownload, downloadUrl, lessonId }: ToolsPanelProps) {
     const [activeTool, setActiveTool] = useState<'ai' | 'resources'>('ai');
 
     return (
@@ -43,7 +45,7 @@ export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl, lessonId 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 {activeTool === 'ai' ? (
                     <div className="space-y-6 h-full">
-                        <DiscoveryChat lessonId={lessonId} />
+                        <DiscoveryChat session={copilotSession} />
                     </div>
                 ) : (
                     <div className="space-y-8 animate-in fade-in duration-500">

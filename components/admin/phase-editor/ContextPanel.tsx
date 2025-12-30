@@ -6,12 +6,13 @@ import ResourceUploader from '@/components/admin/ResourceUploader';
 interface ContextPanelProps {
     lesson: Lesson;
     onUpdateField: (field: keyof Lesson, value: any) => void;
+    errors?: string[];
 }
 
 /**
  * ISP: ContextPanel focuses only on high-level phase metadata and video control.
  */
-export function ContextPanel({ lesson, onUpdateField }: ContextPanelProps) {
+export function ContextPanel({ lesson, onUpdateField, errors }: ContextPanelProps) {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-left duration-700">
             {/* Video Preview / Placeholder */}
@@ -36,9 +37,12 @@ export function ContextPanel({ lesson, onUpdateField }: ContextPanelProps) {
                 <input
                     value={lesson.video_url}
                     onChange={(e) => onUpdateField('video_url', e.target.value)}
-                    className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-white placeholder:text-gray-800 focus:ring-1 ring-amber-500 outline-none transition-all shadow-inner"
+                    className={`w-full bg-black/20 border rounded-2xl p-4 text-xs text-white placeholder:text-gray-800 focus:ring-1 ring-amber-500 outline-none transition-all shadow-inner ${errors?.some(e => e.includes('video')) ? 'border-red-500/50 bg-red-500/[0.02]' : 'border-white/5'}`}
                     placeholder="URL de Loom o MP4..."
                 />
+                {errors?.filter(e => e.includes('video')).map((err, i) => (
+                    <p key={i} className="text-[10px] text-red-400 font-bold ml-2 italic">{err}</p>
+                ))}
             </div>
 
             {/* Metadata Section */}
@@ -48,8 +52,11 @@ export function ContextPanel({ lesson, onUpdateField }: ContextPanelProps) {
                     <input
                         value={lesson.title}
                         onChange={(e) => onUpdateField('title', e.target.value)}
-                        className="w-full bg-black/20 border border-white/5 rounded-2xl p-5 text-lg font-black text-white focus:ring-1 ring-amber-500 outline-none transition-all shadow-inner"
+                        className={`w-full bg-black/20 border rounded-2xl p-5 text-lg font-black text-white focus:ring-1 ring-amber-500 outline-none transition-all shadow-inner ${errors?.some(e => e.includes('título')) ? 'border-red-500/50 bg-red-500/[0.02]' : 'border-white/5'}`}
                     />
+                    {errors?.filter(e => e.includes('título')).map((err, i) => (
+                        <p key={i} className="text-[10px] text-red-400 font-bold ml-2 italic">{err}</p>
+                    ))}
                 </div>
 
                 <div className="space-y-2">
@@ -57,7 +64,7 @@ export function ContextPanel({ lesson, onUpdateField }: ContextPanelProps) {
                     <ResourceUploader
                         folder="lesson-thumbnails"
                         accept="image/*"
-                        initialUrl={lesson.thumbnail_url}
+                        initialUrl={lesson.thumbnail_url ?? undefined}
                         label="Cambiar Miniatura"
                         onUploadComplete={(url) => onUpdateField('thumbnail_url', url)}
                     />

@@ -1,45 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useChat } from '@ai-sdk/react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PartialKnowledgeMap } from '../../../lib/domain/discovery';
-import { Card, CardHeader, CardTitle, CardContent } from '../../ui/card';
-import { Badge } from '../../ui/badge';
-import { TypewriterText } from '../../ui/TypewriterText';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TypewriterText } from '@/components/ui/TypewriterText';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
 
 interface DiscoveryChatProps {
-    lessonId: string;
-    onComplete?: (context: PartialKnowledgeMap) => void;
+    session: CopilotSessionHelper;
 }
 
-export default function DiscoveryChat({ lessonId, onComplete }: DiscoveryChatProps) {
-    const [context, setContext] = useState<PartialKnowledgeMap>({
-        keyConcepts: [],
-        identifiedMisconceptions: []
-    });
-
+export default function DiscoveryChat({ session }: DiscoveryChatProps) {
     const {
-        messages = [],
-        input = '',
-        handleInputChange = () => { },
-        handleSubmit = () => { },
-        isLoading = false
-    } = useChat({
-        api: '/api/discovery',
-        body: { lessonId },
-        onToolCall({ toolCall }: { toolCall: any }) {
-            if (toolCall.toolName === 'updateContext') {
-                const args = toolCall.args as PartialKnowledgeMap;
-                setContext(prev => ({
-                    ...prev,
-                    ...args,
-                    keyConcepts: Array.from(new Set([...(prev.keyConcepts || []), ...(args.keyConcepts || [])])),
-                    identifiedMisconceptions: [...(prev.identifiedMisconceptions || []), ...(args.identifiedMisconceptions || [])]
-                }));
-            }
-        }
-    });
+        messages,
+        input,
+        handleInputChange,
+        handleSubmit,
+        isLoading,
+        liveContext: context
+    } = session;
 
     return (
         <div className="flex h-[calc(100vh-200px)] w-full gap-4 overflow-hidden rounded-xl bg-gray-50/50 p-4 shadow-sm border border-gray-100">
@@ -84,13 +64,13 @@ export default function DiscoveryChat({ lessonId, onComplete }: DiscoveryChatPro
                     <div className="relative flex items-center gap-2">
                         <input
                             className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
-                            value={input}
+                            value={input ?? ''}
                             placeholder="Responde al ingeniero..."
                             onChange={handleInputChange}
                         />
                         <button
                             type="submit"
-                            disabled={isLoading || !input.trim()}
+                            disabled={isLoading || !input?.trim()}
                             className="bg-blue-600 text-white rounded-full p-2 h-10 w-10 flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-md active:scale-95"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>

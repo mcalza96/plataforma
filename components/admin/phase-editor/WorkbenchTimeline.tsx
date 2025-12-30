@@ -24,18 +24,16 @@ interface WorkbenchTimelineProps {
     onUpdateStep: (id: string, updates: Partial<StepData>) => void;
     onRemoveStep: (id: string) => void;
     onReorderSteps: (activeId: string, overId: string) => void;
+    stepErrors?: Record<string, string[]>;
 }
 
-/**
- * ISP: WorkbenchTimeline is the central "Lego board" where steps are organized.
- * Controlled component that receives its state from the hook.
- */
 export function WorkbenchTimeline({
     steps,
     onAddStep,
     onUpdateStep,
     onRemoveStep,
-    onReorderSteps
+    onReorderSteps,
+    stepErrors = {}
 }: WorkbenchTimelineProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -96,6 +94,7 @@ export function WorkbenchTimeline({
                                 onToggleExpand={() => setExpandedId(expandedId === item.id ? null : item.id)}
                                 onUpdate={onUpdateStep}
                                 onRemove={onRemoveStep}
+                                errors={stepErrors[item.id]}
                             />
                         ))}
                     </div>

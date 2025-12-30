@@ -30,6 +30,7 @@ interface StepCardProps {
     onToggleExpand: () => void;
     onUpdate: (id: string, updates: Partial<StepData>) => void;
     onRemove: (id: string) => void;
+    errors?: string[];
 }
 
 const TYPE_CONFIG = {
@@ -45,7 +46,8 @@ export default function StepCard({
     isExpanded,
     onToggleExpand,
     onUpdate,
-    onRemove
+    onRemove,
+    errors
 }: StepCardProps) {
     const {
         attributes,
@@ -107,6 +109,13 @@ export default function StepCard({
 
                 {/* Badges & Actions */}
                 <div className="flex items-center gap-5">
+                    {errors && errors.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full text-red-400">
+                            <span className="material-symbols-outlined text-[14px]">warning</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest">{errors.length}</span>
+                        </div>
+                    )}
+
                     <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/5 rounded-xl">
                         <span className="material-symbols-outlined text-[14px] text-gray-600">schedule</span>
                         <span className="text-[9px] font-black text-gray-500 tracking-widest">{step.duration}MIN</span>
@@ -118,7 +127,7 @@ export default function StepCard({
                                 e.stopPropagation();
                                 if (confirm('¿Seguro que quieres eliminar este ladrillo del mapa?')) onRemove(step.id);
                             }}
-                            className="size-10 rounded-xl text-gray-700 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center"
+                            className="size-10 rounded-xl text-gray-700 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center font-black"
                         >
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                         </button>
@@ -151,7 +160,7 @@ export default function StepCard({
                                         <input
                                             value={step.title}
                                             onChange={(e) => onUpdate(step.id, { title: e.target.value })}
-                                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-sm font-bold text-white focus:ring-1 ring-amber-500 outline-none transition-all placeholder:text-gray-800"
+                                            className={`w-full bg-black/20 border rounded-2xl p-4 text-sm font-bold text-white focus:ring-1 ring-amber-500 outline-none transition-all placeholder:text-gray-800 ${errors?.some(e => e.includes('título')) ? 'border-red-500/50 bg-red-500/[0.02]' : 'border-white/5'}`}
                                             placeholder="Introduce el nombre táctico..."
                                         />
                                     </div>
@@ -160,10 +169,20 @@ export default function StepCard({
                                         <textarea
                                             value={step.description}
                                             onChange={(e) => onUpdate(step.id, { description: e.target.value })}
-                                            className="w-full bg-black/20 border border-white/5 rounded-2xl p-4 text-xs text-gray-300 focus:ring-1 ring-amber-500 outline-none min-h-[120px] resize-none leading-relaxed transition-all scrollbar-hide"
+                                            className={`w-full bg-black/20 border rounded-2xl p-4 text-xs text-gray-300 focus:ring-1 ring-amber-500 outline-none min-h-[120px] resize-none leading-relaxed transition-all scrollbar-hide ${errors?.some(e => e.includes('Instrucciones') || e.includes('pregunta')) ? 'border-red-500/50 bg-red-500/[0.02]' : 'border-white/5'}`}
                                             placeholder="Detalla lo que el alumno dominará al finalizar este bloque..."
                                         />
                                     </div>
+                                    {errors && errors.length > 0 && (
+                                        <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-2xl space-y-1">
+                                            {errors.map((err, i) => (
+                                                <p key={i} className="text-[10px] text-red-400 font-bold flex items-center gap-2">
+                                                    <span className="size-1 bg-red-500 rounded-full" />
+                                                    {err}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Config Column */}

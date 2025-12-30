@@ -7,7 +7,9 @@ interface PhaseHeaderProps {
     lessonTitle: string;
     onSave: () => void;
     isPending: boolean;
-    status: 'idle' | 'saving' | 'success' | 'error';
+    status: 'idle' | 'saving' | 'saved' | 'error';
+    errorCount?: number;
+    onScrollToError?: () => void;
 }
 
 /**
@@ -18,7 +20,9 @@ export function PhaseHeader({
     lessonTitle,
     onSave,
     isPending,
-    status
+    status,
+    errorCount,
+    onScrollToError
 }: PhaseHeaderProps) {
     return (
         <div className="flex-1 flex items-center justify-between">
@@ -44,15 +48,26 @@ export function PhaseHeader({
 
             {/* Actions & Feedback */}
             <div className="flex items-center gap-6">
+                {errorCount !== undefined && errorCount > 0 && (
+                    <button
+                        onClick={onScrollToError}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full text-red-500 hover:bg-red-500/20 transition-all active:scale-95 cursor-pointer"
+                        title="Haz clic para ir al primer error"
+                    >
+                        <span className="material-symbols-outlined !text-[14px] animate-pulse">report_problem</span>
+                        <span className="text-[9px] font-black uppercase tracking-widest">{errorCount} ERRORES</span>
+                    </button>
+                )}
+
                 {status !== 'idle' && (
                     <div className={`flex items-center gap-2 px-4 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300 ${status === 'saving' ? 'bg-white/5 border-white/10 text-gray-400' :
-                            status === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                'bg-red-500/10 border-red-500/20 text-red-400'
+                        status === 'saved' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                            'bg-red-500/10 border-red-500/20 text-red-400'
                         }`}>
                         <span className={`material-symbols-outlined !text-[14px] ${status === 'saving' ? 'animate-spin' : ''}`}>
-                            {status === 'saving' ? 'sync' : status === 'success' ? 'verified' : 'report'}
+                            {status === 'saving' ? 'sync' : status === 'saved' ? 'verified' : 'report'}
                         </span>
-                        {status === 'saving' ? 'Sincronizando' : status === 'success' ? 'Cambios Guardados' : 'Error al Guardar'}
+                        {status === 'saving' ? 'Sincronizando' : status === 'saved' ? 'Cambios Guardados' : 'Error al Guardar'}
                     </div>
                 )}
 

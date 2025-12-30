@@ -7,7 +7,8 @@ import {
     PointerSensor,
     useSensor,
     useSensors,
-    DragEndEvent
+    DragEndEvent,
+    DragStartEvent
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -15,14 +16,8 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
-import { SortableStepItem } from './SortableStepItem';
 import { useState, useEffect } from 'react';
-
-interface Step {
-    id: string;
-    title: string;
-    type: 'video' | 'quiz' | 'resource';
-}
+import StepCard, { StepData, StepType } from './StepCard';
 
 interface StepTimelineProps {
     initialStepsCount: number;
@@ -30,26 +25,38 @@ interface StepTimelineProps {
 }
 
 export default function StepTimeline({ initialStepsCount, onChange }: StepTimelineProps) {
-    const [items, setItems] = useState<Step[]>([]);
+    const [items, setItems] = useState<StepData[]>([]);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     useEffect(() => {
         // Inicializar pasos si la lista está vacía
         if (items.length === 0 && initialStepsCount > 0) {
-            const initialItems: Step[] = Array.from({ length: initialStepsCount }, (_, i) => ({
+            const initialItems: StepData[] = Array.from({ length: initialStepsCount }, (_, i) => ({
                 id: `step-${i}-${Date.now()}`,
                 title: `Paso ${i + 1}`,
-                type: 'video'
+                description: '',
+                type: 'video',
+                duration: 5
             }));
             setItems(initialItems);
         }
     }, [initialStepsCount]);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Sensibilidad para no disparar drag al clickear para expandir
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    const handleDragStart = (event: DragStartEvent) => {
+        // Al arrastrar, colapsamos cualquier ladrillo abierto para optimizar el espacio visual
+        setExpandedId(null);
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -63,57 +70,63 @@ export default function StepTimeline({ initialStepsCount, onChange }: StepTimeli
         }
     };
 
-    const handleUpdateTitle = (id: string, title: string) => {
-        setItems(prev => prev.map(item => item.id === id ? { ...item, title } : item));
+    const handleUpdate = (id: string, updates: Partial<StepData>) => {
+        setItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
     };
 
     const handleRemove = (id: string) => {
         const newItems = items.filter(item => item.id !== id);
         setItems(newItems);
         onChange(newItems.length);
+        if (expandedId === id) setExpandedId(null);
     };
 
     const handleAddStep = () => {
-        const newStep: Step = {
+        const newStep: StepData = {
             id: `step-${Date.now()}`,
             title: `Nuevo Paso ${items.length + 1}`,
-            type: 'video'
+            description: '',
+            type: 'video',
+            duration: 5
         };
         const newItems = [...items, newStep];
         setItems(newItems);
         onChange(newItems.length);
+        setExpandedId(newStep.id); // Expandir automáticamente el nuevo
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between px-2">
                 <div className="space-y-1">
-                    <h3 className="text-xs font-black text-gray-500 uppercase tracking-widest">Línea de Tiempo Atómica</h3>
-                    <p className="text-[10px] text-gray-600 font-medium italic">Arrastra para reordenar la secuencia de aprendizaje.</p>
+                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Plan de Despliegue</h3>
+                    <p className="text-[10px] text-gray-600 font-bold italic">Secuencia táctica de ladrillos de aprendizaje.</p>
                 </div>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-black italic text-amber-500">{items.length}</span>
-                    <span className="text-[10px] font-black text-amber-500/50 uppercase">Bloques</span>
+                <div className="flex items-baseline gap-1 bg-white/[0.03] px-4 py-2 rounded-2xl border border-white/5 shadow-inner">
+                    <span className="text-xl font-black italic text-amber-500">{items.length}</span>
+                    <span className="text-[9px] font-black text-amber-500/50 uppercase tracking-widest">Bloques</span>
                 </div>
             </div>
 
             <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
             >
                 <SortableContext
                     items={items.map(i => i.id)}
                     strategy={verticalListSortingStrategy}
                 >
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {items.map((item, index) => (
-                            <SortableStepItem
+                            <StepCard
                                 key={item.id}
-                                id={item.id}
+                                step={item}
                                 index={index}
-                                title={item.title}
-                                onUpdateTitle={handleUpdateTitle}
+                                isExpanded={expandedId === item.id}
+                                onToggleExpand={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                                onUpdate={handleUpdate}
                                 onRemove={handleRemove}
                             />
                         ))}
@@ -123,10 +136,12 @@ export default function StepTimeline({ initialStepsCount, onChange }: StepTimeli
 
             <button
                 onClick={handleAddStep}
-                className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl text-gray-600 hover:text-amber-500 hover:border-amber-500/30 hover:bg-amber-500/5 transition-all text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group"
+                className="w-full py-6 border-2 border-dashed border-white/5 rounded-3xl text-gray-600 hover:text-amber-500 hover:border-amber-500/30 hover:bg-amber-500/[0.02] transition-all text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 group active:scale-[0.98]"
             >
-                <span className="material-symbols-outlined text-sm group-hover:rotate-90 transition-transform">add_circle</span>
-                Añadir Ladrillo de Aprendizaje
+                <div className="size-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition-all">
+                    <span className="material-symbols-outlined text-sm group-hover:rotate-90 transition-transform duration-500">add</span>
+                </div>
+                Acoplar Nuevo Ladrillo Atómico
             </button>
         </div>
     );

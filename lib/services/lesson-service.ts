@@ -119,6 +119,22 @@ export class LessonService {
         return this.lessonRepository.getLearnerSubmissions(learnerId);
     }
 
+    async getLessonById(id: string): Promise<Lesson | null> {
+        return this.lessonRepository.getLessonById(id);
+    }
+
+    async getAdjacentLessons(courseId: string, currentOrder: number): Promise<{ prev: Lesson | null, next: Lesson | null }> {
+        const lessons = await this.lessonRepository.getLessonsByCourseId(courseId);
+
+        // Asumiendo que están ordenadas por el repo (getLessonsByCourseId las ordena por order asc)
+        const currentIndex = lessons.findIndex(l => l.order === currentOrder);
+
+        return {
+            prev: currentIndex > 0 ? lessons[currentIndex - 1] : null,
+            next: currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null
+        };
+    }
+
     async getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
         return this.lessonRepository.getLessonsByCourseId(courseId);
     }

@@ -15,6 +15,11 @@ export interface ILessonRepository {
     deleteLesson(lessonId: string): Promise<void>;
 
     /**
+     * Get a specific lesson by ID.
+     */
+    getLessonById(lessonId: string): Promise<Lesson | null>;
+
+    /**
      * Get all lessons for a specific course.
      */
     getLessonsByCourseId(courseId: string): Promise<Lesson[]>;

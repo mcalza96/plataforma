@@ -42,6 +42,22 @@ export class SupabaseLessonRepository implements ILessonRepository {
         }
     }
 
+    async getLessonById(lessonId: string): Promise<Lesson | null> {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from('lessons')
+            .select('*')
+            .eq('id', lessonId)
+            .maybeSingle();
+
+        if (error) {
+            console.error('Error fetching lesson by ID in repository:', error);
+            return null;
+        }
+
+        return data;
+    }
+
     async getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
         const supabase = await createClient();
         const { data, error } = await supabase

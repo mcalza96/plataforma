@@ -4,8 +4,9 @@ import { createGroq } from '@ai-sdk/groq';
 import { streamText, tool, generateText } from 'ai';
 import { z } from 'zod';
 import { PartialKnowledgeMapSchema } from '../../domain/discovery';
-import { UsageTrackerService } from '@/lib/services/usage-tracker';
-import { SOCRATIC_PROMPT } from '@/lib/ai/prompts';
+import { UsageTrackerService } from './usage-tracker';
+import { SOCRATIC_PROMPT } from '../../ai/prompts';
+
 
 // La inicialización se hace perezosa para evitar crashes en build time o si falta la env var al cargar el modulo
 function getGroqClient() {

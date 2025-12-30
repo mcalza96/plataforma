@@ -1,4 +1,4 @@
-import { BloomLevel } from '../domain/course';
+import { BloomLevel } from '../../domain/entities/course';
 
 export class MetadataService {
     private apiKey: string;

@@ -8,9 +8,10 @@ export { AuthSchema } from './domain/auth';
 export {
     CourseSchema,
     LessonSchema,
-    ALOSchema,
     FeedbackSchema
-} from './domain/course';
+} from './domain/schemas/course';
+export { ALOSchema } from './domain/schemas/alo';
+
 export {
     DiagnosisSchema,
     ProposalSchema

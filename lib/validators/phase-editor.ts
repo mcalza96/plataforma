@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { Lesson } from '@/lib/domain/course';
+import { Lesson } from '@/lib/domain/entities/course';
+
 import { StepData } from '@/components/admin/StepCard';
 
 // --- Base Schemas ---

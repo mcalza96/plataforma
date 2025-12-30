@@ -1,4 +1,6 @@
-import { AtomicLearningObject, CreateALOInput } from '../domain/course';
+import { AtomicLearningObject } from '../schemas/alo';
+import { CreateALOInput } from '../dtos/alo';
+
 
 export interface IContentRepository {
     createContent(data: CreateALOInput, creatorId: string): Promise<AtomicLearningObject>;

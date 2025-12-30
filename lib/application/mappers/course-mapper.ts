@@ -1,4 +1,6 @@
-import { Course, CourseDTO, Lesson, LessonDTO } from '../../domain/course';
+import { Course, Lesson } from '../../domain/entities/course';
+import { CourseDTO, LessonDTO } from '../../domain/dtos/course';
+
 
 /**
  * Mapper to transform between Database/DTO structures and Domain Entities.

@@ -1,6 +1,11 @@
 'use server';
 
-import { createClient } from './infrastructure/supabase/supabase-server';
+import {
+    getLessonRepository,
+    getCourseReader,
+    getCourseWriter,
+    getCompetencyRepository
+} from './di';
 import { PartialKnowledgeMap } from './domain/discovery';
 
 /**
@@ -8,18 +13,16 @@ import { PartialKnowledgeMap } from './domain/discovery';
  * Updates the course/lesson metadata and upserts competency/misconception nodes.
  */
 export async function saveDiscoveryContext(lessonId: string, context: PartialKnowledgeMap) {
-    const supabase = await createClient();
+    const lessonRepo = getLessonRepository();
+    const courseReader = getCourseReader();
+    const courseWriter = getCourseWriter();
+    const competencyRepo = getCompetencyRepository();
 
     try {
         // 1. Get Course ID from Lesson
-        const { data: lesson, error: lessonError } = await supabase
-            .from('lessons')
-            .select('course_id')
-            .eq('id', lessonId)
-            .single();
-
-        if (lessonError || !lesson) {
-            console.error('[saveDiscoveryContext] Error fetching lesson:', lessonError);
+        const lesson = await lessonRepo.getLessonById(lessonId);
+        if (!lesson) {
+            console.error('[saveDiscoveryContext] Lesson not found:', lessonId);
             return { success: false, error: 'Lesson not found' };
         }
 
@@ -27,61 +30,36 @@ export async function saveDiscoveryContext(lessonId: string, context: PartialKno
 
         // 2. Update Course metadata if identified
         if (context.subject || context.targetAudience) {
-            const updates: any = {};
-            if (context.subject) updates.category = context.subject; // Mapping subject to category
-            // We could also update title if needed, but let's stick to category/description for now to avoid overwriting the main title unless explicit
-
-            await supabase
-                .from('courses')
-                .update(updates)
-                .eq('id', courseId);
+            const courseDTO = await courseReader.getCourseById(courseId);
+            if (courseDTO) {
+                if (context.subject) courseDTO.category = context.subject;
+                // Add target audience to metadata or description if needed
+                await courseWriter.upsertCourse(courseDTO);
+            }
         }
 
         // 3. Upsert Key Concepts (Competencies)
         if (context.keyConcepts && context.keyConcepts.length > 0) {
             for (const concept of context.keyConcepts) {
-                // Basic Upsert by title
-                const { data: existing } = await supabase
-                    .from('competency_nodes')
-                    .select('id')
-                    .eq('title', concept)
-                    .eq('node_type', 'competency')
-                    .limit(1);
-
-                if (!existing || existing.length === 0) {
-                    await supabase
-                        .from('competency_nodes')
-                        .insert({
-                            title: concept,
-                            node_type: 'competency',
-                            metadata: { courseId } // Link to course in metadata
-                        });
-                }
+                await competencyRepo.upsertNode({
+                    title: concept,
+                    type: 'competency',
+                    metadata: { courseId }
+                });
             }
         }
 
         // 4. Upsert Misconceptions
         if (context.identifiedMisconceptions && context.identifiedMisconceptions.length > 0) {
             for (const m of context.identifiedMisconceptions) {
-                const { data: existing } = await supabase
-                    .from('competency_nodes')
-                    .select('id')
-                    .eq('title', m.error)
-                    .eq('node_type', 'misconception')
-                    .limit(1);
-
-                if (!existing || existing.length === 0) {
-                    await supabase
-                        .from('competency_nodes')
-                        .insert({
-                            title: m.error,
-                            node_type: 'misconception',
-                            metadata: {
-                                courseId,
-                                refutationStrategy: m.refutation
-                            }
-                        });
-                }
+                await competencyRepo.upsertNode({
+                    title: m.error,
+                    type: 'misconception',
+                    metadata: {
+                        courseId,
+                        refutationStrategy: m.refutation
+                    }
+                });
             }
         }
 

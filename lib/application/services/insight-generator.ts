@@ -3,7 +3,7 @@
 import { createGroq } from '@ai-sdk/groq';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { AssessmentResult, PathMutation } from '../domain/triage';
+import { AssessmentResult, PathMutation } from '../../domain/triage';
 
 const groq = createGroq({
     apiKey: process.env.GROQ_API_KEY || '',

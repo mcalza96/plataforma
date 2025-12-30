@@ -1,5 +1,7 @@
-import { ILessonRepository } from '../../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput } from '../../domain/course';
+import { ILessonRepository } from '../../domain/repositories/lesson-repository';
+import { Lesson } from '../../domain/entities/course';
+import { UpsertLessonInput } from '../../domain/dtos/course';
+
 
 /**
  * Use Case: Create or Update a Lesson.

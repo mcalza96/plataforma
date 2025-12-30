@@ -1,5 +1,7 @@
-import { ICourseWriter } from '../../repositories/course-repository';
-import { Course, UpsertCourseInput } from '../../domain/course';
+import { ICourseWriter } from '../../domain/repositories/course-repository';
+import { Course } from '../../domain/entities/course';
+import { UpsertCourseInput } from '../../domain/dtos/course';
+
 
 /**
  * Use Case: Save or Update a Course.

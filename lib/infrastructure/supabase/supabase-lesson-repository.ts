@@ -1,5 +1,8 @@
-import { ILessonRepository } from '../../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../../domain/course';
+import { ILessonRepository } from '../../domain/repositories/lesson-repository';
+import { Lesson } from '../../domain/entities/course';
+import { UpsertLessonInput, LessonNode } from '../../domain/dtos/course';
+import { Submission, Achievement } from '../../domain/dtos/learner';
+
 import { createClient } from './supabase-server';
 import { CourseMapper } from '../../application/mappers/course-mapper';
 

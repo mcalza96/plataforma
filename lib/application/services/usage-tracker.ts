@@ -1,4 +1,4 @@
-import { createServiceRoleClient } from '../infrastructure/supabase/supabase-server';
+import { createServiceRoleClient } from '../../infrastructure/supabase/supabase-server';
 
 interface UsageParams {
     userId: string;

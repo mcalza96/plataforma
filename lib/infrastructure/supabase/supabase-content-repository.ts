@@ -1,6 +1,8 @@
 import { createClient } from '../../infrastructure/supabase/supabase-server';
-import { AtomicLearningObject, CreateALOInput } from '../../domain/course';
-import { IContentRepository } from '../../repositories/content-repository';
+import { AtomicLearningObject } from '../../domain/schemas/alo';
+import { CreateALOInput } from '../../domain/dtos/alo';
+import { IContentRepository } from '../../domain/repositories/content-repository';
+
 
 export class SupabaseContentRepository implements IContentRepository {
     async createContent(data: CreateALOInput, creatorId: string): Promise<AtomicLearningObject> {

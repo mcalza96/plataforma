@@ -1,8 +1,10 @@
-import { IContentRepository } from "../repositories/content-repository";
-import { AtomicLearningObject, BloomLevel } from "../domain/course";
-import { DiagnosisSchema } from "../validations";
+import { IContentRepository } from "../../domain/repositories/content-repository";
+import { AtomicLearningObject } from "../../domain/schemas/alo";
+import { BloomLevel } from "../../domain/entities/course";
+import { DiagnosisSchema } from "../../validations";
 import { z } from "zod";
-import { IAIProvider } from "../domain/ports";
+import { IAIProvider } from "../../domain/repositories/ai-provider";
+
 
 type Diagnosis = z.infer<typeof DiagnosisSchema>;
 

@@ -1,4 +1,7 @@
-import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
+import { Lesson } from '../entities/course';
+import { UpsertLessonInput, LessonNode } from '../dtos/course';
+import { Submission, Achievement } from '../dtos/learner';
+
 
 /**
  * Interface definition for Lesson repository.

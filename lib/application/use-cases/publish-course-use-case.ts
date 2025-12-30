@@ -1,4 +1,4 @@
-import { ICourseReader, ICourseWriter } from '../../repositories/course-repository';
+import { ICourseReader, ICourseWriter } from '../../domain/repositories/course-repository';
 import { CourseMapper } from '../mappers/course-mapper';
 
 export interface PublishCourseInput {

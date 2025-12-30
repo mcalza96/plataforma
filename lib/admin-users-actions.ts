@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getCourseService } from './di';
+import { getFamilyService, getLearnerService, getAdminService } from './di';
 import { getAuthUser, getUserRole } from './infrastructure/auth-utils';
 
 /**
@@ -10,7 +10,7 @@ import { getAuthUser, getUserRole } from './infrastructure/auth-utils';
 export async function getFamilies() {
     try {
         const role = await getUserRole();
-        const service = getCourseService();
+        const service = getFamilyService();
         return await service.getFamilies(role);
     } catch (error: any) {
         console.error('Error fetching families:', error);
@@ -24,7 +24,7 @@ export async function getFamilies() {
 export async function getFamilyById(id: string) {
     try {
         const role = await getUserRole();
-        const service = getCourseService();
+        const service = getFamilyService();
         return await service.getFamilyById(id, role);
     } catch (error: any) {
         console.error('Error fetching family:', error);
@@ -38,7 +38,7 @@ export async function getFamilyById(id: string) {
 export async function updateLearnerLevel(learnerId: string, profileId: string, newLevel: number) {
     try {
         const role = await getUserRole();
-        const service = getCourseService();
+        const service = getLearnerService();
 
         await service.updateLearnerLevel(learnerId, newLevel, role);
 
@@ -53,8 +53,6 @@ export async function updateLearnerLevel(learnerId: string, profileId: string, n
     }
 }
 
-
-
 /**
  * Actualiza el rol de un usuario
  */
@@ -64,7 +62,7 @@ export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'i
         const user = await getAuthUser();
         const currentUserId = user?.id || '';
 
-        const service = getCourseService();
+        const service = getAdminService();
         await service.updateUserRole(targetUserId, newRole, currentUserId, role);
 
         revalidatePath(`/admin/users/${targetUserId}`);
@@ -76,4 +74,5 @@ export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'i
         return { success: false, error: error.message || 'Error al actualizar el rol.' };
     }
 }
+
 

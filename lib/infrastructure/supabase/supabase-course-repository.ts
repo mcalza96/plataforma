@@ -1,17 +1,11 @@
-import { ICourseReader, ICourseWriter, ILearnerRepository, IStatsRepository } from '../../repositories/course-repository';
+import { ICourseReader, ICourseWriter } from '../../domain/repositories/course-repository';
+import { Course, Lesson } from '../../domain/entities/course';
 import {
-    CourseDTO,
     CourseCardDTO,
     CourseDetailDTO,
-    LessonDTO,
-    Learner,
     UpsertCourseInput,
-    FamilyDTO,
-    LearnerStats,
-    LearnerAchievement,
-    Course,
-    Lesson
-} from '../../domain/course';
+} from '../../domain/dtos/course';
+
 import { createClient } from './supabase-server';
 import { CourseMapper } from '../../application/mappers/course-mapper';
 
@@ -19,7 +13,7 @@ import { CourseMapper } from '../../application/mappers/course-mapper';
  * Supabase implementation of the segregated course repositories.
  * Handles database communication and data mapping.
  */
-export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, ILearnerRepository, IStatsRepository {
+export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
 
     async getCoursesWithProgress(learnerId: string): Promise<CourseCardDTO[]> {
         const supabase = await createClient();
@@ -29,7 +23,6 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
         const { data: profile } = user ? await supabase.from('profiles').select('role').eq('id', user.id).single() : { data: null };
         const isInstructor = profile?.role === 'instructor';
 
-        // Obtener cursos con sus lecciones asociadas para calcular el progreso total
         let query = supabase
             .from('courses')
             .select(`
@@ -80,7 +73,7 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
                 teacher_id: course.teacher_id,
                 progress: {
                     completed_steps: completedSteps,
-                    total_steps: totalSteps || 5, // Fallback sensible
+                    total_steps: totalSteps || 5,
                     is_completed: isCompleted
                 }
             };
@@ -104,7 +97,6 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
             return null;
         }
 
-        // Ordenar lecciones por el campo 'order'
         const lessons = (course.lessons || []).sort((a: any, b: any) => a.order - b.order);
         const lessonIds = lessons.map((l: any) => l.id);
 
@@ -141,20 +133,20 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
         };
     }
 
-    async getLearnerById(learnerId: string): Promise<Learner | null> {
+    async getCourseById(courseId: string): Promise<Course | null> {
         const supabase = await createClient();
         const { data, error } = await supabase
-            .from('learners')
+            .from('courses')
             .select('*')
-            .eq('id', learnerId)
+            .eq('id', courseId)
             .single();
 
         if (error) {
-            console.error('Error fetching learner in repository:', error);
+            console.error('Error fetching course by ID in repository:', error);
             return null;
         }
 
-        return data;
+        return data ? CourseMapper.toDomain(data) : null;
     }
 
     async getNextLesson(courseId: string, currentOrder: number): Promise<Lesson | null> {
@@ -175,26 +167,8 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
         return data ? CourseMapper.lessonToDomain(data) : null;
     }
 
-    async getCourseById(courseId: string): Promise<Course | null> {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-            .from('courses')
-            .select('*')
-            .eq('id', courseId)
-            .single();
-
-        if (error) {
-            console.error('Error fetching course by ID in repository:', error);
-            return null;
-        }
-
-        return data ? CourseMapper.toDomain(data) : null;
-    }
-
     async upsertCourse(data: UpsertCourseInput): Promise<Course> {
         const supabase = await createClient();
-
-        // Obtener sesión actual para asignar teacher_id si es nuevo curso
         const { data: { user } } = await supabase.auth.getUser();
 
         const payload: any = {
@@ -233,219 +207,6 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
         }
     }
 
-    async getFamilies(): Promise<FamilyDTO[]> {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-            .from('profiles')
-            .select(`
-                *,
-                learners (*)
-            `)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching families in repository:', error);
-            throw new Error('No se pudieron obtener las familias.');
-        }
-
-        return data || [];
-    }
-
-    async getFamilyById(id: string): Promise<FamilyDTO | null> {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-            .from('profiles')
-            .select(`
-                *,
-                learners (*)
-            `)
-            .eq('id', id)
-            .single();
-
-        if (error) {
-            console.error('Error fetching family in repository:', error);
-            throw new Error('No se pudo encontrar la familia solicitada.');
-        }
-
-        return data;
-    }
-
-    async updateLearnerLevel(learnerId: string, newLevel: number): Promise<void> {
-        const supabase = await createClient();
-        const { error } = await supabase
-            .from('learners')
-            .update({ level: newLevel })
-            .eq('id', learnerId);
-
-        if (error) {
-            console.error('Error updating learner level in repository:', error);
-            throw new Error('Error al actualizar el nivel.');
-        }
-    }
-
-    async updateUserRole(userId: string, newRole: string): Promise<void> {
-        const supabase = await createClient();
-        const { error } = await supabase
-            .from('profiles')
-            .update({ role: newRole })
-            .eq('id', userId);
-
-        if (error) {
-            console.error('Error updating user role in repository:', error);
-            throw new Error('Error al actualizar el rol.');
-        }
-    }
-
-    async getLearnerFullStats(learnerId: string): Promise<LearnerStats> {
-        const supabase = await createClient();
-
-        // 1. Total Completed Lessons
-        const { count: completedLections } = await supabase
-            .from('learner_progress')
-            .select('*', { count: 'exact', head: true })
-            .eq('learner_id', learnerId)
-            .eq('is_completed', true);
-
-        // 2. Total Submissions (Projects)
-        const { count: totalProjects } = await supabase
-            .from('submissions')
-            .select('*', { count: 'exact', head: true })
-            .eq('learner_id', learnerId);
-
-        // 3. Estimated Hours
-        const { data: progressData } = await supabase
-            .from('learner_progress')
-            .select('completed_steps')
-            .eq('learner_id', learnerId);
-
-        const totalSteps = progressData?.reduce((acc, curr) => acc + (curr.completed_steps || 0), 0) || 0;
-        const hoursPracticed = Math.round((totalSteps * 15) / 60);
-
-        // 4. Skills by Category
-        const { data: courses } = await supabase
-            .from('courses')
-            .select(`
-                category,
-                lessons (
-                    id,
-                    total_steps,
-                    learner_progress (
-                        learner_id,
-                        completed_steps
-                    )
-                )
-            `);
-
-        const skillsMap: Record<string, { completed: number; total: number }> = {};
-
-        courses?.forEach(course => {
-            const cat = course.category || 'General';
-            if (!skillsMap[cat]) skillsMap[cat] = { completed: 0, total: 0 };
-
-            course.lessons?.forEach((lesson: any) => {
-                skillsMap[cat].total += lesson.total_steps;
-                const progress = lesson.learner_progress?.find((p: any) => p.learner_id === learnerId);
-                skillsMap[cat].completed += progress?.completed_steps || 0;
-            });
-        });
-
-        const skillColors = ['#a855f7', '#0d93f2', '#10b981', '#f59e0b'];
-        const skills = Object.entries(skillsMap).map(([name, data], index) => ({
-            name,
-            percentage: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
-            color: skillColors[index % skillColors.length]
-        }));
-
-        return {
-            totalProjects: totalProjects || 0,
-            hoursPracticed: hoursPracticed || 0,
-            completedLections: completedLections || 0,
-            skills
-        };
-    }
-
-    async getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]> {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-            .from('learner_achievements')
-            .select(`
-                unlocked_at,
-                achievements (*)
-            `)
-            .eq('learner_id', learnerId);
-
-        if (error) {
-            console.error('Error fetching achievements in repository:', error);
-            return [];
-        }
-
-        // Map Supabase joined data to the Expected Domain Interface
-        // Supabase returns the joined record as an array or object depending on schema
-        return (data || []).map((item: any) => ({
-            unlocked_at: item.unlocked_at,
-            achievements: Array.isArray(item.achievements) ? item.achievements[0] : item.achievements
-        })) as LearnerAchievement[];
-    }
-
-    async createLearner(data: {
-        parentId: string;
-        displayName: string;
-        avatarUrl: string;
-    }): Promise<Learner> {
-        const supabase = await createClient();
-        const { data: dbData, error } = await supabase
-            .from('learners')
-            .insert({
-                parent_id: data.parentId,
-                display_name: data.displayName,
-                avatar_url: data.avatarUrl,
-                level: 1
-            })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error creating learner in repository:', error);
-            throw new Error(error.message);
-        }
-
-        return dbData;
-    }
-
-    async ensureProfileExists(data: {
-        id: string;
-        email: string;
-        fullName: string;
-    }): Promise<void> {
-        const supabase = await createClient();
-        const { error } = await supabase.from('profiles').upsert({
-            id: data.id,
-            email: data.email,
-            full_name: data.fullName,
-        });
-
-        if (error) {
-            console.error('Error ensuring profile existence in repository:', data.id, error);
-            throw new Error(`No se pudo crear tu perfil de padre: ${error.message}.`);
-        }
-    }
-
-    async getLearnersByParentId(parentId: string): Promise<Learner[]> {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-            .from('learners')
-            .select('*')
-            .eq('parent_id', parentId)
-            .order('created_at', { ascending: true });
-
-        if (error) {
-            console.error('Error fetching learners for parent in repository:', error);
-            throw new Error('Error al obtener los alumnos.');
-        }
-
-        return data || [];
-    }
-
     async getAllCourses(): Promise<Course[]> {
         const supabase = await createClient();
         const { data: { user } } = await supabase.auth.getUser();
@@ -469,29 +230,5 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, I
         }
 
         return (data || []).map(c => CourseMapper.toDomain(c));
-    }
-
-    async getGlobalStats(): Promise<{
-        totalLearners: number;
-        totalSubmissions: number;
-        totalCourses: number;
-    }> {
-        const supabase = await createClient();
-
-        const [
-            { count: totalLearners },
-            { count: totalSubmissions },
-            { count: totalCourses }
-        ] = await Promise.all([
-            supabase.from('learners').select('*', { count: 'exact', head: true }),
-            supabase.from('submissions').select('*', { count: 'exact', head: true }),
-            supabase.from('courses').select('*', { count: 'exact', head: true })
-        ]);
-
-        return {
-            totalLearners: totalLearners || 0,
-            totalSubmissions: totalSubmissions || 0,
-            totalCourses: totalCourses || 0
-        };
     }
 }

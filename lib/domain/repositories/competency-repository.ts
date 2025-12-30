@@ -1,5 +1,6 @@
-import { CompetencyNode } from '../domain/competency';
-import { Edge } from '../domain/graph';
+import { CompetencyNode } from '../competency';
+import { Edge } from '../graph';
+
 
 /**
  * Contract for the Knowledge Graph persistence layer.
@@ -25,4 +26,10 @@ export interface ICompetencyRepository {
      * Loads a subgraph or the full graph for a user (including global nodes).
      */
     getGraph(userId?: string): Promise<{ nodes: CompetencyNode[]; edges: Edge[] }>;
+
+    /**
+     * Upserts a competency or misconception node.
+     */
+    upsertNode(node: Partial<CompetencyNode>): Promise<void>;
 }
+

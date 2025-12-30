@@ -1,8 +1,11 @@
-import { ILessonRepository } from '../repositories/lesson-repository';
-import { ICourseReader } from '../repositories/course-repository';
-import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
-import { AuthGuard } from '../application/guards/auth-guard';
-import { UpsertLessonUseCase } from '../application/use-cases/upsert-lesson-use-case';
+import { ILessonRepository } from '../../domain/repositories/lesson-repository';
+import { ICourseReader } from '../../domain/repositories/course-repository';
+import { Lesson } from '../../domain/entities/course';
+import { UpsertLessonInput, LessonNode } from '../../domain/dtos/course';
+import { Submission, Achievement } from '../../domain/dtos/learner';
+import { AuthGuard } from '../guards/auth-guard';
+import { UpsertLessonUseCase } from '../use-cases/upsert-lesson-use-case';
+
 
 /**
  * Domain service for Lesson operations.

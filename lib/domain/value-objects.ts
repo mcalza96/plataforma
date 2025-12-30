@@ -22,12 +22,12 @@ export class VideoUrl {
     private readonly value: string;
 
     constructor(value: string) {
-        const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/;
-        if (!urlPattern.test(value)) {
+        // More permissive URL pattern to support various platforms (YouTube, Loom, etc) and parameters
+        const urlPattern = /^(https?:\/\/)[^\s$.?#].[^\s]*$/i;
+        if (!value || !urlPattern.test(value.trim())) {
             throw new Error('Necesitamos una URL de video (MP4/Loom) válida');
         }
-        // Basic check for video platforms if needed
-        this.value = value;
+        this.value = value.trim();
     }
 
     toString(): string {

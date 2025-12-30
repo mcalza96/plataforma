@@ -1,6 +1,7 @@
 import { getLessonService } from '@/lib/di';
 import { notFound } from 'next/navigation';
 import PhaseWorkshop from './PhaseWorkshop';
+import { CourseMapper } from '@/lib/application/mappers/course-mapper';
 
 interface PhasePageProps {
     params: Promise<{
@@ -16,15 +17,17 @@ interface PhasePageProps {
 export default async function PhaseEditorPage({ params }: PhasePageProps) {
     const { id: courseId, lessonId } = await params;
     const service = getLessonService();
-    const lesson = await service.getLessonById(lessonId);
+    const lessonEntity = await service.getLessonById(lessonId);
 
-    if (!lesson) {
+    if (!lessonEntity) {
         notFound();
     }
 
+    const lessonDTO = CourseMapper.lessonToDTO(lessonEntity);
+
     return (
         <PhaseWorkshop
-            initialLesson={lesson}
+            initialLesson={lessonDTO}
             courseId={courseId}
         />
     );

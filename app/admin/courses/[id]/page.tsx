@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import CourseForm from './CourseForm';
 import { getCourseService, getLessonService } from '@/lib/di';
 import AdminBreadcrumbsResolver from '@/components/admin/AdminBreadcrumbsResolver';
+import { CourseMapper } from '@/lib/application/mappers/course-mapper';
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -10,27 +11,30 @@ interface PageProps {
 export default async function EditCoursePage({ params }: PageProps) {
     const { id } = await params;
 
-    let course = null;
-    let lessons: any[] = [];
+    let courseDTO = null;
+    let lessonsDTOs: any[] = [];
 
     if (id !== 'new') {
         const courseService = getCourseService();
         const lessonService = getLessonService();
 
-        course = await courseService.getCourseById(id);
+        const courseEntity = await courseService.getCourseById(id);
 
-        if (!course) {
+        if (!courseEntity) {
             return notFound();
         }
 
-        lessons = await lessonService.getLessonsByCourseId(id);
+        courseDTO = CourseMapper.toDTO(courseEntity);
+
+        const lessonsEntities = await lessonService.getLessonsByCourseId(id);
+        lessonsDTOs = lessonsEntities.map(l => CourseMapper.lessonToDTO(l));
     }
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 pt-8">
             <AdminBreadcrumbsResolver courseId={id !== 'new' ? id : undefined} />
 
-            <CourseForm course={course} lessons={lessons} />
+            <CourseForm course={courseDTO} lessons={lessonsDTOs} />
         </div>
     );
 }

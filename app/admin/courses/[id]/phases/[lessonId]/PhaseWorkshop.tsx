@@ -51,6 +51,7 @@ export default function PhaseWorkshop({ initialLesson, courseId }: PhaseWorkshop
                     onApplyAI={editor.applyAISuggestions}
                     onUpdateDownload={(url) => editor.updateField('download_url', url)}
                     downloadUrl={editor.lesson.download_url}
+                    lessonId={editor.lesson.id}
                 />
             }
         />

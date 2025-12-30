@@ -1,19 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import CopilotSidebar from '../CopilotSidebar';
+import DiscoveryChat from '../copilot/DiscoveryChat';
 import ResourceUploader from '../ResourceUploader';
 
 interface ToolsPanelProps {
     onApplyAI: (suggestions: { title: string }[]) => void;
     onUpdateDownload: (url: string) => void;
     downloadUrl: string | null;
+    lessonId: string;
 }
 
 /**
  * ISP: ToolsPanel consolidates auxiliary workflows like AI generation and downloadable resources.
  */
-export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl }: ToolsPanelProps) {
+export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl, lessonId }: ToolsPanelProps) {
     const [activeTool, setActiveTool] = useState<'ai' | 'resources'>('ai');
 
     return (
@@ -42,7 +43,7 @@ export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl }: ToolsPa
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 {activeTool === 'ai' ? (
                     <div className="space-y-6 h-full">
-                        <CopilotSidebar onApplyStructure={onApplyAI} isInline />
+                        <DiscoveryChat lessonId={lessonId} />
                     </div>
                 ) : (
                     <div className="space-y-8 animate-in fade-in duration-500">

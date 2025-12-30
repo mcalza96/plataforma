@@ -5,12 +5,25 @@ import { getAIOrchestratorService } from './di';
 import { validateAdmin } from './infrastructure/auth-utils';
 import { ActionResponse } from './admin-content-actions';
 import { z } from 'zod';
+import { checkRateLimit } from '@/lib/infrastructure/rate-limit';
 
 /**
  * Genera una propuesta de camino de aprendizaje personalizado
  * a partir de las notas/diagnóstico del profesor.
  */
 export async function generateCustomPath(data: z.infer<typeof DiagnosisSchema>): Promise<ActionResponse> {
+    // Rate Limit Check
+    // In a real app, use the authenticated user ID. Here we mock it or use IP if available.
+    const identifier = "mock-user-id";
+    const { success } = await checkRateLimit(identifier, 'diagnostic');
+
+    if (!success) {
+        return {
+            success: false,
+            error: "Has alcanzado tu límite de velocidad cognitiva por hoy (Rate Limit Exceeded)."
+        };
+    }
+
     try {
         // 1. Seguridad: Solo admin/instructor
         await validateAdmin();
@@ -21,6 +34,19 @@ export async function generateCustomPath(data: z.infer<typeof DiagnosisSchema>):
         // 3. Orquestación de IA
         const aiService = getAIOrchestratorService();
         const proposal = await aiService.generatePath(validated);
+
+        // Track Usage (Async, fire and forget)
+        import('@/lib/services/usage-tracker').then(({ UsageTrackerService }) => {
+            const inputTokens = JSON.stringify(validated).length / 4; // Rough estimation
+            const outputTokens = JSON.stringify(proposal).length / 4;
+            UsageTrackerService.track({
+                userId: 'mock-user-id', // Replace with real ID
+                model: 'gemini-1.5-pro',
+                tokensInput: Math.ceil(inputTokens),
+                tokensOutput: Math.ceil(outputTokens),
+                featureUsed: 'diagnostic'
+            });
+        });
 
         return {
             success: true,

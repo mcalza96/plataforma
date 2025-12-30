@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,14 +12,22 @@ interface DiscoveryChatProps {
 }
 
 export default function DiscoveryChat({ session }: DiscoveryChatProps) {
+    const [localInput, setLocalInput] = useState('');
     const {
         messages,
-        input,
-        handleInputChange,
-        handleSubmit,
         isLoading,
+        append,
         liveContext: context
     } = session;
+
+    const handleSubmitLocal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!localInput.trim() || isLoading) return;
+
+        const content = localInput;
+        setLocalInput('');
+        await append({ role: 'user', content });
+    };
 
     return (
         <div className="flex h-[calc(100vh-200px)] w-full gap-4 overflow-hidden rounded-xl bg-gray-50/50 p-4 shadow-sm border border-gray-100">
@@ -60,17 +68,17 @@ export default function DiscoveryChat({ session }: DiscoveryChatProps) {
                     </AnimatePresence>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100 bg-gray-50/30">
+                <form onSubmit={handleSubmitLocal} className="p-4 border-t border-gray-100 bg-gray-50/30">
                     <div className="relative flex items-center gap-2">
                         <input
                             className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
-                            value={input ?? ''}
+                            value={localInput}
                             placeholder="Responde al ingeniero..."
-                            onChange={handleInputChange}
+                            onChange={(e) => setLocalInput(e.target.value)}
                         />
                         <button
                             type="submit"
-                            disabled={isLoading || !input?.trim()}
+                            disabled={isLoading || !localInput.trim()}
                             className="bg-blue-600 text-white rounded-full p-2 h-10 w-10 flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-md active:scale-95"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>

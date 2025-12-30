@@ -31,6 +31,8 @@ interface StepCardProps {
     onUpdate: (id: string, updates: Partial<StepData>) => void;
     onRemove: (id: string) => void;
     errors?: string[];
+    isSelected?: boolean;
+    onFocus?: () => void;
 }
 
 const TYPE_CONFIG = {
@@ -47,7 +49,9 @@ export default function StepCard({
     onToggleExpand,
     onUpdate,
     onRemove,
-    errors
+    errors,
+    isSelected,
+    onFocus
 }: StepCardProps) {
     const {
         attributes,
@@ -70,10 +74,15 @@ export default function StepCard({
     return (
         <div
             ref={setNodeRef}
+            id={step.id}
             style={style}
-            className={`group flex flex-col overflow-hidden transition-all duration-300 ${isDragging
-                ? 'scale-[1.02] shadow-2xl z-50 opacity-100'
-                : 'opacity-100'
+            onClick={onFocus}
+            className={`group flex flex-col overflow-hidden transition-all duration-500 ${isSelected
+                ? 'ring-1 ring-amber-500/50 shadow-[0_0_40px_-10px_rgba(245,158,11,0.2)] rounded-2xl'
+                : 'rounded-2xl'
+                } ${isDragging
+                    ? 'scale-[1.02] shadow-2xl z-50 opacity-100'
+                    : 'opacity-100'
                 }`}
         >
             {/* Lego Brick Header (Collapsed State) */}
@@ -81,7 +90,7 @@ export default function StepCard({
                 className={`relative flex items-center gap-4 p-5 transition-all duration-300 ${isExpanded
                     ? 'bg-[#222222] border-t border-x border-white/10 rounded-t-3xl shadow-xl'
                     : 'bg-[#1A1A1A] border border-white/5 rounded-2xl hover:border-white/10'
-                    } ${isDragging ? '!border-amber-500/50 bg-[#252525] scale-[1.02]' : ''}`}
+                    } ${isDragging ? '!border-amber-500/50 bg-[#252525] scale-[1.02]' : ''} ${isSelected && !isExpanded ? 'border-amber-500/20' : ''}`}
             >
                 {/* Drag Handle */}
                 <div

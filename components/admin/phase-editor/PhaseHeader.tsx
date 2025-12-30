@@ -10,6 +10,7 @@ interface PhaseHeaderProps {
     status: 'idle' | 'saving' | 'saved' | 'error';
     errorCount?: number;
     onScrollToError?: () => void;
+    isValid?: boolean;
 }
 
 /**
@@ -22,7 +23,8 @@ export function PhaseHeader({
     isPending,
     status,
     errorCount,
-    onScrollToError
+    onScrollToError,
+    isValid = true
 }: PhaseHeaderProps) {
     return (
         <div className="flex-1 flex items-center justify-between">
@@ -73,8 +75,8 @@ export function PhaseHeader({
 
                 <button
                     onClick={onSave}
-                    disabled={isPending}
-                    className="bg-white text-black hover:bg-amber-500 transition-all disabled:opacity-50 font-black px-8 py-4 rounded-xl text-[10px] tracking-[0.2em] flex items-center gap-3 shadow-2xl active:scale-95 group border border-transparent hover:border-amber-500/50"
+                    disabled={isPending || !isValid}
+                    className="bg-white text-black hover:bg-amber-500 transition-all disabled:opacity-30 disabled:grayscale disabled:pointer-events-none font-black px-8 py-4 rounded-xl text-[10px] tracking-[0.2em] flex items-center gap-3 shadow-2xl active:scale-95 group border border-transparent hover:border-amber-500/50"
                 >
                     {isPending ? (
                         <span className="material-symbols-outlined animate-spin text-sm">settings_backup_restore</span>

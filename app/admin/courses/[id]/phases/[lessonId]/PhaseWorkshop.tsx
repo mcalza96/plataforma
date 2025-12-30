@@ -1,17 +1,12 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useContextController } from '@/hooks/admin/phase-editor/useContextController';
-import { useTimelineController } from '@/hooks/admin/phase-editor/useTimelineController';
-import { useCopilotSession } from '@/hooks/admin/phase-editor/useCopilotSession';
-import { useAutoSave } from '@/hooks/use-auto-save';
-import { validatePhase } from '@/lib/validators/phase-editor';
 import { Lesson } from '@/lib/domain/course';
-import { PhaseEditorLayout } from '@/components/admin/phase-editor/Layout';
+import { EditorLayout } from '../../phase-editor/components/shell/EditorLayout';
+import { CopilotShell } from '../../phase-editor/components/intelligence/CopilotShell';
+import { PhaseDocument } from '../../phase-editor/components/canvas/PhaseDocument';
 import { PhaseHeader } from '@/components/admin/phase-editor/PhaseHeader';
-import { ContextPanel } from '@/components/admin/phase-editor/ContextPanel';
-import { WorkbenchTimeline } from '@/components/admin/phase-editor/WorkbenchTimeline';
-import { ToolsPanel } from '@/components/admin/phase-editor/ToolsPanel';
+
+import { useEditorOrchestrator } from '@/hooks/admin/phase-editor/useEditorOrchestrator';
 
 interface PhaseWorkshopClientProps {
     initialLesson: Lesson;
@@ -19,45 +14,11 @@ interface PhaseWorkshopClientProps {
 }
 
 /**
- * PhaseWorkshopClient: Assembles the entire "Taller de Fase" (Workshop).
- * It uses specialized controllers (hooks) and acts as the wiring layer (Orchestrator).
- * Now with Auto-save and Real-time Validation.
+ * PhaseWorkshop: Assembles the entire "Taller de Fase" (Workshop).
+ * Now using the "Creative Studio" master orchestrator.
  */
 export default function PhaseWorkshop({ initialLesson, courseId }: PhaseWorkshopClientProps) {
-    const contextCtrl = useContextController(initialLesson);
-    const timelineCtrl = useTimelineController(initialLesson);
-    const copilotCtrl = useCopilotSession(initialLesson.id);
-
-    // 1. Calculate Validation Errors in real-time
-    const { contextErrors, stepErrors, isValid } = useMemo(() => {
-        return validatePhase(contextCtrl.lesson, timelineCtrl.steps);
-    }, [contextCtrl.lesson, timelineCtrl.steps]);
-
-    // 2. Integration: Auto-Save
-    const { status: autoSaveStatus } = useAutoSave(
-        { lesson: contextCtrl.lesson, steps: timelineCtrl.steps },
-        async ({ steps }) => {
-            // We only trigger valid saves
-            if (isValid) {
-                await contextCtrl.saveContext(steps);
-            }
-        },
-        3000
-    );
-
-    // Bridge: Connect Copilot suggestions to Timeline
-    const handleApplyAI = (suggestions: { title: string }[]) => {
-        const newSteps = copilotCtrl.generateStepsFromSuggestions(suggestions);
-        timelineCtrl.addGeneratedSteps(newSteps);
-    };
-
-    // Bridge: Connect Timeline state to Context save
-    const handleSave = () => {
-        contextCtrl.saveContext(timelineCtrl.steps);
-    };
-
-    // Determine aggregate status for Header
-    const displayStatus = contextCtrl.status !== 'idle' ? contextCtrl.status : autoSaveStatus;
+    const editor = useEditorOrchestrator(initialLesson);
 
     // Feature: Scroll to first error for UX
     const scrollToFirstError = () => {
@@ -67,43 +28,40 @@ export default function PhaseWorkshop({ initialLesson, courseId }: PhaseWorkshop
         }
     };
 
+    const displayStatus = editor.context.status !== 'idle'
+        ? editor.context.status
+        : editor.ui.autoSaveStatus;
+
     return (
-        <PhaseEditorLayout
-            header={
+        <EditorLayout
+            actions={
                 <PhaseHeader
                     courseId={courseId}
-                    lessonTitle={contextCtrl.lesson.title}
-                    onSave={handleSave}
-                    isPending={contextCtrl.isPending}
+                    lessonTitle={editor.context.lesson.title}
+                    onSave={editor.ui.handleManualSave}
+                    isPending={editor.context.isPending}
                     status={displayStatus as any}
-                    errorCount={Object.keys(stepErrors).length + contextErrors.length}
+                    errorCount={Object.keys(editor.ui.stepErrors).length + editor.ui.contextErrors.length}
                     onScrollToError={scrollToFirstError}
+                    isValid={editor.ui.isValid}
                 />
             }
-            contextPanel={
-                <ContextPanel
-                    lesson={contextCtrl.lesson}
-                    onUpdateField={contextCtrl.updateMetadata}
-                    errors={contextErrors}
-                />
+            intelligence={
+                <CopilotShell session={editor.copilot} />
             }
-            workbenchPanel={
-                <WorkbenchTimeline
-                    steps={timelineCtrl.steps}
-                    onAddStep={timelineCtrl.addStep}
-                    onUpdateStep={timelineCtrl.updateStep}
-                    onRemoveStep={timelineCtrl.removeStep}
-                    onReorderSteps={timelineCtrl.reorderSteps}
-                    stepErrors={stepErrors}
-                />
-            }
-            toolsPanel={
-                <ToolsPanel
-                    copilotSession={copilotCtrl}
-                    onApplyAI={handleApplyAI}
-                    onUpdateDownload={(url) => contextCtrl.updateMetadata('download_url', url)}
-                    downloadUrl={contextCtrl.lesson.download_url}
-                    lessonId={contextCtrl.lesson.id}
+            canvas={
+                <PhaseDocument
+                    lesson={editor.context.lesson}
+                    steps={editor.timeline.steps}
+                    onUpdateField={editor.context.updateMetadata}
+                    onAddStep={editor.timeline.addStep}
+                    onUpdateStep={editor.timeline.updateStep}
+                    onRemoveStep={editor.timeline.removeStep}
+                    onReorderSteps={editor.timeline.reorderSteps}
+                    contextErrors={editor.ui.contextErrors}
+                    stepErrors={editor.ui.stepErrors}
+                    selectedBlockId={editor.ui.selectedBlockId}
+                    onFocusBlock={editor.ui.focusBlock}
                 />
             }
         />

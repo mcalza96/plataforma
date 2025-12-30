@@ -52,14 +52,12 @@ export const StepSchema = z.discriminatedUnion('type', [
 ]);
 
 // --- Lesson Context Schema ---
-
 export const PhaseContextSchema = z.object({
-    title: z.string().min(5, "El título de la fase es muy corto"),
-    video_url: z.string().url("URL de video maestra inválida").or(z.literal('')),
-    // Other fields as needed
+    title: z.string().min(5, "El título de la fase es muy corto (mín. 5 caracteres)"),
+    video_url: z.string().url("Necesitamos una URL de video (MP4/Loom) válida"),
 });
 
-// --- Validation Functions ---
+// ... Validation Functions ...
 
 export function validateStep(step: StepData): string[] {
     const result = StepSchema.safeParse(step);
@@ -74,13 +72,18 @@ export function validatePhase(lesson: Lesson, steps: StepData[]): {
     stepErrors: Record<string, string[]>;
     isValid: boolean;
 } {
-    // Validate Context
+    // 1. Validate Context Metadata
     const contextResult = PhaseContextSchema.safeParse(lesson);
     const contextErrors = contextResult.success
         ? []
         : contextResult.error.issues.map((e: z.ZodIssue) => e.message);
 
-    // Validate Steps
+    // 2. Validate Step Count (Business Rule: Min 1)
+    if (steps.length === 0) {
+        contextErrors.push("Mínimo 1 paso LEGO para completar el despliegue");
+    }
+
+    // 3. Validate Individual Steps
     const stepErrors: Record<string, string[]> = {};
     let hasStepErrors = false;
 

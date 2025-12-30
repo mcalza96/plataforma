@@ -1,5 +1,7 @@
 'use client';
 
+import { forwardRef } from 'react';
+
 interface VideoPlayerProps {
     videoUrl: string;
     title: string;
@@ -11,14 +13,15 @@ interface VideoPlayerProps {
 /**
  * Pure component for video rendering.
  * Preserves the layout and original aesthetics of the studio.
+ * Uses forwardRef to allow parent control of the video element.
  */
-export default function VideoPlayer({
+const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
     videoUrl,
     title,
     description,
     thumbnailUrl,
     courseId
-}: VideoPlayerProps) {
+}, ref) => {
     return (
         <div
             className="flex-1 lg:basis-[70%] flex flex-col bg-black relative group/player"
@@ -26,6 +29,7 @@ export default function VideoPlayer({
         >
             <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden">
                 <video
+                    ref={ref}
                     key={videoUrl} // Force re-render when video source changes
                     className="w-full h-full object-contain"
                     controls
@@ -47,4 +51,8 @@ export default function VideoPlayer({
             </div>
         </div>
     );
-}
+});
+
+VideoPlayer.displayName = 'VideoPlayer';
+
+export default VideoPlayer;

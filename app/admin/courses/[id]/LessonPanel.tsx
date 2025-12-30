@@ -6,13 +6,14 @@ import StepEditor from '@/components/admin/StepEditor';
 
 interface LessonPanelProps {
     lesson: any;
+    lessons: any[]; // New prop to show dependency options
     isOpen: boolean;
     onClose: () => void;
     onSave: (lessonData: any) => Promise<void>;
     isSaving: boolean;
 }
 
-export default function LessonPanel({ lesson, isOpen, onClose, onSave, isSaving }: LessonPanelProps) {
+export default function LessonPanel({ lesson, lessons, isOpen, onClose, onSave, isSaving }: LessonPanelProps) {
     const [formData, setFormData] = useState<any>(lesson || {});
 
     useEffect(() => {
@@ -96,6 +97,19 @@ export default function LessonPanel({ lesson, isOpen, onClose, onSave, isSaving 
                                     onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
                                     className="w-full bg-[#252525] border border-white/5 rounded-2xl p-5 text-white focus:ring-2 ring-amber-500 transition-all outline-none"
                                 />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest pl-1">Fase Previa Requerida</label>
+                                <select
+                                    value={formData.parent_node_id || ''}
+                                    onChange={(e) => setFormData({ ...formData, parent_node_id: e.target.value || null })}
+                                    className="w-full bg-[#252525] border border-white/5 rounded-2xl p-5 text-white focus:ring-2 ring-amber-500 transition-all outline-none appearance-none font-bold text-sm"
+                                >
+                                    <option value="">Ninguna (Raíz)</option>
+                                    {lessons?.filter(l => l.id !== lesson?.id).map(l => (
+                                        <option key={l.id} value={l.id}>Fase {l.order}: {l.title}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 

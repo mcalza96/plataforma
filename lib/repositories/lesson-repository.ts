@@ -1,4 +1,4 @@
-import { Lesson, UpsertLessonInput, Submission, Achievement } from '../domain/course';
+import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
 
 /**
  * Interface definition for Lesson repository.
@@ -90,4 +90,9 @@ export interface ILessonRepository {
      * Get submissions for a learner.
      */
     getLearnerSubmissions(learnerId: string): Promise<Submission[]>;
+
+    /**
+     * Verify if a path of lessons is unlocked for a learner.
+     */
+    checkLessonPath(lessonId: string, learnerId: string): Promise<LessonNode[]>;
 }

@@ -10,7 +10,8 @@ import {
     ActionResponse
 } from '@/lib/admin-content-actions';
 import ResourceUploader from '@/components/admin/ResourceUploader';
-import StepEditor from '@/components/admin/StepEditor';
+import StepTimeline from '@/components/admin/StepTimeline';
+import CopilotSidebar from '@/components/admin/CopilotSidebar';
 
 import { Course, Lesson } from '@/lib/domain/course';
 
@@ -41,6 +42,9 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
     const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
     const [lessonFormData, setLessonFormData] = useState<any>(null);
 
+    // Timeline key to force re-render when lesson changes
+    const [timelineKey, setTimelineKey] = useState(0);
+
     useEffect(() => {
         setLessons(initialLessons);
     }, [initialLessons]);
@@ -49,6 +53,7 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
         if (selectedLessonId) {
             const lesson = lessons.find(l => l.id === selectedLessonId);
             setLessonFormData(lesson ? { ...lesson } : null);
+            setTimelineKey(prev => prev + 1); // Refresh timeline
         } else {
             setLessonFormData(null);
         }
@@ -118,8 +123,19 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
         });
     };
 
+    const handleApplyAISuggestion = (steps: { title: string }[]) => {
+        if (!lessonFormData) return;
+        setLessonFormData({
+            ...lessonFormData,
+            total_steps: steps.length,
+            // Aquí podríamos extender para guardar los títulos de los pasos si actualizamos la DB
+        });
+        showMessage('success', 'Estructura de IA aplicada');
+        setTimelineKey(prev => prev + 1); // Refresh timeline to show AI steps
+    };
+
     return (
-        <div className="space-y-8 pb-24">
+        <div className="space-y-8 pb-24 relative pr-12 lg:pr-0">
             {/* Feedback Toast */}
             {message && (
                 <div className={`fixed top-24 right-8 z-[200] px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 animate-in fade-in slide-in-from-right duration-300 ${message.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
@@ -356,7 +372,7 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                    <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-12">
                                         <div className="space-y-8">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Título de la Fase</label>
@@ -402,21 +418,28 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
                                                     />
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="space-y-12">
-                                            <StepEditor
-                                                value={lessonFormData.total_steps}
-                                                onChange={(val) => setLessonFormData({ ...lessonFormData, total_steps: val })}
-                                            />
-
-                                            <ResourceUploader
-                                                label="Caja de Herramientas (.brushset / .pdf)"
-                                                folder="lesson-resources"
-                                                accept=".brushset,.pdf,.procreate,.zip"
-                                                initialUrl={lessonFormData.download_url}
-                                                onUploadComplete={(url) => setLessonFormData({ ...lessonFormData, download_url: url })}
-                                            />
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Fase Requerida (DAG)</label>
+                                                <select
+                                                    value={lessonFormData.parent_node_id || ''}
+                                                    onChange={(e) => setLessonFormData({ ...lessonFormData, parent_node_id: e.target.value || null })}
+                                                    className="w-full bg-black/20 border border-white/5 rounded-2xl p-5 text-white text-sm focus:ring-2 ring-amber-500 outline-none appearance-none font-bold"
+                                                >
+                                                    <option value="">Ninguna (Fase Raíz)</option>
+                                                    {lessons
+                                                        .filter(l => l.id !== lessonFormData.id) // No auto-referencia
+                                                        .map(l => (
+                                                            <option key={l.id} value={l.id}>
+                                                                Fase {l.order}: {l.title}
+                                                            </option>
+                                                        ))
+                                                    }
+                                                </select>
+                                                <p className="text-[9px] text-gray-600 font-medium ml-1 italic">
+                                                    El alumno debe completar la fase seleccionada para desbloquear esta.
+                                                </p>
+                                            </div>
 
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Instrucciones DX</label>
@@ -427,6 +450,22 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
                                                     placeholder="Escribe aquí los objetivos técnicos de esta fase..."
                                                 />
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-12 bg-black/10 p-8 rounded-3xl border border-white/5">
+                                            <StepTimeline
+                                                key={`timeline-${lessonFormData.id || 'new'}-${timelineKey}`}
+                                                initialStepsCount={lessonFormData.total_steps}
+                                                onChange={(count) => setLessonFormData({ ...lessonFormData, total_steps: count })}
+                                            />
+
+                                            <ResourceUploader
+                                                label="Caja de Herramientas (.brushset / .pdf)"
+                                                folder="lesson-resources"
+                                                accept=".brushset,.pdf,.procreate,.zip"
+                                                initialUrl={lessonFormData.download_url}
+                                                onUploadComplete={(url) => setLessonFormData({ ...lessonFormData, download_url: url })}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -451,6 +490,8 @@ export default function CourseForm({ course, lessons: initialLessons }: CourseFo
                     </div>
                 </div>
             )}
+
+            <CopilotSidebar onApplyStructure={handleApplyAISuggestion} />
         </div>
     );
 }

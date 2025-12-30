@@ -2,6 +2,7 @@
 
 import { LessonDTO as Lesson, LearnerProgressDTO as LearnerProgress } from '@/lib/domain/course';
 import { useLessonController } from '@/hooks/use-lesson-controller';
+import { useRef } from 'react';
 
 // Pure Components
 import CelebrationOverlay from '@/components/lesson-view/CelebrationOverlay';
@@ -20,6 +21,7 @@ interface LessonClientProps {
 /**
  * Lesson View Container Component.
  * Orquestrates state (via useLessonController) and UI presentation.
+ * Now synchronizes video playback with atomic steps.
  */
 export default function LessonClient({
     courseId,
@@ -28,6 +30,7 @@ export default function LessonClient({
     initialProgress,
     nextLessonId
 }: LessonClientProps) {
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     // 1. Controller Layer
     const {
@@ -46,7 +49,18 @@ export default function LessonClient({
         nextLessonId
     });
 
-    // 2. View Layer
+    // 2. Interaction Handlers
+    const handleJumpToStep = (timestamp: number) => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = timestamp;
+            videoRef.current.play().catch(() => {
+                // Autoplay might be blocked until user interaction
+                console.log('Autoplay attempted after jump');
+            });
+        }
+    };
+
+    // 3. View Layer
     return (
         <main className="flex-1 flex flex-col lg:flex-row overflow-hidden relative bg-[#1A1A1A]">
 
@@ -54,6 +68,7 @@ export default function LessonClient({
 
             {/* Left Area: Visual Content */}
             <VideoPlayer
+                ref={videoRef}
                 videoUrl={lesson.video_url}
                 title={lesson.title}
                 description={lesson.description}
@@ -67,6 +82,7 @@ export default function LessonClient({
                     totalSteps={lesson.total_steps}
                     completedSteps={optimisticSteps}
                     onToggleStep={handleStepToggle}
+                    onJumpToStep={handleJumpToStep}
                     isPending={isPending}
                 />
 

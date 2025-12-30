@@ -16,3 +16,13 @@ export async function getLearnerAchievements(learnerId: string) {
     return await service.getLearnerAchievements(learnerId);
 }
 
+export async function getKnowledgeDelta(learnerId: string) {
+    const service = getCourseService();
+    return await service.calculateKnowledgeDelta(learnerId);
+}
+
+export async function getLearningFrontier(learnerId: string) {
+    const service = getCourseService();
+    return await service.getStudentFrontier(learnerId);
+}
+

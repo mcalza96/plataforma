@@ -1,4 +1,6 @@
-import LegoProgressBar from '@/components/dashboard/LegoProgressBar';
+'use client';
+
+import LegoStack from '@/components/ui/LegoStack';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import { useViewTransition } from '@/hooks/use-view-transition';
@@ -67,11 +69,17 @@ export default function CourseCard({
                     <p className="text-[#90b2cb] text-sm">Módulo: {category}</p>
                 </div>
 
-                <LegoProgressBar
-                    completedSteps={completedSteps}
-                    totalSteps={totalSteps}
-                    variant={variant}
-                />
+                <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">
+                        <span>{completedSteps} de {totalSteps} Pasos</span>
+                        <span className="text-white">{Math.round((completedSteps / totalSteps) * 100)}%</span>
+                    </div>
+                    <LegoStack
+                        completedSteps={completedSteps}
+                        totalSteps={totalSteps}
+                        variant={status === 'Nuevo' ? 'secondary' : 'primary'}
+                    />
+                </div>
 
                 <Link
                     href={`/lessons/${id}`}

@@ -1,5 +1,5 @@
 import { ILessonRepository } from '../../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput, Submission, Achievement } from '../../domain/course';
+import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../../domain/course';
 import { createClient } from './supabase-server';
 
 /**
@@ -273,6 +273,22 @@ export class SupabaseLessonRepository implements ILessonRepository {
 
         if (error) {
             console.error('Error fetching submissions in repository:', error);
+            return [];
+        }
+
+        return data || [];
+    }
+
+    async checkLessonPath(lessonId: string, learnerId: string): Promise<LessonNode[]> {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .rpc('get_lesson_path_status', {
+                target_lesson_id: lessonId,
+                learner_uuid: learnerId
+            });
+
+        if (error) {
+            console.error('Error checking lesson path:', error);
             return [];
         }
 

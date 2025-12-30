@@ -3,6 +3,15 @@
  * These are clean interfaces used by the UI and the Domain layer.
  */
 
+export enum BloomLevel {
+    RECUERDO = 'Recordar',
+    COMPRENSION = 'Comprender',
+    APLICACION = 'Aplicar',
+    ANALISIS = 'Analizar',
+    EVALUACION = 'Evaluar',
+    CREACION = 'Crear'
+}
+
 export interface Course {
     id: string;
     title: string;
@@ -10,6 +19,7 @@ export interface Course {
     thumbnail_url: string;
     level_required: number;
     category: string;
+    teacher_id: string; // ID of the instructor (profile_id)
     is_published?: boolean;
     created_at?: string;
 }
@@ -24,6 +34,16 @@ export interface Lesson {
     download_url: string | null;
     order: number;
     total_steps: number;
+    parent_node_id: string | null; // For DAG structure
+}
+
+/**
+ * DTO for a Lesson in the DAG (Graph representation)
+ */
+export interface LessonNode extends Lesson {
+    is_unlocked: boolean;
+    depth?: number;
+    requirements?: LessonNode[]; // Adjacent nodes
 }
 
 export interface LearnerProgress {
@@ -111,6 +131,7 @@ export interface UpsertCourseInput {
     thumbnail_url?: string;
     level_required: number;
     category: string;
+    teacher_id?: string;
     is_published?: boolean;
 }
 
@@ -124,6 +145,7 @@ export interface UpsertLessonInput {
     download_url?: string;
     total_steps: number;
     order: number;
+    parent_node_id?: string | null;
 }
 
 export interface CreateCourseInput {
@@ -132,4 +154,64 @@ export interface CreateCourseInput {
     thumbnail_url?: string;
     level_required: number;
     category: string;
+}
+
+// --- Content Library (Brickyard) ---
+
+export interface AtomicLearningObject {
+    id: string;
+    title: string;
+    description: string;
+    type: 'video' | 'quiz' | 'text';
+    payload: any;
+    metadata: {
+        bloom_level: BloomLevel;
+        estimated_duration?: number;
+        skills: string[];
+    };
+    is_public: boolean;
+    created_by: string;
+    created_at: string;
+}
+
+export interface CreateALOInput {
+    title: string;
+    description: string;
+    type: 'video' | 'quiz' | 'text';
+    payload: any;
+    metadata?: Partial<AtomicLearningObject['metadata']>;
+    is_public?: boolean;
+}
+
+// --- Path Nodes (Customized Learning Paths) ---
+
+export interface PathNode {
+    id: string;
+    learner_id: string;
+    content_id: string;
+    title_override?: string;
+    description_override?: string;
+    order: number;
+    parent_node_id: string | null;
+    status: 'locked' | 'available' | 'completed' | 'mastered';
+    is_completed: boolean;
+    unlocked_at?: string;
+}
+
+export interface KnowledgeDelta {
+    category: string;
+    initial_score: number;
+    current_mastery: number;
+}
+
+export interface CustomPathCommitInput {
+    learner_id: string;
+    modules: {
+        content_id: string;
+        order: number;
+        title_override?: string;
+        description_override?: string;
+        has_custom_edits: boolean;
+        original_alo: AtomicLearningObject;
+    }[];
 }

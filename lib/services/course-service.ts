@@ -110,4 +110,32 @@ export class CourseService {
     async getGlobalStats() {
         return this.courseRepository.getGlobalStats();
     }
+
+    async getStudentFrontier(learnerId: string): Promise<any[]> {
+        const { createClient } = await import('../infrastructure/supabase/supabase-server');
+        const supabase = await createClient();
+
+        const { data, error } = await supabase.rpc('get_student_frontier', {
+            p_learner_id: learnerId
+        });
+
+        if (error) {
+            console.error('Error fetching student frontier:', error);
+            return [];
+        }
+        return data as any[];
+    }
+
+    async calculateKnowledgeDelta(learnerId: string): Promise<any[]> {
+        const stats = await this.getLearnerFullStats(learnerId);
+
+        // Regla de Negocio: El delta se proyecta comparando el estado actual 
+        // con la base de nivel inicial estimada (metadata de diagnóstico).
+        // Por ahora lo simulamos con un factor del 20% de crecimiento atómico.
+        return stats.skills.map(s => ({
+            category: s.name,
+            initial: Math.max(10, Math.round(s.percentage * 0.75)), // El nivel base es el 75% del actual (mínimo 10%)
+            current: s.percentage
+        }));
+    }
 }

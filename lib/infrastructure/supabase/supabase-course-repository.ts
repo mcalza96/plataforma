@@ -23,14 +23,25 @@ export class SupabaseCourseRepository implements ICourseRepository {
     async getCoursesWithProgress(learnerId: string): Promise<CourseCardDTO[]> {
         const supabase = await createClient();
 
+        // Obtener el rol del usuario para filtrar por ID de maestro si es necesario
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = user ? await supabase.from('profiles').select('role').eq('id', user.id).single() : { data: null };
+        const isInstructor = profile?.role === 'instructor';
+
         // Obtener cursos con sus lecciones asociadas para calcular el progreso total
-        const { data: courses, error: coursesError } = await supabase
+        let query = supabase
             .from('courses')
             .select(`
                 *,
                 lessons (id, total_steps)
             `)
             .order('title', { ascending: true });
+
+        if (isInstructor && user) {
+            query = query.eq('teacher_id', user.id);
+        }
+
+        const { data: courses, error: coursesError } = await query;
 
         if (coursesError) {
             console.error('Error fetching courses in repository:', coursesError);
@@ -65,6 +76,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
                 thumbnail_url: course.thumbnail_url,
                 level_required: course.level_required,
                 category: course.category,
+                teacher_id: course.teacher_id,
                 progress: {
                     completed_steps: completedSteps,
                     total_steps: totalSteps || 5, // Fallback sensible
@@ -116,6 +128,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             thumbnail_url: course.thumbnail_url,
             level_required: course.level_required,
             category: course.category,
+            teacher_id: course.teacher_id,
             lessons: lessons,
             learnerProgress: progress || [],
             progress: {
@@ -179,10 +192,17 @@ export class SupabaseCourseRepository implements ICourseRepository {
     async upsertCourse(data: UpsertCourseInput): Promise<Course> {
         const supabase = await createClient();
 
+        // Obtener sesión actual para asignar teacher_id si es nuevo curso
+        const { data: { user } } = await supabase.auth.getUser();
+
         const payload: any = {
             ...data,
             updated_at: new Date().toISOString()
         };
+
+        if (!data.id && user) {
+            payload.teacher_id = user.id;
+        }
 
         const { data: course, error } = await supabase
             .from('courses')
@@ -426,10 +446,20 @@ export class SupabaseCourseRepository implements ICourseRepository {
 
     async getAllCourses(): Promise<Course[]> {
         const supabase = await createClient();
-        const { data, error } = await supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: profile } = user ? await supabase.from('profiles').select('role').eq('id', user.id).single() : { data: null };
+        const isInstructor = profile?.role === 'instructor';
+
+        let query = supabase
             .from('courses')
             .select('*')
             .order('title', { ascending: true });
+
+        if (isInstructor && user) {
+            query = query.eq('teacher_id', user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.error('Error fetching all courses in repository:', error);

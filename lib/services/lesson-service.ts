@@ -1,5 +1,5 @@
 import { ILessonRepository } from '../repositories/lesson-repository';
-import { Lesson, UpsertLessonInput, Submission, Achievement } from '../domain/course';
+import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
 
 /**
  * Domain service for Lesson operations.
@@ -121,5 +121,9 @@ export class LessonService {
 
     async getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
         return this.lessonRepository.getLessonsByCourseId(courseId);
+    }
+
+    async checkLessonPath(lessonId: string, learnerId: string): Promise<LessonNode[]> {
+        return this.lessonRepository.checkLessonPath(lessonId, learnerId);
     }
 }

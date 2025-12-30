@@ -13,6 +13,14 @@ export async function getAuthUser() {
 }
 
 /**
+ * Obtiene solo el ID del usuario actual
+ */
+export async function getUserId(): Promise<string | null> {
+    const user = await getAuthUser();
+    return user?.id || null;
+}
+
+/**
  * Obtiene el rol del usuario actual desde la base de datos
  */
 export async function getUserRole(): Promise<AppRole> {

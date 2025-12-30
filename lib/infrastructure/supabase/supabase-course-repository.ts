@@ -1,24 +1,25 @@
-import { ICourseRepository } from '../../repositories/course-repository';
+import { ICourseReader, ICourseWriter, ILearnerRepository, IStatsRepository } from '../../repositories/course-repository';
 import {
-    Course,
+    CourseDTO,
     CourseCardDTO,
     CourseDetailDTO,
-    Lesson,
+    LessonDTO,
     Learner,
     UpsertCourseInput,
-    UpsertLessonInput,
-    CreateCourseInput,
     FamilyDTO,
     LearnerStats,
-    LearnerAchievement
+    LearnerAchievement,
+    Course,
+    Lesson
 } from '../../domain/course';
 import { createClient } from './supabase-server';
+import { CourseMapper } from '../../application/mappers/course-mapper';
 
 /**
- * Supabase implementation of the ICourseRepository.
+ * Supabase implementation of the segregated course repositories.
  * Handles database communication and data mapping.
  */
-export class SupabaseCourseRepository implements ICourseRepository {
+export class SupabaseCourseRepository implements ICourseReader, ICourseWriter, ILearnerRepository, IStatsRepository {
 
     async getCoursesWithProgress(learnerId: string): Promise<CourseCardDTO[]> {
         const supabase = await createClient();
@@ -131,6 +132,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             teacher_id: course.teacher_id,
             lessons: lessons,
             learnerProgress: progress || [],
+            is_published: course.is_published,
             progress: {
                 completed_steps: completedSteps,
                 total_steps: totalSteps,
@@ -170,7 +172,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             console.error('Error fetching next lesson in repository:', error);
             return null;
         }
-        return data;
+        return data ? CourseMapper.lessonToDomain(data) : null;
     }
 
     async getCourseById(courseId: string): Promise<Course | null> {
@@ -186,7 +188,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             return null;
         }
 
-        return data;
+        return data ? CourseMapper.toDomain(data) : null;
     }
 
     async upsertCourse(data: UpsertCourseInput): Promise<Course> {
@@ -215,7 +217,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             throw new Error('Could not save course');
         }
 
-        return course;
+        return CourseMapper.toDomain(course);
     }
 
     async deleteCourse(courseId: string): Promise<void> {
@@ -466,7 +468,7 @@ export class SupabaseCourseRepository implements ICourseRepository {
             throw new Error('Error al obtener los cursos.');
         }
 
-        return data || [];
+        return (data || []).map(c => CourseMapper.toDomain(c));
     }
 
     async getGlobalStats(): Promise<{

@@ -1,9 +1,8 @@
-import { ChatGroq } from "@langchain/groq";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { IContentRepository } from "../repositories/content-repository";
 import { AtomicLearningObject, BloomLevel } from "../domain/course";
 import { DiagnosisSchema } from "../validations";
 import { z } from "zod";
+import { IAIProvider } from "../domain/ports";
 
 type Diagnosis = z.infer<typeof DiagnosisSchema>;
 
@@ -18,28 +17,10 @@ export interface PlanningProposal {
 }
 
 export class AIOrchestratorService {
-    private llm: ChatGroq;
-    private embeddings: OpenAIEmbeddings;
-    private contentRepository: IContentRepository;
-
     constructor(
-        groqApiKey: string,
-        openaiApiKey: string,
-        contentRepository: IContentRepository
-    ) {
-        this.llm = new ChatGroq({
-            apiKey: groqApiKey,
-            model: "llama-3.3-70b-versatile",
-            temperature: 0.1,
-        });
-
-        this.embeddings = new OpenAIEmbeddings({
-            apiKey: openaiApiKey,
-            model: "text-embedding-3-small",
-        });
-
-        this.contentRepository = contentRepository;
-    }
+        private aiProvider: IAIProvider,
+        private contentRepository: IContentRepository
+    ) { }
 
     /**
      * Genera un plan de aprendizaje personalizado basado en el diagnóstico.
@@ -48,7 +29,7 @@ export class AIOrchestratorService {
         // 1. Fase de Recuperación (Retrieval)
         // Generamos un embedding de las brechas detectadas para buscar contenidos relevantes
         const queryText = `${diagnosis.subject}: ${diagnosis.identified_gaps.join(", ")}`;
-        const queryVector = await this.embeddings.embedQuery(queryText);
+        const queryVector = await this.aiProvider.embedQuery(queryText);
 
         const relevantALOs = await this.contentRepository.findRelevantItems(queryVector, 10);
 
@@ -102,15 +83,8 @@ export class AIOrchestratorService {
         }
         `;
 
-        const response = await this.llm.invoke(prompt);
-        // Nota: La respuesta de ChatGroq con json_mode o prompt explícito suele ser JSON
-        try {
-            const result = JSON.parse(response.content as string);
-            return result as PlanningProposal;
-        } catch (e) {
-            console.error("Error parsing LLM response:", response.content);
-            throw new Error("La IA generó un formato de plan inválido.");
-        }
+        const response = await this.aiProvider.generatePlanning(prompt);
+        return response;
     }
 
     private auditProposal(proposal: PlanningProposal, availableALOs: AtomicLearningObject[]) {
@@ -151,7 +125,6 @@ export class AIOrchestratorService {
         ]
         `;
 
-        const response = await this.llm.invoke(prompt);
-        return JSON.parse(response.content as string);
+        return this.aiProvider.generateQuiz(context);
     }
 }

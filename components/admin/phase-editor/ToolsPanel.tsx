@@ -1,50 +1,78 @@
 'use client';
 
-import ResourceUploader from '@/components/admin/ResourceUploader';
-import CopilotSidebar from '@/components/admin/CopilotSidebar';
+import { useState } from 'react';
+import CopilotSidebar from '../CopilotSidebar';
+import ResourceUploader from '../ResourceUploader';
 
 interface ToolsPanelProps {
-    thumbnailUrl: string;
-    downloadUrl: string;
-    onUpdateField: (field: any, url: string) => void;
-    onApplyAISuggestion: (count: number) => void;
+    onApplyAI: (suggestions: { title: string }[]) => void;
+    onUpdateDownload: (url: string) => void;
+    downloadUrl: string | null;
 }
 
-export default function ToolsPanel({ thumbnailUrl, downloadUrl, onUpdateField, onApplyAISuggestion }: ToolsPanelProps) {
-    return (
-        <div className="space-y-8">
-            {/* AI Assistant Section */}
-            <div className="bg-[#1F1F1F] border border-white/5 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform blur-3xl" />
+/**
+ * ISP: ToolsPanel consolidates auxiliary workflows like AI generation and downloadable resources.
+ */
+export function ToolsPanel({ onApplyAI, onUpdateDownload, downloadUrl }: ToolsPanelProps) {
+    const [activeTool, setActiveTool] = useState<'ai' | 'resources'>('ai');
 
-                <div className="relative z-10">
-                    <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em] mb-6 px-1">Copiloto Atómico</h3>
-                    <CopilotSidebar
-                        onApplyStructure={(steps) => onApplyAISuggestion(steps.length)}
-                        isInline={true} // New prop for integrated layout
-                    />
-                </div>
+    return (
+        <div className="h-full flex flex-col animate-in fade-in slide-in-from-right duration-1000">
+            {/* Tool Switcher */}
+            <div className="flex bg-[#121212] border-b border-white/5 p-4 gap-2">
+                <button
+                    onClick={() => setActiveTool('ai')}
+                    className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTool === 'ai' ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/10' : 'text-gray-500 hover:text-white'
+                        }`}
+                >
+                    <span className="material-symbols-outlined !text-[16px]">smart_toy</span>
+                    Copilot
+                </button>
+                <button
+                    onClick={() => setActiveTool('resources')}
+                    className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTool === 'resources' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'
+                        }`}
+                >
+                    <span className="material-symbols-outlined !text-[16px]">attachment</span>
+                    Recursos
+                </button>
             </div>
 
-            {/* Assets Management */}
-            <div className="bg-[#1F1F1F] border border-white/5 rounded-[3rem] p-8 shadow-2xl space-y-10">
-                <ResourceUploader
-                    label="Miniatura de Fase"
-                    folder="lesson-thumbs"
-                    accept="image/*"
-                    initialUrl={thumbnailUrl}
-                    onUploadComplete={(url) => onUpdateField('thumbnail_url', url)}
-                />
+            {/* Active Content Area */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                {activeTool === 'ai' ? (
+                    <div className="space-y-6 h-full">
+                        <CopilotSidebar onApplyStructure={onApplyAI} isInline />
+                    </div>
+                ) : (
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] ml-2">Archivo Descargable</h4>
+                            <p className="text-[10px] text-gray-700 italic px-2">Sube pinceles, referencias o archivos de trabajo para esta fase.</p>
+                            <ResourceUploader
+                                folder="lesson-resources"
+                                accept="*"
+                                initialUrl={downloadUrl || ''}
+                                label="Subir Recurso Maestro"
+                                onUploadComplete={onUpdateDownload}
+                            />
+                        </div>
 
-                <div className="h-px bg-white/5" />
+                        {downloadUrl && (
+                            <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex items-center gap-3">
+                                <span className="material-symbols-outlined text-emerald-500 text-lg">verified</span>
+                                <span className="text-[10px] font-bold text-gray-400">Recurso vinculado exitosamente</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
 
-                <ResourceUploader
-                    label="Caja de Herramientas (.brushset / .zip)"
-                    folder="lesson-resources"
-                    accept=".brushset,.pdf,.zip,.procreate"
-                    initialUrl={downloadUrl}
-                    onUploadComplete={(url) => onUpdateField('download_url', url)}
-                />
+            {/* Disclaimer */}
+            <div className="p-6 border-t border-white/5 bg-black/20">
+                <p className="text-[9px] text-gray-700 font-medium italic text-center leading-relaxed">
+                    "Las herramientas potencian la enseñanza, el contenido maestro transforma al alumno."
+                </p>
             </div>
         </div>
     );

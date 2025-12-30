@@ -1,72 +1,100 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { upsertLesson, deleteLesson } from '@/lib/admin-content-actions';
 import { Lesson } from '@/lib/domain/course';
+import { StepData } from '@/components/admin/StepCard';
+import { upsertLesson } from '@/lib/admin-content-actions';
+import { arrayMove } from '@dnd-kit/sortable';
 
-export function usePhaseEditor(initialLesson: Lesson, courseId: string) {
-    const router = useRouter();
+export function usePhaseEditor(initialLesson: Lesson) {
     const [isPending, startTransition] = useTransition();
-    const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [formData, setFormData] = useState<Lesson>({ ...initialLesson });
-    const [timelineKey, setTimelineKey] = useState(0);
+    const [lesson, setLesson] = useState<Lesson>(initialLesson);
 
-    const showMessage = (type: 'success' | 'error', text: string) => {
-        setMessage({ type, text });
-        setTimeout(() => setMessage(null), 4000);
-    };
+    // Parse description as steps if it's JSON, else empty array
+    // (We will use description field to store steps JSON for now as a tactical simplification)
+    const [steps, setSteps] = useState<StepData[]>(() => {
+        try {
+            return JSON.parse(initialLesson.description || '[]');
+        } catch {
+            return [];
+        }
+    });
+
+    const [status, setStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
     const updateField = (field: keyof Lesson, value: any) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setLesson(prev => ({ ...prev, [field]: value }));
     };
 
-    const save = async () => {
+    const addStep = () => {
+        const newStep: StepData = {
+            id: `step-${Date.now()}`,
+            title: `Nuevo Paso ${steps.length + 1}`,
+            description: '',
+            type: 'video',
+            duration: 5
+        };
+        setSteps(prev => [...prev, newStep]);
+    };
+
+    const removeStep = (id: string) => {
+        setSteps(prev => prev.filter(s => s.id !== id));
+    };
+
+    const updateStep = (id: string, updates: Partial<StepData>) => {
+        setSteps(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    };
+
+    const reorderSteps = (activeId: string, overId: string) => {
+        setSteps((items) => {
+            const oldIndex = items.findIndex((i) => i.id === activeId);
+            const newIndex = items.findIndex((i) => i.id === overId);
+            return arrayMove(items, oldIndex, newIndex);
+        });
+    };
+
+    const applyAISuggestions = (suggestions: { title: string }[]) => {
+        const newSteps: StepData[] = suggestions.map((s, idx) => ({
+            id: `ai-step-${Date.now()}-${idx}`,
+            title: s.title,
+            description: '',
+            type: 'video',
+            duration: 5
+        }));
+        setSteps(prev => [...prev, ...newSteps]);
+    };
+
+    const saveChanges = async () => {
         startTransition(async () => {
+            setStatus('saving');
+            // We store steps in the description field for simplicity in this exercise
             const payload = {
-                ...formData,
-                course_id: courseId,
-                description: formData.description ?? undefined,
-                thumbnail_url: formData.thumbnail_url ?? undefined,
-                download_url: formData.download_url ?? undefined
+                ...lesson,
+                description: JSON.stringify(steps),
+                total_steps: steps.length
             };
-            const result = await upsertLesson(payload);
+
+            const result = await upsertLesson(payload as any);
             if (result.success) {
-                showMessage('success', 'Fase sincronizada con el servidor');
-                router.refresh();
+                setStatus('success');
+                setTimeout(() => setStatus('idle'), 3000);
             } else {
-                showMessage('error', result.error || 'Error al guardar');
+                setStatus('error');
             }
         });
-    };
-
-    const remove = async () => {
-        if (!confirm('¿Seguro que quieres eliminar esta fase permanentemente?')) return;
-        startTransition(async () => {
-            const result = await deleteLesson(initialLesson.id, courseId);
-            if (result.success) {
-                router.push(`/admin/courses/${courseId}`);
-            } else {
-                showMessage('error', result.error || 'Error al eliminar');
-            }
-        });
-    };
-
-    const applyAISuggestion = (stepsCount: number) => {
-        updateField('total_steps', stepsCount);
-        showMessage('success', 'Estructura de IA aplicada');
-        setTimelineKey(prev => prev + 1);
     };
 
     return {
-        formData,
-        isPending,
-        message,
-        timelineKey,
+        lesson,
+        steps,
+        isPending: isPending || status === 'saving',
+        status,
         updateField,
-        save,
-        remove,
-        applyAISuggestion,
-        setMessage: showMessage
+        addStep,
+        removeStep,
+        updateStep,
+        reorderSteps,
+        applyAISuggestions,
+        saveChanges
     };
 }

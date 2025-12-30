@@ -4,13 +4,7 @@ import { useState, useTransition } from 'react';
 import { selectLearner } from '@/lib/learner-actions';
 import { createLearner } from '@/lib/learner-create-action';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-
-interface Learner {
-    id: string;
-    display_name: string;
-    avatar_url: string | null;
-    level: number;
-}
+import { Learner } from '@/lib/domain/course';
 
 export default function ProfilesClient({ learners }: { learners: Learner[] }) {
     const [isPending, startTransition] = useTransition();

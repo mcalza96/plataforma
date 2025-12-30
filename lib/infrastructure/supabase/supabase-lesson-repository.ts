@@ -1,6 +1,7 @@
 import { ILessonRepository } from '../../repositories/lesson-repository';
 import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../../domain/course';
 import { createClient } from './supabase-server';
+import { CourseMapper } from '../../application/mappers/course-mapper';
 
 /**
  * Supabase implementation of the ILessonRepository.
@@ -26,7 +27,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
             throw new Error('Could not save lesson');
         }
 
-        return lesson;
+        return CourseMapper.lessonToDomain(lesson);
     }
 
     async deleteLesson(lessonId: string): Promise<void> {
@@ -55,7 +56,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
             return null;
         }
 
-        return data;
+        return data ? CourseMapper.lessonToDomain(data) : null;
     }
 
     async getLessonsByCourseId(courseId: string): Promise<Lesson[]> {
@@ -71,7 +72,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
             return [];
         }
 
-        return data || [];
+        return (data || []).map(l => CourseMapper.lessonToDomain(l));
     }
 
     async getMaxOrder(courseId: string): Promise<number> {

@@ -1,119 +1,62 @@
 import {
     CourseCardDTO,
     CourseDetailDTO,
-    Lesson,
+    LessonDTO,
+    CourseDTO,
     Learner,
     UpsertCourseInput,
-    Course,
     FamilyDTO,
     LearnerStats,
-    LearnerAchievement
+    LearnerAchievement,
+    Course,
+    Lesson
 } from '../domain/course';
 
 /**
- * Interface definition for Course repository.
- * Follows the Dependency Inversion Principle.
+ * Segregated Interfaces for Course Operations (ISP)
  */
-export interface ICourseRepository {
-    /**
-     * Fetch all courses with progress for a specific learner.
-     */
+
+export interface ICourseReader {
     getCoursesWithProgress(learnerId: string): Promise<CourseCardDTO[]>;
-
-    /**
-     * Fetch a single course with its lessons and learner progress.
-     */
     getCourseWithLessonsAndProgress(courseId: string, learnerId: string): Promise<CourseDetailDTO | null>;
-
-    /**
-     * Fetch learner profile by ID.
-     */
-    getLearnerById(learnerId: string): Promise<Learner | null>;
-
-    /**
-     * Fetch the next lesson in the course sequence.
-     */
     getNextLesson(courseId: string, currentOrder: number): Promise<Lesson | null>;
-
-    /**
-     * Fetch course by ID.
-     */
     getCourseById(courseId: string): Promise<Course | null>;
+    getAllCourses(): Promise<Course[]>;
+}
 
-    /**
-     * Create or update a course.
-     */
+export interface ICourseWriter {
     upsertCourse(data: UpsertCourseInput): Promise<Course>;
-
-    /**
-     * Delete a course.
-     */
     deleteCourse(courseId: string): Promise<void>;
+}
 
-    /**
-     * Get all families (profiles) with their learners.
-     */
+export interface ILearnerRepository {
+    getLearnerById(learnerId: string): Promise<Learner | null>;
     getFamilies(): Promise<FamilyDTO[]>;
-
-    /**
-     * Get a specific family by ID.
-     */
     getFamilyById(id: string): Promise<FamilyDTO | null>;
-
-    /**
-     * Update learner level.
-     */
     updateLearnerLevel(learnerId: string, newLevel: number): Promise<void>;
-
-    /**
-     * Update user role.
-     */
     updateUserRole(userId: string, newRole: string): Promise<void>;
-
-    /**
-     * Get full stats for a learner.
-     */
-    getLearnerFullStats(learnerId: string): Promise<LearnerStats>;
-
-    /**
-     * Get achievements for a learner.
-     */
-    getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]>;
-
-    /**
-     * Create a new learner.
-     */
     createLearner(data: {
         parentId: string;
         displayName: string;
         avatarUrl: string;
     }): Promise<Learner>;
-
-    /**
-     * Ensure a parent profile exists.
-     */
     ensureProfileExists(data: {
         id: string;
         email: string;
         fullName: string;
     }): Promise<void>;
-
-    /**
-     * Get all learners for a specific parent.
-     */
     getLearnersByParentId(parentId: string): Promise<Learner[]>;
+}
 
-    /**
-     * Get all courses (admin view).
-     */
-    getAllCourses(): Promise<Course[]>;
-
-    /**
-     * Get global stats for admin.
-     */
+export interface IStatsRepository {
+    getLearnerFullStats(learnerId: string): Promise<LearnerStats>;
+    getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]>;
     getGlobalStats(): Promise<{
         totalLearners: number;
         totalSubmissions: number;
         totalCourses: number;
     }>;
 }
+
+// Legacy alias for backward compatibility during transition if needed
+export interface ICourseRepository extends ICourseReader, ICourseWriter, ILearnerRepository, IStatsRepository { }

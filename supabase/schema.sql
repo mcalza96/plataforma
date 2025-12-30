@@ -1,26 +1,44 @@
--- TABLA DE PERFILES (PADRES)
--- Vinculada a auth.users para extender la información básica
+-- ========================================================
+-- PROCREATE ALPHA STUDIO - SCHEMA MAESTRO CONSOLIDADO
+-- ========================================================
+
+-- 1. EXTENSIONES Y FUNCIONES AUXILIARES
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (
+    SELECT (role = 'admin')
+    FROM public.profiles
+    WHERE id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. TABLA DE PERFILES
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
+  role TEXT DEFAULT 'family',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Los padres solo pueden ver y editar su propio perfil
-CREATE POLICY "Los padres pueden ver su propio perfil" 
+CREATE POLICY "Users can view own or admins all" 
 ON public.profiles FOR SELECT 
-USING (auth.uid() = id);
+TO authenticated 
+USING (auth.uid() = id OR public.is_admin());
 
-CREATE POLICY "Los padres pueden actualizar su propio perfil" 
+CREATE POLICY "Users can update own or admins all" 
 ON public.profiles FOR UPDATE 
-USING (auth.uid() = id);
+TO authenticated 
+USING (auth.uid() = id OR public.is_admin())
+WITH CHECK (auth.uid() = id OR public.is_admin());
 
--- TABLA DE ALUMNOS (NIÑOS)
+-- 3. TABLA DE ALUMNOS (LEARNERS)
 CREATE TABLE IF NOT EXISTS public.learners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -33,77 +51,69 @@ CREATE TABLE IF NOT EXISTS public.learners (
 
 ALTER TABLE public.learners ENABLE ROW LEVEL SECURITY;
 
--- RLS: Un padre solo puede ver y gestionar sus propios niños
 CREATE POLICY "Los padres pueden ver sus propios alumnos" 
 ON public.learners FOR SELECT 
-USING (auth.uid() = parent_id);
+USING (auth.uid() = parent_id OR public.is_admin());
 
-CREATE POLICY "Los padres pueden crear sus propios alumnos" 
-ON public.learners FOR INSERT 
-WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Los padres pueden gestionar sus propios alumnos" 
+ON public.learners FOR ALL
+USING (auth.uid() = parent_id OR public.is_admin());
 
-CREATE POLICY "Los padres pueden actualizar sus propios alumnos" 
-ON public.learners FOR UPDATE 
-USING (auth.uid() = parent_id);
-
-CREATE POLICY "Los padres pueden eliminar sus propios alumnos" 
-ON public.learners FOR DELETE 
-USING (auth.uid() = parent_id);
-
--- TRIGGER PARA CREAR PERFIL AUTOMATICAMENTE
--- Opcional pero recomendado para que al registrarse el padre ya tenga su perfil
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, avatar_url)
-  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url');
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
-
--- TABLA DE CURSOS
+-- 4. TABLA DE CURSOS
 CREATE TABLE IF NOT EXISTS public.courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT,
   thumbnail_url TEXT,
   level_required INT DEFAULT 1,
-  category TEXT, -- Personajes, Paisajes, etc.
+  category TEXT,
+  is_published BOOLEAN DEFAULT FALSE,
+  teacher_id UUID REFERENCES public.profiles(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 
--- Cualquiera (autenticado) puede ver los cursos
 CREATE POLICY "Cualquier usuario puede ver cursos" 
 ON public.courses FOR SELECT 
-USING (auth.uid() IS NOT NULL);
+USING (true);
 
--- TABLA DE LECCIONES
+CREATE POLICY "Admins can manage courses" 
+ON public.courses FOR ALL
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- 5. TABLA DE LECCIONES
 CREATE TABLE IF NOT EXISTS public.lessons (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
+  description TEXT,
   video_url TEXT,
+  thumbnail_url TEXT,
+  download_url TEXT,
   "order" INT NOT NULL DEFAULT 0,
-  total_steps INT NOT NULL DEFAULT 5, -- Concepto LEGO
+  total_steps INT NOT NULL DEFAULT 5,
+  parent_node_id UUID REFERENCES public.lessons(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE public.lessons ENABLE ROW LEVEL SECURITY;
 
--- Cualquiera (autenticado) puede ver las lecciones
 CREATE POLICY "Cualquier usuario puede ver lecciones" 
 ON public.lessons FOR SELECT 
-USING (auth.uid() IS NOT NULL);
+USING (true);
 
--- TABLA DE PROGRESO DEL ALUMNO
+CREATE POLICY "Admins can manage lessons" 
+ON public.lessons FOR ALL
+TO authenticated
+USING (public.is_admin())
+WITH CHECK (public.is_admin());
+
+-- 6. PROGRESO DEL ALUMNO
 CREATE TABLE IF NOT EXISTS public.learner_progress (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   learner_id UUID NOT NULL REFERENCES public.learners(id) ON DELETE CASCADE,
@@ -118,18 +128,28 @@ CREATE TABLE IF NOT EXISTS public.learner_progress (
 
 ALTER TABLE public.learner_progress ENABLE ROW LEVEL SECURITY;
 
--- RLS: Los padres pueden ver/gestionar el progreso de sus propios niños
-CREATE POLICY "Los padres pueden ver el progreso de sus alumnos" 
-ON public.learner_progress FOR SELECT 
-USING (
-  learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid())
-);
-
-CREATE POLICY "Los padres pueden gestionar el progreso de sus alumnos" 
+CREATE POLICY "Gestion de progreso" 
 ON public.learner_progress FOR ALL 
 USING (
-  learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid())
-)
-WITH CHECK (
-  learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid())
+  learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid() OR public.is_admin())
 );
+
+-- 7. TRIGGER PARA PERFILES
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url, role)
+  VALUES (
+    new.id, 
+    new.email, 
+    new.raw_user_meta_data->>'full_name', 
+    new.raw_user_meta_data->>'avatar_url',
+    COALESCE(new.raw_user_meta_data->>'role', 'family')
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

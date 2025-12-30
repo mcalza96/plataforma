@@ -43,7 +43,7 @@ export default function LessonClient({
     } = useLessonController({
         courseId,
         learnerId,
-        lessonId: lesson.id,
+        lessonId: lesson.id!,
         totalSteps: lesson.total_steps,
         initialCompletedSteps: initialProgress?.completed_steps || 0,
         nextLessonId
@@ -55,7 +55,6 @@ export default function LessonClient({
             videoRef.current.currentTime = timestamp;
             videoRef.current.play().catch(() => {
                 // Autoplay might be blocked until user interaction
-                console.log('Autoplay attempted after jump');
             });
         }
     };
@@ -71,8 +70,8 @@ export default function LessonClient({
                 ref={videoRef}
                 videoUrl={lesson.video_url}
                 title={lesson.title}
-                description={lesson.description}
-                thumbnailUrl={lesson.thumbnail_url}
+                description={lesson.description || null}
+                thumbnailUrl={lesson.thumbnail_url || null}
                 courseId={courseId}
             />
 

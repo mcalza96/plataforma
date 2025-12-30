@@ -1,48 +1,34 @@
 import { ILessonRepository } from '../repositories/lesson-repository';
 import { Lesson, UpsertLessonInput, Submission, Achievement, LessonNode } from '../domain/course';
+import { AuthGuard } from '../application/guards/auth-guard';
+import { UpsertLessonUseCase } from '../application/use-cases/upsert-lesson-use-case';
 
 /**
  * Domain service for Lesson operations.
+ * Acts as a Facade for Lesson Use Cases.
  */
 export class LessonService {
-    constructor(private lessonRepository: ILessonRepository) { }
+    private upsertLessonUC: UpsertLessonUseCase;
+
+    constructor(private lessonRepository: ILessonRepository) {
+        this.upsertLessonUC = new UpsertLessonUseCase(this.lessonRepository);
+    }
 
     async upsertLesson(data: UpsertLessonInput, userRole: string): Promise<Lesson> {
-        // Regla de negocio: Validar permisos
-        if (userRole !== 'admin' && userRole !== 'instructor') {
-            throw new Error('No tienes permisos para gestionar fases (lecciones).');
-        }
-
-        // Regla de negocio: Autocalcular el orden si es una lección nueva y no se provee orden
-        // En este caso, el repo actual lo pide, pero podemos hacerlo opcional en el servicio
-        if (!data.id && (!data.order || data.order === 0)) {
-            const maxOrder = await this.lessonRepository.getMaxOrder(data.course_id);
-            data.order = maxOrder + 1;
-        }
-
-        return this.lessonRepository.upsertLesson(data);
+        AuthGuard.check(userRole, ['admin', 'instructor']);
+        return this.upsertLessonUC.execute(data);
     }
 
     async deleteLesson(lessonId: string, userRole: string): Promise<void> {
-        if (userRole !== 'admin' && userRole !== 'instructor') {
-            throw new Error('No tienes permisos para eliminar fases.');
-        }
-
+        AuthGuard.check(userRole, ['admin', 'instructor']);
         return this.lessonRepository.deleteLesson(lessonId);
     }
 
     async reorderLessons(courseId: string, lessonIds: string[], userRole: string): Promise<void> {
-        if (userRole !== 'admin' && userRole !== 'instructor') {
-            throw new Error('No tienes permisos para reordenar fases.');
-        }
-
-        // Implementación de reordenamiento masivo
-        // Podríamos iterar y actualizar cada una, o tener un método en el repo
+        AuthGuard.check(userRole, ['admin', 'instructor']);
+        // Simplified for now, but following the same pattern
         for (let i = 0; i < lessonIds.length; i++) {
-            // Nota: Esto es un poco ineficiente, en producción usaríamos una RPC o update masivo
-            const id = lessonIds[i];
-            // Aquí necesitaríamos obtener la lección primero o tener un upsert parcial
-            // Por simplicidad en este sprint, asumimos que el repo maneja el orden
+            // Logic would go here or in a specialized Use Case
         }
     }
 
@@ -54,7 +40,6 @@ export class LessonService {
     ): Promise<void> {
         // Business logic: Determine if the lesson is fully completed
         const isCompleted = completedSteps >= totalSteps;
-
         return this.lessonRepository.markStepComplete(
             learnerId,
             lessonId,
@@ -64,16 +49,12 @@ export class LessonService {
     }
 
     async getAdminSubmissions(filter: 'pending' | 'reviewed', userRole: string): Promise<Submission[]> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden revisar entregas.');
-        }
+        AuthGuard.check(userRole, ['admin']);
         return this.lessonRepository.getAdminSubmissions(filter);
     }
 
     async getSubmissionDetail(id: string, userRole: string): Promise<Submission | null> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden ver el detalle de entregas.');
-        }
+        AuthGuard.check(userRole, ['admin']);
         return this.lessonRepository.getSubmissionDetail(id);
     }
 
@@ -83,9 +64,7 @@ export class LessonService {
         content: string;
         badgeId?: string | null;
     }, userRole: string): Promise<void> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden enviar revisiones.');
-        }
+        AuthGuard.check(userRole, ['admin']);
         return this.lessonRepository.submitReview(data);
     }
 
@@ -125,8 +104,6 @@ export class LessonService {
 
     async getAdjacentLessons(courseId: string, currentOrder: number): Promise<{ prev: Lesson | null, next: Lesson | null }> {
         const lessons = await this.lessonRepository.getLessonsByCourseId(courseId);
-
-        // Asumiendo que están ordenadas por el repo (getLessonsByCourseId las ordena por order asc)
         const currentIndex = lessons.findIndex(l => l.order === currentOrder);
 
         return {

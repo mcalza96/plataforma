@@ -1,4 +1,9 @@
-import { ICourseRepository } from '../repositories/course-repository';
+import {
+    ICourseReader,
+    ICourseWriter,
+    ILearnerRepository,
+    IStatsRepository
+} from '../repositories/course-repository';
 import {
     UpsertCourseInput,
     Course,
@@ -7,108 +12,99 @@ import {
     LearnerAchievement,
     Learner
 } from '../domain/course';
+import { AuthGuard } from '../application/guards/auth-guard';
+import { SaveCourseUseCase } from '../application/use-cases/save-course-use-case';
+import { PublishCourseUseCase } from '../application/use-cases/publish-course-use-case';
 
 /**
  * Domain service for Course operations.
- * Encapsulates business logic and rules.
+ * Acts as a Facade for Application Use Cases.
  */
 export class CourseService {
-    constructor(private courseRepository: ICourseRepository) { }
+    private saveCourseUC: SaveCourseUseCase;
+    private publishCourseUC: PublishCourseUseCase;
+
+    constructor(
+        private courseReader: ICourseReader,
+        private courseWriter: ICourseWriter,
+        private learnerRepository: ILearnerRepository,
+        private statsRepository: IStatsRepository
+    ) {
+        this.saveCourseUC = new SaveCourseUseCase(this.courseWriter);
+        this.publishCourseUC = new PublishCourseUseCase(this.courseReader, this.courseWriter);
+    }
 
     async createOrUpdateCourse(data: UpsertCourseInput, userRole: string): Promise<Course> {
-        // Regla de negocio: Solo admin o instructor pueden gestionar cursos
-        if (userRole !== 'admin' && userRole !== 'instructor') {
-            throw new Error('No tienes permisos suficientes para gestionar misiones.');
-        }
-
-        // Regla de negocio: Si se intenta publicar, verificar contenido mínimo
-        if (data.is_published) {
-            if (!data.title || data.description.length < 20) {
-                throw new Error('La misión debe tener un título y una descripción detallada para ser publicada.');
-            }
-            // Placeholder para verificar si tiene lecciones en el futuro
-        }
-
-        return this.courseRepository.upsertCourse(data);
+        AuthGuard.check(userRole, ['admin', 'instructor']);
+        return this.saveCourseUC.execute(data);
     }
 
     async deleteCourse(id: string, userRole: string): Promise<void> {
-        // Regla de negocio: Solo el admin puede eliminar cursos
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden eliminar misiones del sistema.');
-        }
+        AuthGuard.check(userRole, ['admin']);
+        return this.courseWriter.deleteCourse(id);
+    }
 
-        return this.courseRepository.deleteCourse(id);
+    async publishCourse(courseId: string, userId: string, userRole: string): Promise<void> {
+        // AuthGuard check is inside the UseCase as it also checks ownership
+        return this.publishCourseUC.execute({ courseId, userId, userRole });
     }
 
     async getCourseById(id: string): Promise<Course | null> {
-        return this.courseRepository.getCourseById(id);
+        return this.courseReader.getCourseById(id);
     }
 
     async getFamilies(userRole: string): Promise<FamilyDTO[]> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden ver la lista de familias.');
-        }
-        return this.courseRepository.getFamilies();
+        AuthGuard.check(userRole, ['admin']);
+        return this.learnerRepository.getFamilies();
     }
 
     async getFamilyById(id: string, userRole: string): Promise<FamilyDTO | null> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden ver el detalle de una familia.');
-        }
-        return this.courseRepository.getFamilyById(id);
+        AuthGuard.check(userRole, ['admin']);
+        return this.learnerRepository.getFamilyById(id);
     }
 
     async updateLearnerLevel(learnerId: string, newLevel: number, userRole: string): Promise<void> {
-        if (userRole !== 'admin') {
-            throw new Error('Solo los administradores pueden actualizar el nivel de los alumnos.');
-        }
-
+        AuthGuard.check(userRole, ['admin']);
         if (newLevel < 1 || newLevel > 10) {
             throw new Error('El nivel debe estar entre 1 y 10.');
         }
-
-        return this.courseRepository.updateLearnerLevel(learnerId, newLevel);
+        return this.learnerRepository.updateLearnerLevel(learnerId, newLevel);
     }
 
     async updateUserRole(targetUserId: string, targetNewRole: string, currentUserId: string, currentUserRole: string): Promise<void> {
-        if (currentUserRole !== 'admin') {
-            throw new Error('Solo los administradores pueden cambiar roles.');
-        }
-
+        AuthGuard.check(currentUserRole, ['admin']);
         if (currentUserId === targetUserId && targetNewRole !== 'admin') {
             throw new Error('No puedes quitarte el rol de administrador a ti mismo.');
         }
-
-        return this.courseRepository.updateUserRole(targetUserId, targetNewRole);
+        return this.learnerRepository.updateUserRole(targetUserId, targetNewRole);
     }
 
     async getLearnerFullStats(learnerId: string): Promise<LearnerStats> {
-        return this.courseRepository.getLearnerFullStats(learnerId);
+        return this.statsRepository.getLearnerFullStats(learnerId);
     }
 
     async getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]> {
-        return this.courseRepository.getLearnerAchievements(learnerId);
+        return this.statsRepository.getLearnerAchievements(learnerId);
     }
 
     async createLearner(data: { parentId: string; displayName: string; avatarUrl: string }): Promise<Learner> {
-        return this.courseRepository.createLearner(data);
+        return this.learnerRepository.createLearner(data);
     }
 
     async ensureProfileExists(data: { id: string; email: string; fullName: string }): Promise<void> {
-        return this.courseRepository.ensureProfileExists(data);
+        return this.learnerRepository.ensureProfileExists(data);
     }
 
     async getLearnersByParentId(parentId: string): Promise<Learner[]> {
-        return this.courseRepository.getLearnersByParentId(parentId);
+        return this.learnerRepository.getLearnersByParentId(parentId);
     }
 
     async getAllCourses(): Promise<Course[]> {
-        return this.courseRepository.getAllCourses();
+        return this.courseReader.getAllCourses();
     }
 
     async getGlobalStats() {
-        return this.courseRepository.getGlobalStats();
+        return this.statsRepository.getGlobalStats();
     }
 
     async getStudentFrontier(learnerId: string): Promise<any[]> {
@@ -128,13 +124,9 @@ export class CourseService {
 
     async calculateKnowledgeDelta(learnerId: string): Promise<any[]> {
         const stats = await this.getLearnerFullStats(learnerId);
-
-        // Regla de Negocio: El delta se proyecta comparando el estado actual 
-        // con la base de nivel inicial estimada (metadata de diagnóstico).
-        // Por ahora lo simulamos con un factor del 20% de crecimiento atómico.
         return stats.skills.map(s => ({
             category: s.name,
-            initial: Math.max(10, Math.round(s.percentage * 0.75)), // El nivel base es el 75% del actual (mínimo 10%)
+            initial: Math.max(10, Math.round(s.percentage * 0.75)),
             current: s.percentage
         }));
     }

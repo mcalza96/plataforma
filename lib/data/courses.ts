@@ -1,10 +1,10 @@
 import 'server-only';
 import { cache } from 'react';
-import { getCourseRepository } from '../di';
+import { getCourseReader, getLearnerRepository } from '../di';
 import {
     CourseCardDTO,
     CourseDetailDTO,
-    Lesson,
+    LessonDTO as Lesson,
     Learner,
     LearnerProgress
 } from '../domain/course';
@@ -17,7 +17,7 @@ import {
  * Optimized with React.cache for per-request memoization.
  */
 export const getCoursesWithProgress = cache(async (learnerId: string): Promise<CourseCardDTO[]> => {
-    const repository = getCourseRepository();
+    const repository = getCourseReader();
     return repository.getCoursesWithProgress(learnerId);
 });
 
@@ -25,7 +25,7 @@ export const getCoursesWithProgress = cache(async (learnerId: string): Promise<C
  * Fetch a single course with its lessons and learner progress.
  */
 export const getCourseWithLessonsAndProgress = cache(async (courseId: string, learnerId: string): Promise<CourseDetailDTO | null> => {
-    const repository = getCourseRepository();
+    const repository = getCourseReader();
     return repository.getCourseWithLessonsAndProgress(courseId, learnerId);
 });
 
@@ -33,7 +33,7 @@ export const getCourseWithLessonsAndProgress = cache(async (courseId: string, le
  * Fetch learner profile by ID.
  */
 export const getLearnerById = cache(async (learnerId: string): Promise<Learner | null> => {
-    const repository = getCourseRepository();
+    const repository = getLearnerRepository();
     return repository.getLearnerById(learnerId);
 });
 
@@ -41,7 +41,7 @@ export const getLearnerById = cache(async (learnerId: string): Promise<Learner |
  * Fetch the next lesson in the course sequence.
  */
 export const getNextLesson = cache(async (courseId: string, currentOrder: number): Promise<Lesson | null> => {
-    const repository = getCourseRepository();
+    const repository = getCourseReader();
     return repository.getNextLesson(courseId, currentOrder);
 });
 

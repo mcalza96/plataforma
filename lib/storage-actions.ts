@@ -1,6 +1,6 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { getLessonService } from './di';
+import { getSubmissionService } from './di';
 import { createClient } from './infrastructure/supabase/supabase-server';
 
 export async function uploadSubmission(formData: FormData) {
@@ -42,7 +42,7 @@ export async function uploadSubmission(formData: FormData) {
 
     // 3. Insert into Database via Service
     try {
-        const service = getLessonService();
+        const service = getSubmissionService();
         const dbData = await service.createSubmission({
             learnerId,
             lessonId,
@@ -64,7 +64,7 @@ export async function uploadSubmission(formData: FormData) {
 }
 
 export async function getLearnerSubmissions(learnerId: string) {
-    const service = getLessonService();
+    const service = getSubmissionService();
     return await service.getLearnerSubmissions(learnerId);
 }
 

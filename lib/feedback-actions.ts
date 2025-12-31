@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getLessonService } from './di';
+import { getSubmissionService, getFeedbackService } from './di';
 import { getUserRole, validateAdmin } from './infrastructure/auth-utils';
 import { FeedbackSchema } from './validations';
 
@@ -12,7 +12,7 @@ import { FeedbackSchema } from './validations';
 export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pending') {
     try {
         const role = await getUserRole();
-        const service = getLessonService();
+        const service = getSubmissionService();
         return await service.getAdminSubmissions(filter, role);
     } catch (error: any) {
         console.error('Error in getAdminSubmissions action:', error);
@@ -26,7 +26,7 @@ export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pend
 export async function getSubmissionDetail(id: string) {
     try {
         const role = await getUserRole();
-        const service = getLessonService();
+        const service = getSubmissionService();
         return await service.getSubmissionDetail(id, role);
     } catch (error: any) {
         console.error('Error in getSubmissionDetail action:', error);
@@ -41,7 +41,7 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
     try {
         const validated = FeedbackSchema.parse(data);
         const role = await getUserRole();
-        const service = getLessonService();
+        const service = getSubmissionService();
 
         await service.submitReview(validated, role);
 
@@ -63,7 +63,7 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
  */
 export async function getAvailableBadges() {
     try {
-        const service = getLessonService();
+        const service = getSubmissionService();
         return await service.getAvailableBadges();
     } catch (error: any) {
         console.error('Error in getAvailableBadges action:', error);
@@ -76,7 +76,7 @@ export async function getAvailableBadges() {
  */
 export async function getLearnerFeedback(learnerId: string) {
     try {
-        const service = getLessonService();
+        const service = getFeedbackService();
         return await service.getLearnerFeedback(learnerId);
     } catch (error: any) {
         console.error('Error in getLearnerFeedback action:', error);
@@ -89,7 +89,7 @@ export async function getLearnerFeedback(learnerId: string) {
  */
 export async function getUnreadFeedbackCount(learnerId: string) {
     try {
-        const service = getLessonService();
+        const service = getFeedbackService();
         return await service.getUnreadFeedbackCount(learnerId);
     } catch (error: any) {
         console.error('Error in getUnreadFeedbackCount action:', error);
@@ -102,7 +102,7 @@ export async function getUnreadFeedbackCount(learnerId: string) {
  */
 export async function markFeedbackAsRead(messageId: string) {
     try {
-        const service = getLessonService();
+        const service = getFeedbackService();
         await service.markFeedbackAsRead(messageId);
 
         revalidatePath('/dashboard');

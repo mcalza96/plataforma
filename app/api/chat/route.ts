@@ -1,7 +1,7 @@
 import { streamText, tool } from 'ai';
 import { createGroq } from '@ai-sdk/groq';
 import { classifyIntent } from '@/lib/ai/router';
-import { SOCRATIC_PROMPT } from '@/lib/ai/prompts';
+import { SOCRATIC_PROMPT, buildArchitectPrompt } from '@/lib/ai/prompts';
 import { checkRateLimit } from '@/lib/infrastructure/rate-limit';
 import { PartialKnowledgeMapSchema } from '@/lib/domain/discovery';
 import { normalizeMessages } from '@/lib/ai/utils';
@@ -23,12 +23,12 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages, lessonId } = await req.json();
+        const { messages, lessonId, stage = 'initial_profiling' } = await req.json();
         const coreMessages = normalizeMessages(messages);
 
         // 2. Classify Intent
         const { intent, reasoning } = await classifyIntent(coreMessages, lessonId);
-        console.log(`[Chat API] 🤖 Intent: ${intent} | Reason: ${reasoning}`);
+        console.log(`[Chat API] 🤖 Intent: ${intent} | Reason: ${reasoning} | Stage: ${stage}`);
 
 
         // 3. Orchestration
@@ -50,9 +50,17 @@ export async function POST(req: Request) {
                     }
                 );
 
+
             case 'PEDAGOGICAL_QUERY':
+                // Use FSM-based dynamic prompt for Curriculum Architect
                 const { continueInterview } = await import('@/lib/application/services/discovery');
-                return await continueInterview(coreMessages);
+
+                // Override the discovery service to use our dynamic prompt
+                // Note: We're calling continueInterview which uses the discovery service
+                // The discovery service will use buildArchitectPrompt internally
+                console.log(`[Chat API] Using dynamic prompt for stage: ${stage}`);
+                return await continueInterview(coreMessages, stage);
+
 
             case 'CHAT':
             default:

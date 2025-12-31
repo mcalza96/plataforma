@@ -117,7 +117,8 @@ export function useArchitect() {
                     messages: [...messages, userMessage].map(m => ({
                         role: m.role,
                         content: m.content
-                    }))
+                    })),
+                    stage: state.stage // Pass current FSM stage to API
                 })
             });
 

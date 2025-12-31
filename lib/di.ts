@@ -20,7 +20,7 @@ import { LessonService } from './application/services/lesson-service';
 import { SubmissionService } from './application/services/submission-service';
 import { FeedbackService } from './application/services/feedback-service';
 import { MetadataService } from './application/services/metadata';
-import { AIOrchestratorService } from './application/services/ai-orchestrator-service';
+import { AIOrchestratorService } from './application/services/orchestrator';
 import { LearnerService } from './application/services/learner-service';
 import { FamilyService } from './application/services/family-service';
 import { AdminService } from './application/services/admin-service';

@@ -53,13 +53,39 @@ export function evaluateSession(
         ? Math.round((correctCount / validResponses.length) * 100)
         : 0;
 
+    // Calcular métricas de calibración (Metacognición)
+    const calibration = calculateCalibration(responses);
+
     return {
         attemptId,
         studentId,
         overallScore,
         behaviorProfile: calculateBehaviorProfile(responses),
+        calibration,
         competencyDiagnoses,
         timestamp: new Date(),
+    };
+}
+
+/**
+ * Calcula la calibración entre confianza y acierto.
+ */
+function calculateCalibration(responses: StudentResponse[]) {
+    const valid = responses.filter(isEvidenceQualitySufficient);
+    if (valid.length === 0) return { certaintyAverage: 0, accuracyAverage: 0, blindSpots: 0, fragileKnowledge: 0 };
+
+    const confidenceValueMap = { 'HIGH': 100, 'MEDIUM': 66, 'LOW': 33, 'NONE': 0 };
+    const avgCertainty = valid.reduce((acc, r) => acc + confidenceValueMap[r.confidence], 0) / valid.length;
+    const avgAccuracy = (valid.filter(r => r.isCorrect).length / valid.length) * 100;
+
+    const blindSpots = valid.filter(r => !r.isCorrect && r.confidence === 'HIGH').length;
+    const fragileKnowledge = valid.filter(r => r.isCorrect && (r.confidence === 'LOW' || r.confidence === 'MEDIUM')).length;
+
+    return {
+        certaintyAverage: Math.round(avgCertainty),
+        accuracyAverage: Math.round(avgAccuracy),
+        blindSpots,
+        fragileKnowledge
     };
 }
 

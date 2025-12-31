@@ -1,39 +1,49 @@
 "use server";
 
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
+import { DiagnosticResult } from "@/lib/domain/evaluation/types";
 
 /**
- * Server Action to export exam results as a CSV file.
- * Returns a string representing the CSV content with UTF-8 BOM.
+ * Server Action to export exam results to CSV.
+ * Only accessible by Instructors (owners) or Admins.
  */
-export async function exportExamResults(examId: string) {
+export async function exportExamResultsToCSV(examId: string) {
     const supabase = await createClient();
 
-    // 1. Security Check (Only Staff can export)
+    // 1. Authorization & Identity
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-        return { success: false, error: "Unauthorized" };
-    }
+    if (authError || !user) throw new Error("Unauthorized");
 
-    // Check if user is admin or instructor
+    // Fetch exam to check ownership
+    const { data: exam, error: examError } = await supabase
+        .from("exams")
+        .select("creator_id, title")
+        .eq("id", examId)
+        .single();
+
+    if (examError || !exam) throw new Error("Exam not found");
+
+    // Fetch profile to check role
     const { data: profile } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
 
-    if (!profile || !['admin', 'instructor'].includes(profile.role)) {
-        return { success: false, error: "Forbidden: Only instructors can export results" };
+    const isAdmin = profile?.role === 'admin';
+    const isInstructor = profile?.role === 'instructor';
+
+    if (!isAdmin && (!isInstructor || exam.creator_id !== user.id)) {
+        throw new Error("Forbidden: You do not have permission to export this diagnostic.");
     }
 
-    // 2. Fetch all completed attempts for this exam
-    const { data: attempts, error: fetchError } = await supabase
+    // 2. Fetch all completed attempts with learner details
+    // Note: We use the helper join if profiles table is correctly linked
+    const { data: attempts, error: attemptsError } = await supabase
         .from("exam_attempts")
         .select(`
             id,
             learner_id,
-            started_at,
-            finished_at,
             results_cache,
             profiles:learner_id (
                 full_name,
@@ -44,57 +54,56 @@ export async function exportExamResults(examId: string) {
         .eq("status", "COMPLETED")
         .order("finished_at", { ascending: false });
 
-    if (fetchError) {
-        console.error("Export fetch error:", fetchError);
-        return { success: false, error: "Failed to fetch results" };
+    if (attemptsError || !attempts) {
+        console.error("Export fetch error:", attemptsError);
+        throw new Error("Failed to fetch results for export.");
     }
 
-    if (!attempts || attempts.length === 0) {
-        return { success: false, error: "No completed attempts found to export" };
-    }
-
-    // 3. Transform to CSV
+    // 3. Generate CSV
     const headers = [
-        "Nombre",
+        "Alumno",
         "Email",
-        "ID Intento",
-        "Fecha Inicio",
-        "Fecha Fin",
-        "Score Global",
-        "Diagnóstico"
+        "Score Final (%)",
+        "Impulsividad",
+        "Ansiedad",
+        "Bugs/Confusiones Detectadas"
     ];
 
-    const rows = attempts.map((a: any) => {
-        const result = a.results_cache;
-        const student = a.profiles;
+    const rows = attempts.map(attempt => {
+        const result = attempt.results_cache as unknown as DiagnosticResult;
+        const learnerProfile = (attempt.profiles as any);
 
-        // Flatten diagnostic states for a text summary
-        const diagnosticSummary = result?.competencyDiagnoses
-            ?.map((d: any) => `${d.competencyId}: ${d.state}`)
-            .join("; ") || "N/A";
+        // Detailed bugs list for the instructor
+        const bugs = result?.competencyDiagnoses
+            ? result.competencyDiagnoses
+                .filter(d => d.state === 'MISCONCEPTION')
+                .map(d => `${d.competencyId}: ${d.evidence.reason}`)
+                .join(" | ")
+            : "N/A";
 
         return [
-            student?.full_name || "N/A",
-            student?.email || "N/A",
-            a.id,
-            a.started_at ? new Date(a.started_at).toLocaleString() : "N/A",
-            a.finished_at ? new Date(a.finished_at).toLocaleString() : "N/A",
+            learnerProfile?.full_name || "Estudiante Anónimo",
+            learnerProfile?.email || "N/A",
             result?.overallScore !== undefined ? `${result.overallScore}%` : "0%",
-            diagnosticSummary
+            result?.behaviorProfile?.isImpulsive ? "SÍ" : "NO",
+            result?.behaviorProfile?.isAnxious ? "SÍ" : "NO",
+            bugs || "Ninguno"
         ];
     });
 
-    // Strategy: Use UTF-8 with BOM (\uFEFF) so Excel opens it with correct encoding
+    // Helper functions for CSV escaping
+    const escapeCSV = (val: string) => `"${val.replace(/"/g, '""')}"`;
+
     const csvContent = [
         headers.join(","),
-        ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+        ...rows.map(r => r.map(cell => escapeCSV(String(cell))).join(","))
     ].join("\n");
 
-    const bom = "\uFEFF";
-
+    // Add BOM for Excel UTF-8 compatibility
+    const BOM = "\uFEFF";
     return {
         success: true,
-        csv: bom + csvContent,
-        filename: `reporte_examen_${examId}_${new Date().toISOString().split('T')[0]}.csv`
+        filename: `Resultados_${exam.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`,
+        content: BOM + csvContent
     };
 }

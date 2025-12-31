@@ -33,6 +33,8 @@ export const ExamShell = memo(function ExamShell({
         trackEvent,
         trackAnswer,
         sync,
+        isHydrating,
+        currentAnswers
     } = useExamSync(attemptId, {}); // Initialize sync hook
 
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -46,6 +48,32 @@ export const ExamShell = memo(function ExamShell({
     );
     const [answers, setAnswers] = useState<Map<string, AnswerPayload>>(new Map());
     const [isOffline, setIsOffline] = useState(false);
+
+    // Hydration Sync: Match metadata with hydrated answers
+    useEffect(() => {
+        if (!isHydrating && Object.keys(currentAnswers).length > 0) {
+            setQuestionMetadata(prev => prev.map(meta => ({
+                ...meta,
+                state: currentAnswers[meta.id] ? 'ANSWERED' : meta.state
+            })));
+
+            // Sync local map for Legos that might depend on it
+            setAnswers(prev => {
+                const newMap = new Map(prev);
+                Object.entries(currentAnswers).forEach(([qId, value]) => {
+                    if (!newMap.has(qId)) {
+                        newMap.set(qId, {
+                            questionId: qId,
+                            value,
+                            isGap: false,
+                            telemetry: { timeMs: 0, hesitationCount: 0, focusLostCount: 0 }
+                        });
+                    }
+                });
+                return newMap;
+            });
+        }
+    }, [isHydrating, currentAnswers]);
 
     // Monitor Online/Offline status
     useEffect(() => {
@@ -78,8 +106,8 @@ export const ExamShell = memo(function ExamShell({
     }, [currentQuestionIndex]);
 
     const handleAnswer = (payload: AnswerPayload) => {
-        // Telemetry: Log the answer update
-        trackAnswer(payload.questionId, payload.value);
+        // Telemetry: Log the answer update with rich forensic data
+        trackAnswer(payload.questionId, payload.value, payload.telemetry);
 
         // Save local state for UI indicators
         setAnswers((prev) => new Map(prev).set(payload.questionId, payload));

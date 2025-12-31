@@ -12,8 +12,13 @@ export const PartialKnowledgeMapSchema = z.object({
         error: z.string(),
         refutation: z.string(),
         distractor_artifact: z.string().optional(),
-        observable_symptom: z.string().optional()
+        observable_symptom: z.string().optional(),
+        competencyId: z.string().optional().describe('Link to the keyConcept it belongs to')
     })).optional().describe('Common errors with their refutation strategies, literal artifacts, and observable symptoms'),
+    prerequisites: z.array(z.object({
+        from: z.string(),
+        to: z.string()
+    })).optional().describe('Directed links representing prerequisite relationships between concepts'),
     pedagogicalGoal: z.string().optional().describe('The primary objective of this knowledge unit')
 }).passthrough();
 

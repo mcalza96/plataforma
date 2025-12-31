@@ -83,6 +83,18 @@ export const BehaviorProfileSchema = z.object({
 export type BehaviorProfile = z.infer<typeof BehaviorProfileSchema>;
 
 /**
+ * Calibration metrics for metacognitive analysis
+ */
+export const CalibrationMetricsSchema = z.object({
+    certaintyAverage: z.number(), // 0-100
+    accuracyAverage: z.number(),  // 0-100
+    blindSpots: z.number(),       // Count of High Confidence + Incorrect
+    fragileKnowledge: z.number(), // Count of Low/Medium Confidence + Correct
+});
+
+export type CalibrationMetrics = z.infer<typeof CalibrationMetricsSchema>;
+
+/**
  * Evidencia que respalda un juicio diagnóstico
  */
 export const DiagnosisEvidenceSchema = z.object({
@@ -109,6 +121,7 @@ export const DiagnosticResultSchema = z.object({
     studentId: z.string(),
     overallScore: z.number(),
     behaviorProfile: BehaviorProfileSchema,
+    calibration: CalibrationMetricsSchema, // Add calibration for the Cognitive Mirror
     competencyDiagnoses: z.array(CompetencyDiagnosisSchema),
     timestamp: z.date(),
 });

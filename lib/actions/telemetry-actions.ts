@@ -13,7 +13,7 @@ import { headers } from "next/headers";
 /**
  * Server Action to submit a batch of telemetry events.
  * Implements the "Double Writing" pattern: 
- * 1. Writes all events to the telemetry_events log.
+ * 1. Writes all events to the telemetry_logs log.
  * 2. Updates the exam_attempts snapshot with the latest answers.
  */
 export async function submitTelemetryBatch(batch: unknown) {
@@ -47,7 +47,6 @@ export async function submitTelemetryBatch(batch: unknown) {
     }
 
     // 3. Ownership Check (Is this attempt owned by the user?)
-    // This is technically enforced by RLS, but a explicit check helps for error messaging.
     const { data: attempt, error: attemptError } = await supabase
         .from("exam_attempts")
         .select("learner_id, current_state")
@@ -65,27 +64,27 @@ export async function submitTelemetryBatch(batch: unknown) {
     const repository = new SupabaseTelemetryRepository(supabase);
 
     try {
-        // 4. Double Writing
+        // 4. Double Writing (Divorce Pattern)
 
-        // Part A: Save the full Log (Telemetry Batch)
+        // Step 1: Save ALL events to the forensic log (telemetry_logs)
         await repository.saveBatch(validatedBatch.attemptId, validatedBatch.events);
 
-        // Part B: Update the Snapshot (Current State)
-        // Extract latest answers from ANSWER_UPDATE events in this batch
-        const answerUpdates = validatedBatch.events
-            .filter(e => e.event_type === "ANSWER_UPDATE")
-            .map(e => e.payload as unknown as AnswerUpdatePayload);
+        // Step 2: Update the "Snapshot" (exam_attempts.current_state)
+        // We only care about ANSWER_UPDATE events for the snapshot.
+        const answerEvents = validatedBatch.events.filter(e => e.event_type === "ANSWER_UPDATE");
 
-        if (answerUpdates.length > 0) {
-            // Merge new answers into existing state
-            const newState = { ...(attempt.current_state as Record<string, any>) };
-            answerUpdates.forEach(update => {
-                newState[update.questionId] = update.value;
+        if (answerEvents.length > 0) {
+            // Merge the latest answers from the batch into the existing state
+            const stateToUpdate = { ...(attempt.current_state as Record<string, any>) };
+
+            answerEvents.forEach(event => {
+                const payload = event.payload as unknown as AnswerUpdatePayload;
+                stateToUpdate[payload.questionId] = payload.value;
             });
 
-            await repository.updateSnapshot(validatedBatch.attemptId, newState);
+            await repository.updateSnapshot(validatedBatch.attemptId, stateToUpdate);
         } else {
-            // Even if no answers updated, we might want to update last_active_at
+            // Keep heartbeat by updating last_active_at even if no answers changed
             await repository.updateSnapshot(validatedBatch.attemptId, attempt.current_state as Record<string, any>);
         }
 

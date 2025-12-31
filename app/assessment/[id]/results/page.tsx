@@ -17,7 +17,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
     // 1. Fetch the latest completed attempt for this exam
     const { data: attempt, error } = await supabase
         .from("exam_attempts")
-        .select("*, exams(title)")
+        .select("*, exams(title, config_json)")
         .eq("exam_config_id", id)
         .eq("learner_id", user.id)
         .eq("status", "COMPLETED")
@@ -78,7 +78,10 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
                     </div>
                 </header>
 
-                <StudentReportView result={result} />
+                <StudentReportView
+                    result={result}
+                    matrix={(attempt.exams as any)?.config_json || { keyConcepts: [] }}
+                />
             </div>
         </div>
     );

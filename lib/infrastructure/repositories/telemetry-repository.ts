@@ -12,7 +12,7 @@ export class SupabaseTelemetryRepository {
     async saveBatch(attemptId: string, events: TelemetryEvent[]): Promise<void> {
         if (events.length === 0) return;
 
-        const { error } = await this.supabase.from("telemetry_events").insert(
+        const { error } = await this.supabase.from("telemetry_logs").insert(
             events.map((event) => ({
                 attempt_id: attemptId,
                 event_type: event.event_type,
@@ -68,11 +68,22 @@ export class SupabaseTelemetryRepository {
             .eq("id", attemptId)
             .single();
 
-        if (error) {
+        if (error || !data) {
             console.error("Failed to fetch exam state:", error);
             return null;
         }
 
-        return data;
+        // Map snake_case database fields to camelCase domain types
+        return {
+            attemptId: data.id,
+            learnerId: data.learner_id,
+            examConfigId: data.exam_config_id,
+            currentState: data.current_state,
+            resultsCache: data.results_cache,
+            status: data.status,
+            startedAt: data.started_at,
+            lastActiveAt: data.last_active_at,
+            finishedAt: data.finished_at,
+        };
     }
 }

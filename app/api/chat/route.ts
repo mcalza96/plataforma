@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages, lessonId, stage = 'initial_profiling' } = await req.json();
+        const { messages, lessonId, stage = 'initial_profiling', context } = await req.json();
         const coreMessages = normalizeMessages(messages);
 
         // 2. Classify Intent
@@ -31,17 +31,15 @@ export async function POST(req: Request) {
         console.log(`[Chat API] 🤖 Intent: ${intent} | Reason: ${reasoning} | Stage: ${stage}`);
 
 
-        // 3. Orchestration
+        // 3. Route to appropriate handler
         switch (intent) {
             case 'CANVAS_ACTION':
-                // Placeholder for Architect Agent
                 return new Response(
                     JSON.stringify({
-                        message: "He detectado que quieres realizar una acción en el lienzo. Estamos preparando al Agente Arquitecto para procesar esta solicitud (Fase 4).",
-                        intent,
-                        reasoning
+                        error: 'Canvas actions not yet implemented. Use the UI directly for now.'
                     }),
                     {
+                        status: 501,
                         headers: {
                             'Content-Type': 'application/json',
                             'x-ai-intent': intent,
@@ -54,12 +52,20 @@ export async function POST(req: Request) {
             case 'PEDAGOGICAL_QUERY':
                 // Use FSM-based dynamic prompt for Curriculum Architect
                 const { continueInterview } = await import('@/lib/application/services/discovery');
+                const { loadDraftExam } = await import('@/lib/actions/discovery-actions');
 
-                // Override the discovery service to use our dynamic prompt
-                // Note: We're calling continueInterview which uses the discovery service
-                // The discovery service will use buildArchitectPrompt internally
+                // Fetch current context from database (Única Fuente de Verdad)
+                // This ensures we always have the latest Blueprint state, even if the client is out of sync
+                const examId = 'draft-exam'; // TODO: Get from user session
+                const { success: dbSuccess, context: dbContext } = await loadDraftExam(examId);
+
+                const currentContext = dbSuccess && dbContext ? dbContext : (context || {});
+
                 console.log(`[Chat API] Using dynamic prompt for stage: ${stage}`);
-                return await continueInterview(coreMessages, stage);
+                console.log(`[Chat API] Context source: ${dbSuccess ? 'DATABASE (fresh)' : 'CLIENT (fallback)'}`);
+                console.log(`[Chat API] Current context:`, currentContext);
+
+                return await continueInterview(coreMessages, stage, currentContext);
 
 
             case 'CHAT':

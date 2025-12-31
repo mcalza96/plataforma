@@ -58,7 +58,20 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         attempt = newAttempt;
     }
 
-    const questions = (exam.questions || []) as Question[];
+    // 3. Load Questions (Maquetación dinámica)
+    const questions = (exam.questions?.length ? exam.questions : exam.config_json?.questions || []) as Question[];
+
+    if (questions.length === 0) {
+        // Fallback for exams with only the topology (matrix) but no rendered items
+        return (
+            <div className="h-screen flex items-center justify-center bg-[#0A0A0A] text-white p-8">
+                <div className="text-center space-y-4 max-w-md">
+                    <p className="text-xl font-black">Blueprint sin Reactivos</p>
+                    <p className="text-sm text-zinc-500">Este examen tiene definida su topología pedagógica pero aún no tiene reactivos generados.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="h-screen bg-[#0A0A0A]">

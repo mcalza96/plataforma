@@ -8,9 +8,13 @@ import { generateNarrative } from '../../../lib/application/services/feedback-ge
 import { TrafficLightGraph } from '../insights/TrafficLightGraph';
 import { PrescriptionCard } from '../insights/PrescriptionCard';
 import { LandingProfile } from '../insights/LandingProfile';
+import { CognitiveMirror } from '../../assessment/results/CognitiveMirror';
+import { NextStepsCard } from '../NextStepsCard';
+import { KnowledgeMap } from '../KnowledgeMap';
 
 interface StudentReportViewProps {
     result: DiagnosticResult;
+    matrix: any; // The pedagogical graph from the exam config
     studentName?: string;
 }
 
@@ -32,6 +36,7 @@ const itemVariants: Variants = {
 
 export const StudentReportView: React.FC<StudentReportViewProps> = ({
     result,
+    matrix,
     studentName = 'Estudiante'
 }) => {
     const narrative = generateNarrative(result);
@@ -132,28 +137,16 @@ export const StudentReportView: React.FC<StudentReportViewProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                     {/* Left Column: Visualization */}
                     <motion.div variants={itemVariants} className="lg:col-span-12 xl:col-span-7 space-y-8">
+                        <CognitiveMirror calibration={result.calibration} />
+                        <KnowledgeMap result={result} matrix={matrix} />
                         <TrafficLightGraph diagnoses={result.competencyDiagnoses} />
                         <LandingProfile profile={result.behaviorProfile} />
                     </motion.div>
 
                     {/* Right Column: Actions */}
-                    <motion.div variants={itemVariants} className="lg:col-span-12 xl:col-span-5">
+                    <motion.div variants={itemVariants} className="lg:col-span-12 xl:col-span-5 space-y-8">
                         <PrescriptionCard diagnoses={result.competencyDiagnoses} />
-
-                        <div className="mt-8 p-6 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-3xl text-white relative overflow-hidden shadow-2xl shadow-indigo-600/10">
-                            <div className="relative z-10">
-                                <h3 className="text-xl font-bold mb-2">Próximo Hito: Nivelación</h3>
-                                <p className="text-sm text-indigo-100/80 mb-6">
-                                    {narrative.nextStepsHeadline}
-                                </p>
-                                <button className="w-full py-3 bg-white text-indigo-600 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-lg">
-                                    Iniciar Ruta de Aprendizaje
-                                </button>
-                            </div>
-                            <div className="absolute -bottom-6 -right-6 opacity-20 rotate-12">
-                                <TargetIcon className="w-40 h-40" />
-                            </div>
-                        </div>
+                        <NextStepsCard attemptId={result.attemptId} />
                     </motion.div>
                 </div>
             </motion.div>

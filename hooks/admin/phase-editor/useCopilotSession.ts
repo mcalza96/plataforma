@@ -99,7 +99,7 @@ export function useCopilotSession(
     const isLoading = status === 'submitted' || status === 'streaming';
 
     /**
-     * append: Wrapper manual para enviar mensajes siguiendo la estructura del AI SDK
+     * Custom append implementation using sendMessage from @ai-sdk/react@3.0.3
      */
     const append = useCallback(async (message: { role: 'user'; content: string }) => {
         return await sendMessage({

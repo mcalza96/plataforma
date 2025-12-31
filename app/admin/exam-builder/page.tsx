@@ -5,18 +5,22 @@ import { BuilderLayout } from "@/components/admin/builder/BuilderLayout";
 import { ConfigChat } from "@/components/admin/builder/ConfigChat";
 import { CoverageHUD } from "@/components/admin/builder/CoverageHUD";
 import { useExamBuilder } from "@/hooks/admin/builder/useExamBuilder";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
 import { Rocket, Eye, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { ExamPreview } from "@/components/admin/builder/ExamPreview";
+import { saveDiscoveryContext } from "@/lib/actions/discovery-actions";
 
 export default function ExamBuilderPage() {
     const {
         state,
         examTitle,
         setExamTitle,
+        readiness,
         canPublish,
+        lastSyncedAt,
+        handleSync,
         updateConceptStatus,
         setState
     } = useExamBuilder();
@@ -25,19 +29,87 @@ export default function ExamBuilderPage() {
     const [isPublishing, setIsPublishing] = React.useState(false);
 
     // Handle tool calls from chat to update builder state
-    const handleUpdateFromChat = (toolCall: any) => {
-        // In a real implementation, we would parse toolCall.args
-        // Example: updateContext({ keyConcepts: [...], identifiedMisconceptions: [...] })
+    const handleUpdateFromChat = async (toolCall: any) => {
         if (toolCall.method === 'updateContext') {
-            const { keyConcepts, identifiedMisconceptions } = toolCall.args;
+            const { subject, targetAudience, keyConcepts, identifiedMisconceptions, pedagogicalGoal } = toolCall.args;
 
-            setState(prev => ({
-                ...prev,
-                matrix: {
-                    concepts: keyConcepts || prev.matrix.concepts,
-                    misconceptions: identifiedMisconceptions || prev.matrix.misconceptions
+            setState(prev => {
+                // Accumulate concepts (deduplicate by name)
+                let updatedConcepts = prev.matrix.concepts;
+                if (keyConcepts && keyConcepts.length > 0) {
+                    const existingNames = new Set(prev.matrix.concepts.map(c => c.name.toLowerCase()));
+                    const newConcepts = keyConcepts
+                        .filter((name: string) => typeof name === 'string' && !existingNames.has(name.toLowerCase()))
+                        .map((name: string) => ({
+                            id: crypto.randomUUID(),
+                            name,
+                            status: 'PENDING' as const
+                        }));
+                    updatedConcepts = [...prev.matrix.concepts, ...newConcepts];
                 }
-            }));
+
+                // Accumulate misconceptions (deduplicate by description)
+                let updatedMisconceptions = prev.matrix.misconceptions;
+                if (identifiedMisconceptions && identifiedMisconceptions.length > 0) {
+                    const existingDescriptions = new Set(
+                        prev.matrix.misconceptions.map(m => m.description.toLowerCase())
+                    );
+                    const newMisconceptions = identifiedMisconceptions
+                        .filter((m: any) => {
+                            if (!m) return false;
+                            const desc = (m.error || m.description || '').toLowerCase();
+                            return desc && !existingDescriptions.has(desc);
+                        })
+                        .map((m: any) => ({
+                            id: crypto.randomUUID(),
+                            description: m.error || m.description || 'Unknown Error',
+                            hasTrap: !!(m.distractor_artifact || m.hasTrap)
+                        }));
+                    updatedMisconceptions = [...prev.matrix.misconceptions, ...newMisconceptions];
+                }
+
+                const newMatrix = {
+                    ...prev.matrix,
+                    subject: subject || prev.matrix.subject,
+                    targetAudience: targetAudience || prev.matrix.targetAudience,
+                    pedagogicalGoal: pedagogicalGoal || prev.matrix.pedagogicalGoal,
+                    concepts: updatedConcepts,
+                    misconceptions: updatedMisconceptions
+                };
+
+                // Side effect OUTSIDE the state calculation (async wrapper not needed here, 
+                // but we should just fire it. However, doing it inside setState callback is risky for async updates.
+                // Better approach: Calculate new state, then update local state, then save to DB.
+                // But setState requires accessing 'prev'.
+
+                // Fire-and-forget save to server with the CALCULATED new matrix
+                // This is still inside the callback but we are not blocking rendering.
+                // The warning "Cannot update a component while rendering" usually happens if we trigger ANOTHER state update from here.
+                // saveDiscoveryContext is an async server action, so it shouldn't block render.
+                // The issue might be if saveDiscoveryContext triggers a revalidation that updates a component.
+
+                // Let's use a timeout to detach it from the render cycle just to be safe, 
+                // OR better: use the returned state result in a useEffect.
+                // However, since we are in an event handler (technically), we can't access 'prev' outside.
+
+                // FIX: Don't put the side effect here. 
+                // Since we need 'prev', we can't do it easily outside without reading state.matrix which might be stale.
+                // But 'state' form useExamBuilder is available.
+
+                // Actually, the cleanest way is to use the callback to calculate state, return it, 
+                // and use a useEffect to sync changes? No, that causes loops.
+
+                // Let's defer the server save execution to the next tick.
+                setTimeout(() => {
+                    saveDiscoveryContext("draft-exam", newMatrix);
+                }, 0);
+
+                return {
+                    ...prev,
+                    matrix: newMatrix
+                };
+            });
+            handleSync();
         }
     };
 
@@ -48,7 +120,7 @@ export default function ExamBuilderPage() {
             const { publishExam } = await import("@/lib/actions/exam-actions");
             const result = await publishExam({ title: examTitle, matrix: state.matrix });
             if (result.success) {
-                alert(`¡Examen publicado con éxito! URL: ${result.url}`);
+                alert(`¡Examen publicado con éxito! ID: ${result.examId}`);
             } else {
                 alert(`Error al publicar: ${result.error}`);
             }
@@ -59,26 +131,30 @@ export default function ExamBuilderPage() {
         }
     };
 
-    const handleConceptClick = (name: string) => {
-        // This could trigger a specific message in chat to focus on this concept
-        console.log("Focusing on concept:", name);
-    };
-
     const header = (
         <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
                 <Link href="/admin">
-                    <Button variant="ghost" size="icon" className="size-8 rounded-full border border-white/5">
-                        <ChevronLeft size={16} />
+                    <Button variant="ghost" size="icon" className="size-9 rounded-xl border border-white/5 bg-white/[0.02]">
+                        <ChevronLeft size={18} />
                     </Button>
                 </Link>
-                <div className="flex items-center gap-2">
-                    <Input
-                        value={examTitle}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamTitle(e.target.value)}
-                        className="bg-transparent border-none text-sm font-black text-white p-0 h-auto focus:ring-0 w-[300px]"
-                    />
-                    <span className="text-[10px] font-mono text-zinc-600 bg-white/5 px-2 py-0.5 rounded uppercase">Draft</span>
+                <div className="flex items-center gap-4">
+                    <div className="space-y-0.5">
+                        <Input
+                            value={examTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamTitle(e.target.value)}
+                            className="bg-transparent border-none text-base font-black text-white p-0 h-auto focus:ring-0 w-[300px]"
+                        />
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase">Draft Mode</span>
+                            {lastSyncedAt && (
+                                <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                                    Sincronizado: {lastSyncedAt.toLocaleTimeString()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -87,23 +163,23 @@ export default function ExamBuilderPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsPreviewOpen(true)}
-                    className="h-9 rounded-xl border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-widest gap-2"
+                    className="h-10 rounded-xl border-white/10 bg-white/5 text-[11px] font-black uppercase tracking-widest gap-2 hover:bg-white/10"
                 >
-                    <Eye size={14} />
-                    Previsualizar
+                    <Eye size={16} />
+                    Blueprint
                 </Button>
                 <Button
                     disabled={!canPublish || isPublishing}
                     onClick={handlePublish}
                     size="sm"
-                    className="h-9 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-[10px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-amber-500/10"
+                    className="h-10 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-[11px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-20 transition-all"
                 >
                     {isPublishing ? (
-                        <span className="animate-spin text-sm">⌛</span>
+                        <div className="size-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                     ) : (
-                        <Rocket size={14} />
+                        <Rocket size={16} />
                     )}
-                    Publicar Examen
+                    Publicar
                 </Button>
             </div>
         </div>
@@ -116,29 +192,38 @@ export default function ExamBuilderPage() {
                 sidebar={
                     <ConfigChat
                         examTitle={examTitle}
+                        stage={state.stage}
+                        matrix={state.matrix}
                         onUpdateState={handleUpdateFromChat}
                     />
                 }
             >
-                <div className="max-w-4xl mx-auto space-y-12">
-                    <div className="space-y-2">
-                        <h2 className="text-2xl font-black text-white tracking-tight">Entorno de Construcción</h2>
-                        <p className="text-sm text-zinc-500 max-w-xl">
-                            Conversa con el Agente Arquitecto para definir los límites del conocimiento y los posibles fallos cognitivos de tus alumnos.
+                <div className="max-w-4xl mx-auto space-y-12 pb-20">
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <div className="size-2 rounded-full bg-amber-500 animate-pulse" />
+                            <h2 className="text-3xl font-black text-white tracking-tight">Arquitectura del Diagnóstico</h2>
+                        </div>
+                        <p className="text-sm text-zinc-400 max-w-xl leading-relaxed">
+                            Diseño asistido por IA: El Agente Arquitecto mapea la topología del conocimiento mientras detecta nodos sombra (misconceptions) en tiempo real.
                         </p>
                     </div>
 
                     <CoverageHUD
+                        stage={state.stage}
+                        readiness={readiness}
                         concepts={state.matrix.concepts}
                         misconceptions={state.matrix.misconceptions}
-                        onConceptClick={handleConceptClick}
+                        onConceptClick={(name) => console.log("Focus:", name)}
                     />
 
-                    {/* Informative placeholder for ExamPreview functionality */}
-                    <div className="mt-20 pt-20 border-t border-white/5 opacity-30 select-none">
-                        <p className="text-[10px] font-mono text-center tracking-[0.5em] uppercase">
-                            Sistema de Generación de Reactivos Activo
-                        </p>
+                    {/* Footer decoration */}
+                    <div className="mt-20 pt-10 border-t border-white/5 opacity-20">
+                        <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500 uppercase tracking-[0.3em]">
+                            <span>Knowledge Engine V2.1</span>
+                            <span>Shadow Work Protocol Active</span>
+                            <span>Node Density: {state.matrix.concepts.length + state.matrix.misconceptions.length}</span>
+                        </div>
                     </div>
                 </div>
             </BuilderLayout>

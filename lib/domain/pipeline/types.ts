@@ -23,7 +23,7 @@ export type TelemetryEventType = z.infer<typeof TelemetryEventTypeSchema>;
 export const TelemetryEventSchema = z.object({
     event_type: TelemetryEventTypeSchema,
     timestamp: z.string().datetime().optional(), // ISO string, defaults to now() in DB
-    payload: z.record(z.any()), // Specific details for the event
+    payload: z.record(z.string(), z.any()), // Specific details for the event
 });
 export type TelemetryEvent = z.infer<typeof TelemetryEventSchema>;
 
@@ -43,7 +43,8 @@ export const ExamStateSchema = z.object({
     attemptId: z.string().uuid(),
     learnerId: z.string().uuid(),
     examConfigId: z.string().uuid(),
-    currentState: z.record(z.any()), // { q1: "A", q2: "SKIP" }
+    currentState: z.record(z.string(), z.any()), // { q1: "A", q2: "SKIP" }
+    resultsCache: z.record(z.string(), z.any()).optional().nullable(), // Store final evaluation
     status: ExamStatusSchema,
     startedAt: z.string().datetime(),
     lastActiveAt: z.string().datetime(),

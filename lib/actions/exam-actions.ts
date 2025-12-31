@@ -4,13 +4,27 @@ import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { checkRateLimit } from "@/lib/infrastructure/rate-limit";
 import { headers } from "next/headers";
 
-export async function publishExam(config: any) {
+export async function publishExam(config: { title: string; matrix: any; questions?: any[] }) {
     const supabase = await createClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
         return { success: false, error: "Unauthorized" };
     }
+
+    // Capture the current "Snapshot" of the builder's questions or generate them
+    // If questions aren't provided, use a default map based on matrix concepts
+    const finalQuestions = config.questions?.length ? config.questions : (config.matrix?.concepts || []).map((c: any) => ({
+        id: crypto.randomUUID(),
+        type: 'CBM',
+        stem: `Diagnóstico sobre: ${c.name}`,
+        options: [
+            { id: 'opt-a', text: 'Opción Correcta', isCorrect: true },
+            { id: 'opt-b', text: 'Distractor Común', isCorrect: false },
+            { id: 'opt-c', text: 'No lo sé / No estoy seguro', isCorrect: false, isGap: true }
+        ],
+        competencyId: c.id
+    }));
 
     // Save the exam configuration
     const { data, error } = await supabase
@@ -19,7 +33,7 @@ export async function publishExam(config: any) {
             title: config.title,
             creator_id: user.id,
             config_json: config.matrix, // The topography (concepts, misconceptions)
-            questions: config.questions || [], // The generated Lego props
+            questions: finalQuestions,     // The actual probes (Question[])
             status: "PUBLISHED",
         })
         .select("id")
@@ -58,7 +72,7 @@ export async function finalizeAttempt(attemptId: string) {
         };
     }
 
-    // 1. Mark as completed and get final state
+    // 1. Mark as completed and get final state + exam config
     const { data: attempt, error: attemptError } = await supabase
         .from("exam_attempts")
         .update({
@@ -67,7 +81,7 @@ export async function finalizeAttempt(attemptId: string) {
         })
         .eq("id", attemptId)
         .eq("learner_id", user.id)
-        .select("*, exams(config_json)")
+        .select("*, exams(config_json, questions)")
         .single();
 
     if (attemptError || !attempt) {
@@ -75,54 +89,68 @@ export async function finalizeAttempt(attemptId: string) {
         return { success: false, error: "Attempt not found or unauthorized" };
     }
 
-    // 2. Fetch all telemetry for this attempt to build StudentResponse[]
-    const { data: telemetry, error: telError } = await supabase
-        .from("telemetry_events")
+    const examData = attempt.exams;
+
+    // 2. Fetch all telemetry for this attempt from the Forensic Log (telemetry_logs)
+    const { data: logs, error: logError } = await supabase
+        .from("telemetry_logs")
         .select("*")
         .eq("attempt_id", attemptId)
         .order("timestamp", { ascending: true });
 
-    if (telError) {
-        console.error("Failed to fetch telemetry:", telError);
+    if (logError) {
+        console.error("Failed to fetch telemetry logs:", logError);
         return { success: false, error: "Failed to process evaluation evidence" };
     }
 
     // 3. Prepare data for the Evaluation Engine
     const { evaluateSession } = await import("@/lib/domain/evaluation/inference-engine");
 
-    // Map current_state (snapshot) and telemetry to StudentResponse
-    // For simplicity, we'll use the final snapshot responses combined with cumulative telemetry
-    const responses: any[] = Object.entries(attempt.current_state || {}).map(([qId, value]: [string, any]) => {
-        // Find latest telemetry for this question to get hesitation/time
-        const questionEvents = telemetry?.filter(e => e.payload.questionId === qId) || [];
-        const lastAnswerEvent = [...questionEvents].reverse().find(e => e.event_type === 'ANSWER_UPDATE');
+    // Map Snapshot + Logs to StudentResponse[]
+    const questions = (examData.questions || []) as any[];
+    const responses: any[] = questions.map(q => {
+        const studentValue = attempt.current_state[q.id];
+
+        // Find logs for this question
+        const qLogs = logs?.filter(l => l.payload.questionId === q.id) || [];
+        const answerLog = [...qLogs].reverse().find(l => l.event_type === 'ANSWER_UPDATE');
+
+        const isCorrect = q.options?.find((o: any) => o.id === studentValue)?.isCorrect || false;
 
         return {
-            questionId: qId,
-            selectedOptionId: value,
-            isCorrect: true, // This should be checked against the correct answer in a real app
-            confidence: lastAnswerEvent?.payload?.telemetry?.confidence || 'NONE',
+            questionId: q.id,
+            selectedOptionId: studentValue || 'none',
+            isCorrect: isCorrect,
+            confidence: answerLog?.payload?.telemetry?.confidence || 'NONE',
             telemetry: {
-                timeMs: lastAnswerEvent?.payload?.telemetry?.timeMs || 0,
-                hesitationCount: questionEvents.filter(e => e.event_type === 'HESITATION').length,
-                hoverTimeMs: 0,
+                timeMs: answerLog?.payload?.telemetry?.timeMs || 0,
+                hesitationCount: qLogs.filter(l => l.event_type === 'HESITATION').length,
+                hoverTimeMs: 0, // Not explicitly tracked yet in this version
             }
         };
     });
 
-    // 4. Run Evaluation
-    // Note: QMatrixMapping needs to be derived from exam config
-    const qMatrix: any[] = (attempt.exams?.config_json?.concepts || []).flatMap((c: any) =>
-        (c.questions || []).map((qId: string) => ({
-            questionId: qId,
-            competencyId: c.id,
-            isTrap: false,
-        }))
-    );
+    // 4. Build Q-Matrix Mapping from Exam Topology
+    // We map each question back to its competency and misconception
+    const qMatrix: any[] = questions.map(q => {
+        // Find if this question is a "trap" for a misconception
+        const misconception = examData.config_json?.misconceptions?.find((m: any) =>
+            m.description.includes(q.stem) || q.options?.some((o: any) => o.id === m.trapOptionId)
+        );
 
+        return {
+            questionId: q.id,
+            competencyId: q.competencyId || 'generic',
+            isTrap: !!misconception,
+            trapOptionId: misconception?.trapOptionId || q.options?.find((o: any) => !o.isCorrect && !o.isGap)?.id,
+            idDontKnowOptionId: q.options?.find((o: any) => o.isGap)?.id
+        };
+    });
+
+    // 5. Run Evaluation
     const result = evaluateSession(attemptId, user.id, responses, qMatrix);
 
-    // 5. Save results to cache
+    // 6. Save results to cache (White Box Diagnostic)
     const { error: updateError } = await supabase
         .from("exam_attempts")
         .update({ results_cache: result })

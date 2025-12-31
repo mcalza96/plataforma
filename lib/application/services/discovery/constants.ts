@@ -36,28 +36,22 @@ REGLAS ESTRUCTURALES:
 `;
 
 /**
- * Definición de la herramienta updateContext en formato Groq nativo
+ * Definición COMPRIMIDA de updateContext (ahorro: ~200 tokens)
  */
 export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
     type: 'function',
     function: {
         name: 'updateContext',
-        description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',
+        description: 'Silently update extracted context (concepts, errors, audience).',
         parameters: {
             type: 'object',
             properties: {
-                subject: {
-                    type: 'string',
-                    description: 'La materia a enseñar'
-                },
-                targetAudience: {
-                    type: 'string',
-                    description: 'Descripción del estudiante objetivo'
-                },
+                subject: { type: 'string', description: 'Subject to teach' },
+                targetAudience: { type: 'string', description: 'Target student profile' },
                 keyConcepts: {
                     type: 'array',
                     items: { type: 'string' },
-                    description: 'Conceptos fundamentales identificados'
+                    description: 'Key concepts identified'
                 },
                 identifiedMisconceptions: {
                     type: 'array',
@@ -66,28 +60,25 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                         properties: {
                             error: {
                                 type: 'string',
-                                description: 'QUALITY RULE: Must be a deep conceptual misunderstanding or false mental model (e.g., "Student believes heavy objects fall faster because they have more force"). NOT ACCEPTABLE: Simple calculation slips or lack of attention. REQUIRED: Must include student\'s INTERNAL LOGIC. Format: "[Wrong belief] because [student\'s reasoning]"'
+                                description: 'Conceptual error with student reasoning. Format: "[Wrong belief] because [reasoning]"'
                             },
                             distractor_artifact: {
                                 type: 'string',
-                                description: 'CRITICAL: The exact incorrect answer or literal value the student would write/say. E.g., if the error is adding denominators, this value MUST be "2/8". Do not describe the error here, provide the ARTIFACT. This is the literal distractor that will appear in the exam.'
+                                description: 'CRITICAL: Exact wrong answer student would write (e.g., "2/8" for adding fractions incorrectly)'
                             },
                             observable_symptom: {
                                 type: 'string',
-                                description: 'A visual or behavioral cue for an external observer (parent/teacher) to detect this error without seeing the result. E.g., "Student hesitates for >5 seconds", "Uses fingers to count", "Erases the answer twice", "Writes numerators and denominators at the same speed without pausing".'
+                                description: 'Behavioral cue (e.g., "hesitates >5s", "uses fingers")'
                             },
                             refutation: {
                                 type: 'string',
-                                description: 'QUALITY RULE: A specific counter-example, visual proof, or thought experiment that proves the student\'s logic wrong WITHOUT requiring a teacher\'s explanation. It must be self-evident. E.g., "Show that 1/4 + 1/4 is half a pizza, while 2/8 is just a quarter - proving that adding something to itself cannot result in the same or smaller value". NOT ACCEPTABLE: Just stating the correct rule or explaining the theory.'
+                                description: 'Counter-example proving error wrong (self-evident, no teacher explanation needed)'
                             }
                         }
                     },
-                    description: 'Errores conceptuales profundos (no simples olvidos) con su lógica interna y estrategia de refutación específica'
+                    description: 'Deep conceptual errors with internal logic'
                 },
-                pedagogicalGoal: {
-                    type: 'string',
-                    description: 'El objetivo pedagógico principal'
-                }
+                pedagogicalGoal: { type: 'string', description: 'Main pedagogical objective' }
             }
         }
     }

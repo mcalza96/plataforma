@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
-import { exportExamResults } from '@/lib/actions/export-actions';
+import { exportExamResultsToCSV } from '@/lib/actions/export-actions';
 
 interface ExportButtonProps {
     examId: string;
@@ -16,11 +16,11 @@ export function ExportButton({ examId, variant = 'primary', className = "" }: Ex
     const handleExport = async () => {
         setIsLoading(true);
         try {
-            const result = await exportExamResults(examId);
+            const result = await exportExamResultsToCSV(examId);
 
-            if (result.success && result.csv) {
+            if (result.success && result.content) {
                 // Create a blob and download it
-                const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+                const blob = new Blob([result.content], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -30,7 +30,7 @@ export function ExportButton({ examId, variant = 'primary', className = "" }: Ex
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             } else {
-                alert(result.error || "No se pudieron exportar los resultados.");
+                alert("No se pudieron exportar los resultados.");
             }
         } catch (error) {
             console.error("Export error:", error);

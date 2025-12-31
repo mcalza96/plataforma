@@ -7,13 +7,13 @@ import { z } from 'zod';
 export const PartialKnowledgeMapSchema = z.object({
     subject: z.string().optional().describe('Main subject of the lesson'),
     targetAudience: z.string().optional().describe('Description of the intended student'),
-    keyConcepts: z.array(z.string()).default([]).describe('Fundamental concepts identified'),
+    keyConcepts: z.array(z.string()).optional().describe('Fundamental concepts identified'),
     identifiedMisconceptions: z.array(z.object({
         error: z.string(),
         refutation: z.string()
-    })).default([]).describe('Common errors and their refutation strategies'),
+    })).optional().describe('Common errors and their refutation strategies'),
     pedagogicalGoal: z.string().optional().describe('The primary objective of this knowledge unit')
-});
+}).passthrough();
 
 export type PartialKnowledgeMap = z.infer<typeof PartialKnowledgeMapSchema>;
 

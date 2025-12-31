@@ -1,31 +1,20 @@
 'use server';
 
-import { createGroq } from '@ai-sdk/groq';
-import { streamText, tool, generateText } from 'ai';
-import { z } from 'zod';
-import { PartialKnowledgeMapSchema } from '../../domain/discovery';
+import Groq from 'groq-sdk';
 import { UsageTrackerService } from './usage-tracker';
-import { SOCRATIC_PROMPT } from '../../ai/prompts';
+import { normalizeMessages } from '@/lib/ai/utils';
 
-
-// La inicialización se hace perezosa para evitar crashes en build time o si falta la env var al cargar el modulo
+// Cliente Groq directo (sin AI SDK de Vercel)
 function getGroqClient() {
     const apiKey = process.env.GROQ_API_KEY;
-    console.log("[DiscoveryService] API Key Status:", !!apiKey);
 
     if (!apiKey) {
-        throw new Error("GROQ_API_KEY no está configurada en el servidor. Verifica tu archivo .env.local");
+        throw new Error("GROQ_API_KEY no está configurada en el servidor.");
     }
 
-    return createGroq({
-        apiKey,
-    });
+    return new Groq({ apiKey });
 }
 
-/**
- * Pedagogical Knowledge Engineer System Prompt
- * Implements "Clean Language Interviewing" and the TeacherOS "Shadow Work" protocol.
- */
 const SYSTEM_PROMPT = `
 Eres el Arquitecto Curricular de TeacherOS, un Ingeniero de Conocimiento experto en "Shadow Work" pedagógico.
 Tu misión es EXTRAER el modelo mental del usuario para construir un Blueprint de diagnóstico.
@@ -53,49 +42,164 @@ REGLAS ESTRUCTURALES:
 4.  **RESTRICCIÓN**: Haz una sola pregunta a la vez. Sé breve e incisivo.
 `;
 
-/**
- * Continues the discovery interview using Vercel AI SDK.
- */
+// Definición de herramienta en formato Groq nativo
+const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
+    type: 'function',
+    function: {
+        name: 'updateContext',
+        description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',
+        parameters: {
+            type: 'object',
+            properties: {
+                subject: {
+                    type: 'string',
+                    description: 'La materia a enseñar'
+                },
+                targetAudience: {
+                    type: 'string',
+                    description: 'Descripción del estudiante objetivo'
+                },
+                keyConcepts: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Conceptos fundamentales identificados'
+                },
+                identifiedMisconceptions: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            error: { type: 'string' },
+                            refutation: { type: 'string' }
+                        }
+                    },
+                    description: 'Errores comunes y estrategias de refutación'
+                },
+                pedagogicalGoal: {
+                    type: 'string',
+                    description: 'El objetivo pedagógico principal'
+                }
+            }
+        }
+    }
+};
+
 export async function continueInterview(messages: any[]) {
     const groq = getGroqClient();
-    const model = groq('llama-3.3-70b-versatile');
-
-    // Normalizar mensajes para cumplir con el esquema CoreMessage[] del AI SDK
-    const { normalizeMessages } = await import('@/lib/ai/utils');
     const coreMessages = normalizeMessages(messages);
 
     console.log("[DiscoveryService] CoreMessages for AI:", JSON.stringify(coreMessages, null, 2));
 
-    const result = streamText({
-        model,
-        system: SYSTEM_PROMPT,
-        messages: coreMessages,
-        toolChoice: 'auto',
-        tools: {
-            updateContext: tool({
-                description: 'Actualiza silenciosamente el contexto extraído del profesor (conceptos, errores, audiencia).',
-                parameters: PartialKnowledgeMapSchema,
-                execute: async (params: any) => {
-                    return { success: true, updatedFields: Object.keys(params) };
-                },
-            } as any),
-        },
-        onFinish: async ({ usage }) => {
-            try {
-                if (!usage) return;
-                const u = usage as any;
-                UsageTrackerService.track({
-                    userId: 'mock-user-id',
-                    model: 'llama-3.3-70b-versatile',
-                    tokensInput: u.inputTokens || u.promptTokens || 0,
-                    tokensOutput: u.outputTokens || u.completionTokens || 0,
-                    featureUsed: 'chat'
-                }).catch(e => console.error("[DiscoveryService] Async tracking error:", e));
-            } catch (trackError) {
-                console.error("[DiscoveryService] Failed to initialize usage tracking:", trackError);
-            }
-        },
-    });
+    try {
+        // Llamada directa a Groq sin AI SDK de Vercel
+        const completion = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...coreMessages.map((m: any) => ({
+                    role: m.role as 'user' | 'assistant' | 'system',
+                    content: m.content
+                }))
+            ],
+            tools: [UPDATE_CONTEXT_TOOL],
+            tool_choice: 'auto'
+        });
 
-    return result.toUIMessageStreamResponse();
+        const choice = completion.choices[0];
+        const message = choice.message;
+
+        // Procesar tool calls si existen
+        let toolResults: any[] = [];
+        if (message.tool_calls && message.tool_calls.length > 0) {
+            for (const toolCall of message.tool_calls) {
+                if (toolCall.function.name === 'updateContext') {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    console.log('[DiscoveryService] Context Updated:', JSON.stringify(args, null, 2));
+                    toolResults.push({
+                        toolCallId: toolCall.id,
+                        toolName: toolCall.function.name,
+                        args: args,
+                        result: { success: true, updatedFields: Object.keys(args) }
+                    });
+                }
+            }
+        }
+
+        // Si hubo tool calls pero no hay contenido, hacer follow-up para obtener respuesta de texto
+        let assistantContent = message.content || '';
+        if (toolResults.length > 0 && !assistantContent) {
+            console.log('[DiscoveryService] Making follow-up call for text response...');
+
+            // Construir mensajes con resultados de herramientas
+            const followUpMessages: any[] = [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...coreMessages.map((m: any) => ({
+                    role: m.role as 'user' | 'assistant' | 'system',
+                    content: m.content
+                })),
+                // El mensaje del asistente que incluye el tool call
+                {
+                    role: 'assistant' as const,
+                    tool_calls: message.tool_calls?.map(tc => ({
+                        id: tc.id,
+                        type: 'function' as const,
+                        function: {
+                            name: tc.function.name,
+                            arguments: tc.function.arguments
+                        }
+                    }))
+                },
+                // El resultado de la herramienta
+                ...toolResults.map(tr => ({
+                    role: 'tool' as const,
+                    tool_call_id: tr.toolCallId,
+                    content: JSON.stringify(tr.result)
+                }))
+            ];
+
+            const followUp = await groq.chat.completions.create({
+                model: 'llama-3.3-70b-versatile',
+                messages: followUpMessages,
+                tools: [UPDATE_CONTEXT_TOOL],
+                tool_choice: 'none' // Forzar respuesta de texto, no más tool calls
+            });
+
+            assistantContent = followUp.choices[0]?.message?.content || '';
+            console.log('[DiscoveryService] Follow-up response:', assistantContent);
+        }
+
+        // Tracking de uso (async, no bloquea)
+        if (completion.usage) {
+            UsageTrackerService.track({
+                userId: 'mock-user-id',
+                model: 'llama-3.3-70b-versatile',
+                tokensInput: completion.usage.prompt_tokens || 0,
+                tokensOutput: completion.usage.completion_tokens || 0,
+                featureUsed: 'chat'
+            }).catch(e => console.error("[DiscoveryService] Tracking error:", e));
+        }
+
+        // Construir respuesta 
+        const responseBody = JSON.stringify({
+            role: 'assistant',
+            content: assistantContent,
+            toolCalls: toolResults
+        });
+
+        return new Response(responseBody, {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-tool-calls': JSON.stringify(toolResults)
+            }
+        });
+
+    } catch (error: any) {
+        console.error('[DiscoveryService] Groq API Error:', error);
+        return new Response(JSON.stringify({
+            error: error.message || 'Error en la API de Groq'
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
+    }
 }

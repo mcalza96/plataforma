@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { useChat } from '@ai-sdk/react';
 import {
     type ArchitectState,
     type PartialKnowledgeMap,
@@ -9,14 +8,22 @@ import {
 } from '@/lib/domain/architect';
 import { compileDiagnosticProbe } from '@/lib/architect-actions';
 
+interface Message {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+}
+
 /**
  * useArchitect
  * Custom hook to manage the TeacherOS Architect session.
- * Syncs the Socratic Chat with the Knowledge Engineering Blueprint.
+ * Uses direct fetch to /api/chat instead of AI SDK's useChat for Groq SDK compatibility.
  */
 export function useArchitect() {
-    // 1. Local Input State (Since project useChat doesn't manage it)
+    // 1. Local Input State
     const [input, setInput] = useState('');
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     // 2. Core Architect State
     const [state, setState] = useState<ArchitectState>({
@@ -39,15 +46,25 @@ export function useArchitect() {
 
     // 3. Context Update Logic
     const handleContextUpdate = useCallback((newContext: PartialKnowledgeMap) => {
+        if (!newContext || typeof newContext !== 'object') {
+            console.warn('[useArchitect] Received invalid context update:', newContext);
+            return;
+        }
+
         setState(prev => {
             const updatedContext = {
                 ...prev.context,
-                ...newContext,
-                keyConcepts: Array.from(new Set([...prev.context.keyConcepts, ...(newContext.keyConcepts || [])])),
+                subject: newContext.subject ?? prev.context.subject,
+                targetAudience: newContext.targetAudience ?? prev.context.targetAudience,
+                pedagogicalGoal: newContext.pedagogicalGoal ?? prev.context.pedagogicalGoal,
+                keyConcepts: Array.from(new Set([
+                    ...(prev.context.keyConcepts || []),
+                    ...(newContext.keyConcepts || [])
+                ])),
                 identifiedMisconceptions: [
-                    ...prev.context.identifiedMisconceptions,
+                    ...(prev.context.identifiedMisconceptions || []),
                     ...(newContext.identifiedMisconceptions || []).filter(
-                        (nm: any) => !prev.context.identifiedMisconceptions.some(pm => pm.error === nm.error)
+                        (nm: any) => !(prev.context.identifiedMisconceptions || []).some(pm => pm.error === nm.error)
                     )
                 ]
             };
@@ -56,6 +73,8 @@ export function useArchitect() {
             if (updatedContext.identifiedMisconceptions.length > 0) {
                 newStage = 'shadow_work';
             } else if (updatedContext.keyConcepts.length > 0) {
+                newStage = 'concept_extraction';
+            } else if (updatedContext.subject && updatedContext.targetAudience) {
                 newStage = 'concept_extraction';
             }
 
@@ -68,50 +87,78 @@ export function useArchitect() {
         });
     }, []);
 
-    // 4. Vercel AI SDK useChat Integration
-    const chat: any = (useChat as any)({
-        api: '/api/chat',
-        onToolCall({ toolCall }: any) {
-            if (toolCall.toolName === 'updateContext') {
-                handleContextUpdate(toolCall.args as PartialKnowledgeMap);
-            }
-        }
-    });
-
-    // 5. Message Normalization
-    const normalizedMessages = useMemo(() => {
-        return (chat.messages || []).map((m: any) => ({
-            ...m,
-            content: m.content || m.parts
-                ?.filter((p: any) => p.type === 'text')
-                .map((p: any) => p.text)
-                .join('') || ''
-        }));
-    }, [chat.messages]);
-
-    // 6. Manual Helpers
+    // 4. Manual Helpers
     const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
         setInput(e.target.value);
     }, []);
 
+    // 5. Send message using direct fetch (for Groq SDK compatibility)
     const handleSubmit = useCallback(async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!input.trim() || chat.status === 'submitted' || chat.status === 'streaming') return;
+        if (!input.trim() || isLoading) return;
 
+        const userMessage: Message = {
+            id: `user-${Date.now()}`,
+            role: 'user',
+            content: input.trim()
+        };
+
+        // Optimistic update
         const currentInput = input;
-        setInput(''); // Optimistic clear
+        setInput('');
+        setMessages(prev => [...prev, userMessage]);
+        setIsLoading(true);
 
         try {
-            await chat.sendMessage({
-                role: 'user',
-                parts: [{ type: 'text', text: currentInput }]
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [...messages, userMessage].map(m => ({
+                        role: m.role,
+                        content: m.content
+                    }))
+                })
             });
-        } catch (err) {
-            console.error("[useArchitect] Send failed:", err);
-            setInput(currentInput); // Rollback
-        }
-    }, [input, chat]);
 
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('[useArchitect] Response:', data);
+
+            // Process tool calls if present
+            if (data.toolCalls && Array.isArray(data.toolCalls)) {
+                for (const tc of data.toolCalls) {
+                    if (tc.toolName === 'updateContext' && tc.args) {
+                        console.log('[useArchitect] Processing tool call:', tc.args);
+                        handleContextUpdate(tc.args as PartialKnowledgeMap);
+                    }
+                }
+            }
+
+            // Add assistant message
+            if (data.content || data.message) {
+                const assistantMessage: Message = {
+                    id: `assistant-${Date.now()}`,
+                    role: 'assistant',
+                    content: data.content || data.message || ''
+                };
+                setMessages(prev => [...prev, assistantMessage]);
+            }
+
+        } catch (err: any) {
+            console.error("[useArchitect] Send failed:", err);
+            setInput(currentInput); // Rollback input
+            setMessages(prev => prev.filter(m => m.id !== userMessage.id)); // Rollback message
+            alert(`Error: ${err.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [input, isLoading, messages, handleContextUpdate]);
+
+    // 6. Generate Diagnostic
     const handleGenerate = async () => {
         if (!state.readiness.isValid) return;
         setState(prev => ({ ...prev, isGenerating: true }));
@@ -137,11 +184,11 @@ export function useArchitect() {
 
     return {
         state,
-        messages: normalizedMessages,
+        messages,
         input,
         handleInputChange,
         handleSubmit,
-        isLoading: chat.status === 'submitted' || chat.status === 'streaming',
+        isLoading,
         handleGenerate
     };
 }

@@ -87,3 +87,27 @@ export async function compileDiagnosticProbe(state: ArchitectState) {
         };
     }
 }
+
+/**
+ * generatePrototypes
+ * Server Action to generate draft questions for the user to review in the Canvas.
+ */
+export async function generatePrototypes(state: ArchitectState) {
+    console.log("[ArchitectAction] Generating prototypes...");
+
+    try {
+        const { generatePrototypesFromContext } = await import('./application/services/assessment');
+        const prototypes = await generatePrototypesFromContext(state.context);
+
+        return {
+            success: true,
+            prototypes: prototypes.prototypes
+        };
+    } catch (error: any) {
+        console.error("[ArchitectAction] Prototype generation failed:", error);
+        return {
+            success: false,
+            error: error.message || "Error al generar prototipos"
+        };
+    }
+}

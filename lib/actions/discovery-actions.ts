@@ -79,3 +79,28 @@ export async function saveDiscoveryContext(examId: string, context: any) {
 
     return { success: true };
 }
+export async function resetDiscoveryContext() {
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    // Reset the exam draft to empty config
+    const { error } = await supabase
+        .from("exams")
+        .update({
+            config_json: {},
+            updated_at: new Date().toISOString()
+        })
+        .eq("creator_id", user.id)
+        .eq("status", "DRAFT");
+
+    if (error) {
+        console.error("Failed to reset discovery context:", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true };
+}

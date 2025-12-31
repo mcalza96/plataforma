@@ -2,6 +2,6 @@
  * Assessment Generator - Generación de Instrumentos Diagnósticos
  * Re-exporta funciones de generación para mantener compatibilidad
  */
-export { generateProbe, generateProbeFromContext } from './assessment-generator';
-export { ProbeGenerationSchema } from './schemas';
-export type { ProbeGenerationResult } from './schemas';
+export { generateProbe, generateProbeFromContext, generatePrototypesFromContext } from './assessment-generator';
+export { ProbeGenerationSchema, PrototypeSchema } from './schemas';
+export type { ProbeGenerationResult, PrototypeGenerationResult } from './schemas';

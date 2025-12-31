@@ -4,6 +4,7 @@ import type Groq from 'groq-sdk';
  * Modelo de Groq a utilizar para el Arquitecto
  */
 export const MODEL_NAME = 'llama-3.3-70b-versatile';
+export const FALLBACK_MODEL_NAME = 'llama-3.1-8b-instant';
 
 /**
  * Prompt del sistema para el Arquitecto Curricular
@@ -78,7 +79,16 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                     },
                     description: 'Deep conceptual errors with internal logic'
                 },
-                pedagogicalGoal: { type: 'string', description: 'Main pedagogical objective' }
+                pedagogicalGoal: { type: 'string', description: 'Main pedagogical objective' },
+                studentProfile: { type: 'string', description: 'Detailed learner profile (e.g. engineering students, context, age)' },
+                contentPreference: { type: 'string', enum: ['user_provided', 'ai_suggested', 'mixed'], description: 'How the syllabus is defined' },
+                examConfig: {
+                    type: 'object',
+                    properties: {
+                        questionCount: { type: 'number' },
+                        durationMinutes: { type: 'number' }
+                    }
+                }
             }
         }
     }

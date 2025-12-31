@@ -20,7 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const learner = learnerId ? await getLearnerById(learnerId) : null;
 
     return (
-        <div className="min-h-screen bg-[#1A1A1A] text-white">
+        <div className="h-screen bg-[#1A1A1A] text-white overflow-hidden">
             <AdminShell user={user} role={role} learner={learner}>
                 {children}
             </AdminShell>

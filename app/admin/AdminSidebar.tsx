@@ -28,7 +28,6 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
         { href: '/admin/courses', label: 'Gestión de Cursos', icon: 'school' },
         { href: '/admin/exam-builder', label: 'Constructor', icon: 'rocket_launch' },
         { href: '/admin/exams', label: 'Gestión de Exámenes', icon: 'description' },
-        { href: '/admin/architect', label: 'Arquitecto IA', icon: 'psychology' },
         { href: '/admin/users', label: 'Gestión de Familias', icon: 'group' },
         { href: '/admin/submissions', label: 'Entregas y Feedback', icon: 'reviews' },
         { href: '/admin/stats', label: 'Estadísticas Globales', icon: 'analytics' },

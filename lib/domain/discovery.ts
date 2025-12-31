@@ -19,7 +19,24 @@ export const PartialKnowledgeMapSchema = z.object({
         from: z.string(),
         to: z.string()
     })).optional().describe('Directed links representing prerequisite relationships between concepts'),
-    pedagogicalGoal: z.string().optional().describe('The primary objective of this knowledge unit')
+    pedagogicalGoal: z.string().optional().describe('The primary objective of this knowledge unit'),
+    studentProfile: z.string().optional().describe('Specific details about the learners (e.g., engineering students)'),
+    contentPreference: z.enum(['user_provided', 'ai_suggested', 'mixed']).optional().describe('How the content is defined'),
+    examConfig: z.object({
+        questionCount: z.number().optional(),
+        durationMinutes: z.number().optional()
+    }).optional().describe('User preferences for the exam structure'),
+    prototypes: z.array(z.object({
+        id: z.string(),
+        stem: z.string(),
+        options: z.array(z.object({
+            content: z.string(),
+            isCorrect: z.boolean(),
+            rationale: z.string().describe('Why this option exists (pedagogical reason)')
+        })),
+        pedagogicalReasoning: z.string().describe('Why this question was chosen/designed this way'),
+        alternatives: z.array(z.string()).optional().describe('Other ways to ask this')
+    })).optional().describe('Draft questions for user review')
 }).passthrough();
 
 export type PartialKnowledgeMap = z.infer<typeof PartialKnowledgeMapSchema>;

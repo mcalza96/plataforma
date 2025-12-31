@@ -18,3 +18,22 @@ export const ProbeGenerationSchema = z.object({
 });
 
 export type ProbeGenerationResult = z.infer<typeof ProbeGenerationSchema>;
+
+/**
+ * Schema para generación de prototipos (múltiples ejemplos)
+ */
+export const PrototypeSchema = z.object({
+    prototypes: z.array(z.object({
+        id: z.string().describe("UUID o ID corto único para el prototipo"),
+        stem: z.string().describe("El enunciado de la pregunta"),
+        options: z.array(z.object({
+            content: z.string(),
+            isCorrect: z.boolean(),
+            rationale: z.string().describe("Por qué esta opción es válida o por qué es un distractor efectivo")
+        })),
+        pedagogicalReasoning: z.string().describe("Descripción breve de por qué elegimos esta pregunta y su enfoque"),
+        alternatives: z.array(z.string()).optional().describe("Formas alternativas de preguntar lo mismo")
+    }))
+});
+
+export type PrototypeGenerationResult = z.infer<typeof PrototypeSchema>;

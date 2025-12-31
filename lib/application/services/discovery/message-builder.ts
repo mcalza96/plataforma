@@ -47,11 +47,14 @@ function buildStructuredMemory(context: any): string {
         `[BLUEPRINT v${Date.now()}]`,
         `Subject: ${context.subject || 'TBD'}`,
         `Audience: ${context.targetAudience || 'TBD'}`,
+        `Profile: ${context.studentProfile || 'TBD'}`,
         `Goal: ${context.pedagogicalGoal || 'TBD'}`,
+        `Content Pref: ${context.contentPreference || 'TBD'}`,
         `Concepts (${conceptCount}/3): ${concepts.join(', ') || 'none'}`,
         `Misconceptions (${misconceptionCount}/1): ${misconceptionCount > 0
             ? misconceptions.map((m: any) => m.error).join('; ')
             : 'none'}`,
+        `Exam: ${context.examConfig ? `${context.examConfig.questionCount}q, ${context.examConfig.durationMinutes}min` : 'TBD'}`,
         `Progress: ${progress}% | Complete: ${isComplete ? 'YES' : 'NO'}`,
         ``,
         `RULES: (1) Don't ask about fields already set above. (2) Focus on missing data. (3) NEVER mention updateContext in your response.`

@@ -16,17 +16,15 @@ interface ArchitectLayoutProps {
  */
 export function ArchitectLayout({ chatPanel, blueprintPanel }: ArchitectLayoutProps) {
     return (
-        <div className="flex h-screen w-full bg-[#1A1A1A] text-gray-200 overflow-hidden">
+        <div className="flex flex-1 w-full bg-[#1A1A1A] text-gray-200 overflow-hidden min-h-0">
             {/* Left Panel: Socratic Chat (40%) */}
             <motion.aside
                 initial={{ x: -20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
-                className="w-[40%] h-full border-r border-[#333333] flex flex-col overflow-hidden"
+                className="w-[40%] flex flex-col border-r border-[#333333] overflow-hidden min-h-0"
             >
-                <div className="flex-1 overflow-y-auto">
-                    {chatPanel}
-                </div>
+                {chatPanel}
             </motion.aside>
 
             {/* Right Panel: Knowledge Engineering Blueprint (60%) */}
@@ -34,11 +32,9 @@ export function ArchitectLayout({ chatPanel, blueprintPanel }: ArchitectLayoutPr
                 initial={{ x: 20, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
-                className="w-[60%] h-full flex flex-col overflow-hidden bg-[#121212]"
+                className="flex-1 flex flex-col overflow-hidden bg-[#121212] min-h-0"
             >
-                <div className="flex-1 overflow-y-auto">
-                    {blueprintPanel}
-                </div>
+                {blueprintPanel}
             </motion.main>
         </div>
     );

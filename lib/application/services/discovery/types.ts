@@ -10,8 +10,16 @@ export interface ToolCallArguments {
     identifiedMisconceptions?: Array<{
         error: string;
         refutation: string;
+        distractor_artifact?: string;
+        observable_symptom?: string;
     }>;
     pedagogicalGoal?: string;
+    studentProfile?: string;
+    contentPreference?: 'user_provided' | 'ai_suggested' | 'mixed';
+    examConfig?: {
+        questionCount?: number;
+        durationMinutes?: number;
+    };
 }
 
 /**

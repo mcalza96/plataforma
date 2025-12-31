@@ -7,10 +7,12 @@ import { PartialKnowledgeMapSchema, type PartialKnowledgeMap } from './discovery
  * Represents the sequential phases of the pedagogical knowledge engineering interview.
  */
 export const ArchitectStageSchema = z.enum([
-    'initial_profiling', // Defining subject and target audience
-    'concept_extraction', // Identifying key concepts/topics
-    'shadow_work',       // Probing for misconceptions and hidden errors
-    'synthesis'          // Final review before generation
+    'initial_profiling',     // Defining subject and target audience
+    'content_definition',    // Deciding on content source (user vs AI) and suggestions
+    'concept_extraction',    // Identifying key concepts/topics
+    'shadow_work',           // Probing for misconceptions and hidden errors
+    'exam_configuration',    // Defining number of questions and duration
+    'synthesis'              // Final review and prototype generation
 ]);
 
 export type ArchitectStage = z.infer<typeof ArchitectStageSchema>;

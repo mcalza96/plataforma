@@ -3,7 +3,7 @@
 import { normalizeMessages } from '@/lib/ai/utils';
 import { UsageTrackerService } from '../usage-tracker';
 import { getGroqClient } from './groq-client';
-import { MODEL_NAME, UPDATE_CONTEXT_TOOL } from './constants';
+import { MODEL_NAME, FALLBACK_MODEL_NAME, UPDATE_CONTEXT_TOOL } from './constants';
 import { buildInitialMessages, buildFollowUpMessages } from './message-builder';
 import { processToolCalls, shouldMakeFollowUp } from './tool-processor';
 import type { DiscoveryResponse } from './types';
@@ -43,12 +43,28 @@ export async function continueInterview(
     console.log("[DiscoveryService] Current Context:", JSON.stringify(currentContext, null, 2));
 
     try {
-        const completion = await groq.chat.completions.create({
-            model: MODEL_NAME,
-            messages: buildInitialMessages(coreMessages, stage, currentContext),
-            tools: [UPDATE_CONTEXT_TOOL],
-            tool_choice: 'auto'
-        });
+        let completion;
+        try {
+            console.log(`[DiscoveryService] Attempting call with primary model: ${MODEL_NAME}`);
+            completion = await groq.chat.completions.create({
+                model: MODEL_NAME,
+                messages: buildInitialMessages(coreMessages, stage, currentContext),
+                tools: [UPDATE_CONTEXT_TOOL],
+                tool_choice: 'auto'
+            });
+        } catch (error: any) {
+            if (error.status === 429) {
+                console.warn(`[DiscoveryService] Rate limit hit for ${MODEL_NAME}. Falling back to ${FALLBACK_MODEL_NAME}...`);
+                completion = await groq.chat.completions.create({
+                    model: FALLBACK_MODEL_NAME,
+                    messages: buildInitialMessages(coreMessages, stage, currentContext),
+                    tools: [UPDATE_CONTEXT_TOOL],
+                    tool_choice: 'auto'
+                });
+            } else {
+                throw error;
+            }
+        }
 
         const choice = completion.choices[0];
         const message = choice.message;
@@ -73,6 +89,9 @@ export async function continueInterview(
                     if (update.subject) mergedContext.subject = update.subject;
                     if (update.targetAudience) mergedContext.targetAudience = update.targetAudience;
                     if (update.pedagogicalGoal) mergedContext.pedagogicalGoal = update.pedagogicalGoal;
+                    if (update.studentProfile) mergedContext.studentProfile = update.studentProfile;
+                    if (update.contentPreference) mergedContext.contentPreference = update.contentPreference;
+                    if (update.examConfig) mergedContext.examConfig = update.examConfig;
 
                     // Actualizar Arrays (Acumulativo)
 

@@ -70,12 +70,28 @@ export function useArchitect() {
             };
 
             let newStage = prev.stage;
-            if (updatedContext.identifiedMisconceptions.length > 0) {
+
+            // FSM Transitions - Robust logic
+            const hasSubjectAndTarget = updatedContext.subject && (updatedContext.targetAudience || updatedContext.studentProfile);
+
+            if (hasSubjectAndTarget && prev.stage === 'initial_profiling') {
+                newStage = 'content_definition';
+            }
+
+            if (updatedContext.contentPreference && newStage === 'content_definition') {
+                newStage = 'concept_extraction';
+            }
+
+            if (updatedContext.keyConcepts.length >= 2 && newStage === 'concept_extraction') {
                 newStage = 'shadow_work';
-            } else if (updatedContext.keyConcepts.length > 0) {
-                newStage = 'concept_extraction';
-            } else if (updatedContext.subject && updatedContext.targetAudience) {
-                newStage = 'concept_extraction';
+            }
+
+            if (updatedContext.identifiedMisconceptions.length >= 1 && newStage === 'shadow_work') {
+                newStage = 'exam_configuration';
+            }
+
+            if (updatedContext.examConfig?.questionCount && newStage === 'exam_configuration') {
+                newStage = 'synthesis';
             }
 
             return {
@@ -159,7 +175,34 @@ export function useArchitect() {
         }
     }, [input, isLoading, messages, handleContextUpdate]);
 
-    // 6. Generate Diagnostic
+    // 6. Generate Prototypes
+    const handleGeneratePrototypes = async () => {
+        setState(prev => ({ ...prev, isGenerating: true }));
+
+        try {
+            const { generatePrototypes } = await import('@/lib/architect-actions');
+            const result = await generatePrototypes(state);
+
+            if (result.success && result.prototypes) {
+                setState(prev => ({
+                    ...prev,
+                    isGenerating: false,
+                    context: {
+                        ...prev.context,
+                        prototypes: result.prototypes
+                    }
+                }));
+            } else {
+                throw new Error(result.error || "Falla en la generación de prototipos");
+            }
+        } catch (error: any) {
+            console.error("[useArchitect] Prototype generation error:", error);
+            setState(prev => ({ ...prev, isGenerating: false }));
+            alert(error.message || "No se pudo generar los prototipos. Intenta de nuevo.");
+        }
+    };
+
+    // 7. Generate Final Diagnostic
     const handleGenerate = async () => {
         if (!state.readiness.isValid) return;
         setState(prev => ({ ...prev, isGenerating: true }));
@@ -183,13 +226,88 @@ export function useArchitect() {
         }
     };
 
+    // 0. Constructor Extensions
+    const [examTitle, setExamTitle] = useState("Nueva Evaluación de Diagnóstico");
+
+    // 8. Publish Exam
+    const handlePublish = async () => {
+        if (!state.readiness.isValid) return;
+        setState(prev => ({ ...prev, isGenerating: true }));
+
+        try {
+            const { publishExam } = await import("@/lib/actions/exam-actions");
+            const result = await publishExam({
+                title: examTitle,
+                matrix: state.context,
+                // If we have prototypes, we could potentially use them or just use the generated probe
+                questions: state.context.prototypes as any[]
+            });
+
+            if (result.success) {
+                alert(`¡Examen publicado con éxito!`);
+                return result;
+            } else {
+                throw new Error(result.error || "Falla al publicar");
+            }
+        } catch (error: any) {
+            console.error("[useArchitect] Publish error:", error);
+            alert(error.message || "No se pudo publicar el examen.");
+        } finally {
+            setState(prev => ({ ...prev, isGenerating: false }));
+        }
+    };
+
+    // 9. Reset Session
+    const handleReset = async () => {
+        console.log("[useArchitect] Resetting session...");
+        setIsLoading(true);
+        try {
+            const { resetDiscoveryContext } = await import("@/lib/actions/discovery-actions");
+            const result = await resetDiscoveryContext();
+            if (result.success) {
+                console.log("[useArchitect] Reset success in DB");
+                setMessages([]);
+                setState({
+                    stage: 'initial_profiling',
+                    context: {
+                        subject: '',
+                        targetAudience: '',
+                        keyConcepts: [],
+                        identifiedMisconceptions: [],
+                        pedagogicalGoal: ''
+                    },
+                    readiness: {
+                        hasTargetAudience: false,
+                        conceptCount: 0,
+                        misconceptionCount: 0,
+                        isValid: false
+                    },
+                    isGenerating: false
+                });
+                setInput('');
+            } else {
+                throw new Error(result.error || "Falla al reiniciar");
+            }
+        } catch (error: any) {
+            console.error("[useArchitect] Reset error:", error);
+            alert(error.message || "No se pudo reiniciar la sesión.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return {
         state,
         messages,
         input,
+        examTitle,
+        setExamTitle,
         handleInputChange,
         handleSubmit,
         isLoading,
-        handleGenerate
+        handleGenerate,
+        handleGeneratePrototypes,
+        handlePublish,
+        handleReset
     };
 }

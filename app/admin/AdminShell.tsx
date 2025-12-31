@@ -24,12 +24,12 @@ export default function AdminShell({ children, user, role, learner }: AdminShell
     }, [pathname]);
 
     return (
-        <div className="flex flex-col xl:flex-row min-h-screen bg-[#1A1A1A]">
+        <div className="flex flex-col xl:flex-row h-screen bg-[#1A1A1A] overflow-hidden">
             {/* Sidebar with controlled state */}
             <AdminSidebar isOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
 
-            {/* Main Content Area - Padding only on XL when sidebar is fixed */}
-            <div className="flex-1 xl:ml-64 flex flex-col min-h-screen relative bg-[#1A1A1A]">
+            {/* Main Content Area - Fixed height to prevent overflow */}
+            <div className="flex-1 xl:ml-64 flex flex-col h-screen relative bg-[#1A1A1A] overflow-hidden min-h-0">
                 <AdminTopBar
                     user={user}
                     role={role}
@@ -37,7 +37,7 @@ export default function AdminShell({ children, user, role, learner }: AdminShell
                     onMenuClick={() => setSidebarOpen(true)}
                 />
 
-                <main className="flex-1 p-4 md:p-8">
+                <main className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col min-h-0">
                     {children}
                 </main>
             </div>

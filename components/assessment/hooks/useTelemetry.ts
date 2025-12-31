@@ -1,0 +1,83 @@
+'use client';
+
+import { useRef, useState, useEffect, useCallback } from 'react';
+import type { TelemetryData } from '@/lib/domain/assessment';
+
+type InteractionType = 'HOVER' | 'CHANGE' | 'CLICK';
+
+/**
+ * Hook for capturing forensic telemetry during question interaction
+ * Measures cognitive load through hesitation, focus loss, and time spent
+ */
+export function useTelemetry() {
+    const startTimeRef = useRef<number>(0);
+    const [hesitationCount, setHesitationCount] = useState(0);
+    const [focusLostCount, setFocusLostCount] = useState(0);
+    const [confidence, setConfidence] = useState<'LOW' | 'MEDIUM' | 'HIGH' | undefined>(undefined);
+
+    /**
+     * Start tracking telemetry (call when question mounts)
+     */
+    const start = useCallback(() => {
+        startTimeRef.current = Date.now();
+        setHesitationCount(0);
+        setFocusLostCount(0);
+        setConfidence(undefined);
+    }, []);
+
+    /**
+     * Log an interaction event
+     */
+    const logInteraction = useCallback((type: InteractionType) => {
+        if (type === 'CHANGE') {
+            setHesitationCount((prev) => prev + 1);
+        }
+        // HOVER and CLICK are logged but don't increment counters
+        // They could be used for advanced analytics
+    }, []);
+
+    /**
+     * Set confidence level (for CBM questions)
+     */
+    const setConfidenceLevel = useCallback((level: 'LOW' | 'MEDIUM' | 'HIGH') => {
+        setConfidence(level);
+    }, []);
+
+    /**
+     * Capture final telemetry snapshot
+     */
+    const captureSnapshot = useCallback((): TelemetryData => {
+        const timeMs = Date.now() - startTimeRef.current;
+        return {
+            timeMs,
+            hesitationCount,
+            focusLostCount,
+            confidence,
+        };
+    }, [hesitationCount, focusLostCount, confidence]);
+
+    /**
+     * Track window blur events (focus loss)
+     */
+    useEffect(() => {
+        const handleBlur = () => {
+            setFocusLostCount((prev) => prev + 1);
+        };
+
+        window.addEventListener('blur', handleBlur);
+        return () => window.removeEventListener('blur', handleBlur);
+    }, []);
+
+    return {
+        start,
+        logInteraction,
+        setConfidenceLevel,
+        captureSnapshot,
+        // Expose current values for debugging/display
+        currentMetrics: {
+            hesitationCount,
+            focusLostCount,
+            confidence,
+        },
+    };
+}

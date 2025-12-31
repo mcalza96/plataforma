@@ -17,7 +17,23 @@ export const chatRateLimit = new Ratelimit({
     prefix: "@upstash/ratelimit/chat",
 });
 
-export async function checkRateLimit(identifier: string, type: 'diagnostic' | 'chat') {
+// Telemetry: Permisive (60 requests / minute)
+export const telemetryRateLimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(60, "1 m"),
+    analytics: true,
+    prefix: "@upstash/ratelimit/telemetry",
+});
+
+// Finalization: Strict (1 request / 10 seconds)
+export const finalizationRateLimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(1, "10 s"),
+    analytics: true,
+    prefix: "@upstash/ratelimit/finalization",
+});
+
+export async function checkRateLimit(identifier: string, type: 'diagnostic' | 'chat' | 'telemetry' | 'finalization') {
     const isRedisConfigured = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
 
     if (!isRedisConfigured) {
@@ -26,7 +42,13 @@ export async function checkRateLimit(identifier: string, type: 'diagnostic' | 'c
     }
 
     try {
-        const limiter = type === 'diagnostic' ? diagnosticRateLimit : chatRateLimit;
+        let limiter;
+        switch (type) {
+            case 'diagnostic': limiter = diagnosticRateLimit; break;
+            case 'chat': limiter = chatRateLimit; break;
+            case 'telemetry': limiter = telemetryRateLimit; break;
+            case 'finalization': limiter = finalizationRateLimit; break;
+        }
         const { success, limit, reset, remaining } = await limiter.limit(identifier);
         return { success, limit, reset, remaining };
     } catch (error) {

@@ -79,7 +79,8 @@ export async function generateProbeFromContext(
         )),
         metadata: {
             generatedFromArchitect: true,
-            pedagogicalGoal: context.pedagogicalGoal
+            pedagogicalGoal: context.pedagogicalGoal,
+            observerGuide: object.observer_guide  // ✨ NUEVO: Persistir la guía del observador
         }
     };
 }

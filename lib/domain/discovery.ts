@@ -10,8 +10,10 @@ export const PartialKnowledgeMapSchema = z.object({
     keyConcepts: z.array(z.string()).optional().describe('Fundamental concepts identified'),
     identifiedMisconceptions: z.array(z.object({
         error: z.string(),
-        refutation: z.string()
-    })).optional().describe('Common errors and their refutation strategies'),
+        refutation: z.string(),
+        distractor_artifact: z.string().optional(),
+        observable_symptom: z.string().optional()
+    })).optional().describe('Common errors with their refutation strategies, literal artifacts, and observable symptoms'),
     pedagogicalGoal: z.string().optional().describe('The primary objective of this knowledge unit')
 }).passthrough();
 

@@ -82,3 +82,117 @@ export const ProposalSchema = z.object({
         reason: z.string(),
     })),
 });
+
+// --- Forensic Assessment System (White Box Diagnostics) ---
+
+/**
+ * Telemetry data captured during question interaction
+ * Measures cognitive load and decision-making patterns
+ */
+export interface TelemetryData {
+    /** Time spent on question in milliseconds */
+    timeMs: number;
+    /** Number of times the user changed their answer */
+    hesitationCount: number;
+    /** Number of times the window lost focus */
+    focusLostCount: number;
+    /** Confidence level (only for CBM questions) */
+    confidence?: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+
+/**
+ * Answer payload sent when user completes a question
+ */
+export interface AnswerPayload {
+    /** Unique identifier of the question */
+    questionId: string;
+    /** Answer value (option ID, ordered array, segment ID, etc.) */
+    value: any;
+    /** True if user pressed "No sé" (knowledge gap) */
+    isGap: boolean;
+    /** Forensic telemetry data */
+    telemetry: TelemetryData;
+}
+
+/**
+ * Question types supported by the Lego system
+ */
+export type QuestionType = 'CBM' | 'RANKING' | 'SPOTTING';
+
+/**
+ * Base question interface
+ */
+export interface BaseQuestion {
+    id: string;
+    type: QuestionType;
+    stem: string; // Question text
+}
+
+/**
+ * Confidence-Based Marking question
+ */
+export interface CBMQuestion extends BaseQuestion {
+    type: 'CBM';
+    options: Array<{
+        id: string;
+        text: string;
+    }>;
+}
+
+/**
+ * Ranking question (drag & drop ordering)
+ */
+export interface RankingQuestion extends BaseQuestion {
+    type: 'RANKING';
+    items: Array<{
+        id: string;
+        text: string;
+    }>;
+}
+
+/**
+ * Spotting question (error detection)
+ */
+export interface SpottingQuestion extends BaseQuestion {
+    type: 'SPOTTING';
+    text: string;
+    interactiveSegments: Array<{
+        id: string;
+        startIndex: number;
+        endIndex: number;
+    }>;
+}
+
+/**
+ * Union type for all question types
+ */
+export type Question = CBMQuestion | RankingQuestion | SpottingQuestion;
+
+/**
+ * Question state for navigation
+ */
+export type QuestionState = 'NOT_SEEN' | 'SEEN' | 'ANSWERED' | 'FLAGGED';
+
+/**
+ * Question metadata for the sidebar
+ */
+export interface QuestionMetadata {
+    id: string;
+    state: QuestionState;
+    isFlagged: boolean;
+}
+
+/**
+ * Zod schema for answer validation
+ */
+export const AnswerPayloadSchema = z.object({
+    questionId: z.string(),
+    value: z.any(),
+    isGap: z.boolean(),
+    telemetry: z.object({
+        timeMs: z.number(),
+        hesitationCount: z.number(),
+        focusLostCount: z.number(),
+        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+    }),
+});

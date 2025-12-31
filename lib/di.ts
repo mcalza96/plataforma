@@ -17,6 +17,8 @@ import { ICompetencyRepository } from './domain/repositories/competency-reposito
 
 import { CourseService } from './application/services/course-service';
 import { LessonService } from './application/services/lesson-service';
+import { SubmissionService } from './application/services/submission-service';
+import { FeedbackService } from './application/services/feedback-service';
 import { MetadataService } from './application/services/metadata';
 import { AIOrchestratorService } from './application/services/ai-orchestrator-service';
 import { LearnerService } from './application/services/learner-service';
@@ -44,6 +46,8 @@ let aiProvider: IAIProvider | null = null;
 // Services
 let courseService: CourseService | null = null;
 let lessonService: LessonService | null = null;
+let submissionService: SubmissionService | null = null;
+let feedbackService: FeedbackService | null = null;
 let metadataService: MetadataService | null = null;
 let aiOrchestratorService: AIOrchestratorService | null = null;
 let learnerService: LearnerService | null = null;
@@ -196,4 +200,24 @@ export function getAIOrchestratorService(): AIOrchestratorService {
         );
     }
     return aiOrchestratorService;
+}
+
+/**
+ * Singleton instance of the Submission Service.
+ */
+export function getSubmissionService(): SubmissionService {
+    if (!submissionService) {
+        submissionService = new SubmissionService(getLessonRepository());
+    }
+    return submissionService;
+}
+
+/**
+ * Singleton instance of the Feedback Service.
+ */
+export function getFeedbackService(): FeedbackService {
+    if (!feedbackService) {
+        feedbackService = new FeedbackService(getLessonRepository());
+    }
+    return feedbackService;
 }

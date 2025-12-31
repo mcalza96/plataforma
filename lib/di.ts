@@ -17,7 +17,7 @@ import { ICompetencyRepository } from './domain/repositories/competency-reposito
 
 import { CourseService } from './application/services/course-service';
 import { LessonService } from './application/services/lesson-service';
-import { MetadataService } from './application/services/metadata-service';
+import { MetadataService } from './application/services/metadata';
 import { AIOrchestratorService } from './application/services/ai-orchestrator-service';
 import { LearnerService } from './application/services/learner-service';
 import { FamilyService } from './application/services/family-service';
@@ -180,8 +180,7 @@ export function getAIProvider(): IAIProvider {
  */
 export function getMetadataService(): MetadataService {
     if (!metadataService) {
-        const apiKey = process.env.GROQ_API_KEY || '';
-        metadataService = new MetadataService(apiKey);
+        metadataService = new MetadataService();
     }
     return metadataService;
 }

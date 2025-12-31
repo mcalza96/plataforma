@@ -49,22 +49,14 @@ export class LearnerService {
     }
 
     async getStudentFrontier(learnerId: string): Promise<any[]> {
-        const { createClient } = await import('../../infrastructure/supabase/supabase-server');
-        const supabase = await createClient();
-
-        const { data, error } = await supabase.rpc('get_student_frontier', {
-            p_learner_id: learnerId
-        });
-
-        if (error) {
-            console.error('Error fetching student frontier:', error);
-            return [];
-        }
-        return data as any[];
+        // Delegated to stats repository to preserve abstraction
+        return this.statsRepository.getStudentFrontier(learnerId);
     }
 
     async calculateKnowledgeDelta(learnerId: string): Promise<any[]> {
         const stats = await this.getLearnerFullStats(learnerId);
+
+        // Calculate delta with a more realistic baseline (75% of current)
         return stats.skills.map(s => ({
             category: s.name,
             initial: Math.max(10, Math.round(s.percentage * 0.75)),

@@ -92,6 +92,21 @@ export class SupabaseStatsRepository implements IStatsRepository {
         })) as LearnerAchievement[];
     }
 
+    async getStudentFrontier(learnerId: string): Promise<any[]> {
+        const supabase = await createClient();
+
+        const { data, error } = await supabase.rpc('get_student_frontier', {
+            p_learner_id: learnerId
+        });
+
+        if (error) {
+            console.error('Error fetching student frontier:', error);
+            return [];
+        }
+
+        return data as any[];
+    }
+
     async getGlobalStats(): Promise<{
         totalLearners: number;
         totalSubmissions: number;

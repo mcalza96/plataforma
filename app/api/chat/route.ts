@@ -51,7 +51,7 @@ export async function POST(req: Request) {
                 );
 
             case 'PEDAGOGICAL_QUERY':
-                const { continueInterview } = await import('@/lib/application/services/discovery-service');
+                const { continueInterview } = await import('@/lib/application/services/discovery');
                 return await continueInterview(coreMessages);
 
             case 'CHAT':

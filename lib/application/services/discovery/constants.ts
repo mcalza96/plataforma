@@ -64,11 +64,17 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                     items: {
                         type: 'object',
                         properties: {
-                            error: { type: 'string' },
-                            refutation: { type: 'string' }
+                            error: {
+                                type: 'string',
+                                description: 'QUALITY RULE: Must be a deep conceptual misunderstanding or false mental model (e.g., "Student believes heavy objects fall faster because they have more force"). NOT ACCEPTABLE: Simple calculation slips or lack of attention. REQUIRED: Must include student\'s INTERNAL LOGIC. Format: "[Wrong belief] because [student\'s reasoning]"'
+                            },
+                            refutation: {
+                                type: 'string',
+                                description: 'QUALITY RULE: A specific counter-example or demonstration that proves the error wrong. NOT ACCEPTABLE: Just stating the correct rule. REQUIRED: Explain HOW to refute it with specific examples or demonstrations'
+                            }
                         }
                     },
-                    description: 'Errores comunes y estrategias de refutación'
+                    description: 'Errores conceptuales profundos (no simples olvidos) con su lógica interna y estrategia de refutación específica'
                 },
                 pedagogicalGoal: {
                     type: 'string',

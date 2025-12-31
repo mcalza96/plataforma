@@ -1,8 +1,8 @@
-import { getCourseService } from '@/lib/di';
+import { getAdminService } from '@/lib/di';
 import StatCard from '@/components/ui/StatCard';
 
 export default async function AdminStatsPage() {
-    const service = getCourseService();
+    const service = getAdminService();
     const { totalLearners, totalSubmissions, totalCourses } = await service.getGlobalStats();
 
     return (

@@ -24,21 +24,33 @@ function getGroqClient() {
 
 /**
  * Pedagogical Knowledge Engineer System Prompt
+ * Implements "Clean Language Interviewing" and the TeacherOS "Shadow Work" protocol.
  */
 const SYSTEM_PROMPT = `
-${SOCRATIC_PROMPT}
+Eres el Arquitecto Curricular de TeacherOS, un Ingeniero de Conocimiento experto en "Shadow Work" pedagógico.
+Tu misión es EXTRAER el modelo mental del usuario para construir un Blueprint de diagnóstico.
 
-CONVERSATION PROTOCOL:
-1. One question at a time.
-2. **Silent Observation (CRITICAL)**: Every time the user mentions a specific concept or a potential student error, you MUST call 'updateContext' with the detected information. 
-   - DO NOT announce you are updating the context.
-   - DO NOT ask permission to record the data.
-   - Simply call the tool and continue the Socratic dialogue in the same turn.
-3. When you have identified at least:
-   - 3 Key Concepts
-   - 1 Misconception
-   - Clear Target Audience
-   You may mention that the "Knowledge Map" is taking shape, but keep digging for "Atomic Steps".
+REGLAS ESTRUCTURALES:
+1.  **Fases del Diálogo**:
+    - PERFIL: Define 'subject' (materia) y 'targetAudience' (ej: "Niños de 8 años").
+    - TOPOLOGÍA: Identifica 'keyConcepts' (conceptos nucleares). No aceptes vaguedades.
+    - SOMBRA (CRÍTICO): Por cada concepto, extrae 'identifiedMisconceptions' (error y refutación).
+
+2.  **Uso de la Herramienta 'updateContext' (ESTRICTO)**:
+    - Debes llamar a 'updateContext' para persistir datos tan pronto como los detectes.
+    - **SCHEMA BINDING**: Solo puedes usar estas llaves exactas:
+        * 'subject': string (la materia)
+        * 'targetAudience': string (quién aprende)
+        * 'keyConcepts': string[] (lista de conceptos)
+        * 'identifiedMisconceptions': {error: string, refutation: string}[]
+        * 'pedagogicalGoal': string (propósito educativo)
+    - **PROHIBICIÓN**: No inventes llaves como 'new_key_concept' o 'study_subject'.
+    - **PROHIBICIÓN**: NUNCA menciones el nombre de la herramienta ni sus parámetros en tu respuesta de texto.
+    - **PROHIBICIÓN**: NUNCA digas "actualizando contexto". Sé silencioso.
+
+3.  **Calidad Pedagógica**: Un malentendido ('misconception') debe ser una idea errónea específica, no una falta de conocimiento.
+
+4.  **RESTRICCIÓN**: Haz una sola pregunta a la vez. Sé breve e incisivo.
 `;
 
 /**
@@ -49,22 +61,8 @@ export async function continueInterview(messages: any[]) {
     const model = groq('llama-3.3-70b-versatile');
 
     // Normalizar mensajes para cumplir con el esquema CoreMessage[] del AI SDK
-    const coreMessages = messages.map(m => {
-        // Si ya tiene content string, lo usamos
-        if (typeof m.content === 'string' && m.content.length > 0) {
-            return { role: m.role, content: m.content };
-        }
-        // Si tiene parts (formato del cliente), extraemos el texto
-        if (Array.isArray(m.parts)) {
-            const text = m.parts
-                .filter((p: any) => p.type === 'text')
-                .map((p: any) => p.text)
-                .join('\n');
-            return { role: m.role, content: text };
-        }
-        // Fallback
-        return { role: m.role, content: m.content || '' };
-    });
+    const { normalizeMessages } = await import('@/lib/ai/utils');
+    const coreMessages = normalizeMessages(messages);
 
     console.log("[DiscoveryService] CoreMessages for AI:", JSON.stringify(coreMessages, null, 2));
 

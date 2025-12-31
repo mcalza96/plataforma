@@ -26,6 +26,7 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
 
     const navLinks = [
         { href: '/admin/courses', label: 'Gestión de Cursos', icon: 'school' },
+        { href: '/admin/architect', label: 'Arquitecto IA', icon: 'psychology' },
         { href: '/admin/users', label: 'Gestión de Familias', icon: 'group' },
         { href: '/admin/submissions', label: 'Entregas y Feedback', icon: 'reviews' },
         { href: '/admin/stats', label: 'Estadísticas Globales', icon: 'analytics' },

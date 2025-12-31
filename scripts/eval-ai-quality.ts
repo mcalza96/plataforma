@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { CompetencyNode } from '../lib/domain/competency';
-import { generateProbe } from '../lib/application/services/assessment-generator';
+import { generateProbe } from '../lib/application/services/assessment';
 
 const GoldenSet = [
     {

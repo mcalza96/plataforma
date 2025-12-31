@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import { type ArchitectState } from './domain/architect';
-import { generateProbeFromContext } from './application/services/assessment-generator';
+import { generateProbeFromContext } from './application/services/assessment';
 import { revalidatePath } from 'next/cache';
 
 /**

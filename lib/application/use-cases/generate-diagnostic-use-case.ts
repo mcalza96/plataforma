@@ -2,7 +2,7 @@
 
 import { CompetencyNode } from '../../domain/competency';
 import { DiagnosticProbe } from '../../domain/assessment';
-import { generateProbe } from '../services/assessment-generator';
+import { generateProbe } from '../services/assessment';
 
 interface GenerateDiagnosticInput {
     competency: CompetencyNode;

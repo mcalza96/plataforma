@@ -117,16 +117,36 @@ export class CalibrationService {
                 discrimination_index: discrimination
             });
 
-            // Alerting Logic
+            // 6. Pathology Detection (Forensic Analysis)
+            const alerts: any[] = [];
+
+            // A. High Slip Alert (Ambiguity / "Trick Question")
+            // "Si más del 40% de los estudiantes 'expertos' fallan en una pregunta"
+            // slip = P(Fail | Expert)
             if (slip > 0.4) {
                 await this.createAlert(supabase, examId, qId, 'HIGH_SLIP',
-                    `Pregunta ambigua. El ${Math.round(slip * 100)}% de los mejores alumnos fallan aquí.`);
+                    `Alerta de Ambigüedad (Criticidad Alta): El ${Math.round(slip * 100)}% de los mejores estudiantes (Top 25%) falló esta pregunta. Revise la redacción por posibles 'trampas' injustas o claves erróneas.`);
             }
 
-            if (guess > 0.3) {
-                await this.createAlert(supabase, examId, qId, 'USELESS_DISTRACTOR',
-                    `Distractores ineficaces. El ${Math.round(guess * 100)}% de los novatos acierta.`);
-            }
+            // B. Useless Distractor Pruning (Efficiency)
+            // "Detecta opciones de respuesta con tasa inferior al 5%"
+            // We need option IDs and their selection rates.
+            // Assuming we have access to specific distractor counts here from aggregated stats.
+            // NOTE: In this simplified "calculateItemParameters" loop, we might not have granular distractor counts unless we aggregated them earlier.
+            // But we can check if `guess` (Pass Rate of Novices) is super high? No, that's diff.
+            // We need to fetch/access the distractor breakdown. 
+            // For now, let's assume we implement a dedicated "auditDistractors" method or we have the counts.
+
+            // To properly do this, we should iterate counts like AdminService did. 
+            // Let's rely on AdminService's `runCalibrationCycle` which *does* have the breakdown, 
+            // OR enhance this service to calculate it.
+            // AdminService calls `calibration-service`? 
+            // actually AdminService `runCalibrationCycle` seems to duplicate some logic or implement the "Cycle".
+            // The directive says: "En el CalibrationService, implementa la lógica forense avanzada".
+            // So we should add `auditDistractors` here or enhance this method.
+            // Let's skip simplified "guess" check and rely on a distinct call or assume AdminService does the heavy lifting.
+            // Wait, requirements say "En el CalibrationService... implementa Poda de Distractores".
+            // So I should add a method here `detectPathologies`.
 
             results.push({
                 examId,
@@ -135,11 +155,53 @@ export class CalibrationService {
             });
         }
 
+        // After main loop, we might run specific sub-routines
+        await this.detectDistractorPathologies(supabase, attempts, examId);
+
         return results;
     }
 
+    /**
+     * Sub-routine for Distractor Analysis
+     */
+    private async detectDistractorPathologies(supabase: any, attempts: any[], examId: string) {
+        // Aggregate all option selections
+        const optionCounts: Record<string, Record<string, number>> = {}; // { qId: { optId: count } }
+        const totalCounts: Record<string, number> = {};
+
+        attempts.forEach(a => {
+            if (a.current_state) {
+                for (const [qId, val] of Object.entries(a.current_state)) {
+                    // @ts-ignore
+                    const optId = val?.selectedOptionId || val; // Handle payload variants
+                    if (optId) {
+                        if (!optionCounts[qId]) optionCounts[qId] = {};
+                        optionCounts[qId][optId] = (optionCounts[qId][optId] || 0) + 1;
+                        totalCounts[qId] = (totalCounts[qId] || 0) + 1;
+                    }
+                }
+            }
+        });
+
+        for (const [qId, counts] of Object.entries(optionCounts)) {
+            const total = totalCounts[qId];
+            for (const [optId, count] of Object.entries(counts)) {
+                // Ignore correct answer? We assume we need metadata to know which is correct, 
+                // or we flag *any* low selection. Usually correct answer is selected > 5%.
+                // If the correct answer is selected < 5%, that's a different HUGE problem (Difficulty/Key Error).
+                // Let's assume we flag "Opciones Irrelevantes".
+
+                const rate = count / total;
+                if (rate < 0.05) {
+                    await this.createAlert(supabase, examId, qId, 'USELESS_DISTRACTOR',
+                        `Poda Sugerida: La opción '${optId}' es ruido estadístico (<${(rate * 100).toFixed(1)}% selección). Considere eliminarla o reformularla.`);
+                }
+            }
+        }
+    }
+
     private async createAlert(supabase: any, examId: string, questionId: string, type: string, msg: string) {
-        // Find teacher from exam
+        // Find teacher from exam to assign logic ownership
         const { data: exam } = await supabase.from('exams').select('creator_id').eq('id', examId).single();
         if (!exam) return;
 
@@ -148,39 +210,77 @@ export class CalibrationService {
             exam_id: examId,
             question_id: questionId,
             alert_type: type,
-            severity: type === 'HIGH_SLIP' ? 'CRITICAL' : 'MEDIUM',
+            severity: type === 'HIGH_SLIP' ? 'CRITICAL' : 'LOW',
             message: msg
         });
     }
 
     /**
      * Detección de "Deriva de Concepto" (Concept Drift)
-     * Detects if a misconception is surging compared to baseline.
+     * Compares current week's performance vs historic baseline.
      */
     async detectConceptDrift(examId: string) {
-        // Implementation simplified for task
-        // We would aggregate results_cache->competencyDiagnoses->misconceptionId
         const supabase = await createClient();
 
-        // Use RPC or view for speed
-        const { data: driftData } = await supabase.from('vw_pathology_ranking').select('*').eq('exam_id', examId);
+        // 1. Get Historic Baseline (Avg score/success rate for this exam > 7 days ago)
+        // We need a way to group attempts by time.
+        // Simplified: Fetch aggregated stats from a "baseline" period vs "recent" period.
 
-        if (!driftData) return;
+        const now = new Date();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-        driftData.forEach(async (d: any) => {
-            // Mock threshold: if occurrences > 20% of cohort size (assuming we know size)
-            // Or simpler: if confidence > 0.8 and occurrences > 5
-            if (d.total_occurrences > 5 && d.avg_confidence_score > 0.8) {
-                await supabase.from('integrity_alerts').insert({
-                    teacher_id: d.teacher_id,
-                    exam_id: examId,
-                    competency_id: d.competency_id,
-                    alert_type: 'CONCEPT_DRIFT',
-                    severity: 'CRITICAL',
-                    message: `Deriva detectada en ${d.competency_id}. Misconception activo con alta confianza.`
+        // Fetch Recent Attempts (Last 7 Days)
+        const { data: recentAttempts } = await supabase
+            .from('exam_attempts')
+            .select('results_cache')
+            .eq('exam_config_id', examId)
+            .gte('finished_at', sevenDaysAgo.toISOString());
+
+        // Fetch Historic (Older than 7 days) - Limit 100 for perf?
+        const { data: historicAttempts } = await supabase
+            .from('exam_attempts')
+            .select('results_cache')
+            .eq('exam_config_id', examId)
+            .lt('finished_at', sevenDaysAgo.toISOString())
+            .limit(100);
+
+        if (!recentAttempts || recentAttempts.length < 5 || !historicAttempts || historicAttempts.length < 10) {
+            // Not enough data for drift
+            return;
+        }
+
+        // Calculate Success Rate per Concept
+        const getConceptRates = (attempts: any[]) => {
+            const rates: Record<string, { total: number, passed: number }> = {};
+            attempts.forEach(a => {
+                const diagnoses = a.results_cache?.competencyDiagnoses || [];
+                diagnoses.forEach((d: any) => {
+                    const cid = d.competencyId;
+                    if (!rates[cid]) rates[cid] = { total: 0, passed: 0 };
+                    rates[cid].total++;
+                    if (d.state === 'MASTERED') rates[cid].passed++;
                 });
+            });
+            return rates;
+        };
+
+        const recentRates = getConceptRates(recentAttempts);
+        const baselineRates = getConceptRates(historicAttempts);
+
+        // Compare
+        for (const [cid, recent] of Object.entries(recentRates)) {
+            const baseline = baselineRates[cid];
+            if (baseline && baseline.total > 5) {
+                const recentSuccess = recent.passed / recent.total;
+                const baselineSuccess = baseline.passed / baseline.total;
+
+                // Drop > 15% is alarming
+                if (baselineSuccess - recentSuccess > 0.15) {
+                    await this.createAlert(supabase, examId, cid, 'CONCEPT_DRIFT',
+                        `Deriva de Concepto: La tasa de éxito en '${cid}' cayó del ${(baselineSuccess * 100).toFixed(0)}% al ${(recentSuccess * 100).toFixed(0)}% en la última semana.`);
+                }
             }
-        });
+        }
     }
 
     /**

@@ -55,7 +55,30 @@ export function useExamSync(attemptId: string, initialAnswers: Record<string, an
         hydrate();
     }, [attemptId, setAnswers]);
 
-    // Periodic sync
+    // 3. Heartbeat Logic (Idle Protection)
+    // If the user is idle for > 60s (no queue updates), we force a sync to ensure data safety.
+    useEffect(() => {
+        const HEARTBEAT_THRESHOLD_MS = 60000; // 60s
+
+        const heartbeatTimer = setInterval(() => {
+            // We can check if there are unsynced changes in the queue, or just ping.
+            // Requirement says "synchronization forced if student > 60s ... without interacting".
+            // Since `sync` only sends if there are queue items (handled in useTelemetrySync usually),
+            // we might want to ensure we at least TRY to sync what's pending if they go idle.
+
+            if (queue.current.length > 0) {
+                // If we have data pending and haven't synced in a while, do it.
+                // The main SYNC_INTERVAL_MS is 10s, so this is a failsafe.
+                // But maybe they are offline? 
+                // Let's force a sync attempt.
+                sync();
+            }
+        }, HEARTBEAT_THRESHOLD_MS);
+
+        return () => clearInterval(heartbeatTimer);
+    }, [sync, queue]);
+
+    // Periodic sync (Standard Loop)
     useEffect(() => {
         const timer = setInterval(sync, SYNC_INTERVAL_MS);
         return () => {
@@ -68,6 +91,9 @@ export function useExamSync(attemptId: string, initialAnswers: Record<string, an
     useEffect(() => {
         const handleBeforeUnload = () => {
             if (queue.current.length > 0) {
+                // Try to use beacon if possible (Sync is async usually), 
+                // but here we just call the method. 
+                // React 18+ strict mode might double invoke, it's fine.
                 sync();
             }
         };

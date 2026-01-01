@@ -30,17 +30,33 @@ export class AdminService {
         const supabase = await createClient();
 
         // 1. Fetch Raw Data (Batch Processing)
+        // 1. Fetch Raw Data (Batch Processing)
+        // Trigger Rule: "Cuando un examen alcance los 10 intentos completados (N=10)"
+        // In a real trigger, we'd check if (total % 10 === 0) or just > 10.
+        // For reliability, we run if > 10, but maybe debounced in real life.
         const attempts = await this.statsRepository.getCalibrationData(examId);
-        if (!attempts || attempts.length < 10) return false; // Need minimum cohort size
 
-        // 2. Identify High Performers (Top 25%)
+        // Requirement: Minimum 10 attempts to have statistical significance
+        if (!attempts || attempts.length < 10) {
+            console.log(`Calibration skipped: Insufficient N (${attempts?.length || 0} < 10)`);
+            return false;
+        }
+
+        // 2. Identify High Performers (Top 25%) - The "Experts"
         const scores = attempts.map(a => ({
             learnerId: a.learner_id,
             score: a.results_cache?.overallScore || 0
         }));
+        // Sort descending
         scores.sort((a, b) => b.score - a.score);
-        const top25Cutoff = scores[Math.floor(scores.length * 0.25)].score;
-        const topPerformers = new Set(scores.filter(s => s.score >= top25Cutoff).map(s => s.learnerId));
+
+        // Identify the score threshold for the top 25%
+        const top25Index = Math.floor(scores.length * 0.25);
+        // Ensure minimal top group size (at least 1 person if N=10, 25% is 2.5 -> 2 people)
+        // We take the slice 0 to top25Index (exclusive if 0-indexed, so actually index is count)
+        const expertCount = Math.max(1, top25Index);
+
+        const topPerformers = new Set(scores.slice(0, expertCount).map(s => s.learnerId));
 
         // 3. Aggregate Item Statistics
         const itemStats: Record<string, { total: number, correct: number, expertFail: number, novicePass: number, distractorCounts: Record<string, number> }> = {};

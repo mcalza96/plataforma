@@ -17,12 +17,18 @@ interface KnowledgeMapProps {
 export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) => {
     // 1. Map concepts to their diagnostic state and handle prerequisite propagation
     const nodeStates = useMemo(() => {
-        const states: Record<string, 'MASTERED' | 'MISCONCEPTION' | 'GAP' | 'LOCKED' | 'UNKNOWN'> = {};
+        const states: Record<string, {
+            status: 'MASTERED' | 'MISCONCEPTION' | 'GAP' | 'LOCKED' | 'UNKNOWN';
+            reason?: string;
+        }> = {};
 
         // Initial state from diagnostics
-        matrix.keyConcepts.forEach(c => states[c] = 'UNKNOWN');
+        matrix.keyConcepts.forEach(c => states[c] = { status: 'UNKNOWN' });
         result.competencyDiagnoses.forEach(d => {
-            states[d.competencyId] = d.state;
+            states[d.competencyId] = {
+                status: d.state,
+                reason: d.evidence.reason // Capture the "why"
+            };
         });
 
         // Hard Pruning Logic: Propagate "Infection" or "Blockage"
@@ -37,8 +43,8 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
         const queue: string[] = [];
 
         // Identify starting points for blockage (Bugs and Gaps)
-        Object.entries(states).forEach(([id, state]) => {
-            if (state === 'MISCONCEPTION' || state === 'GAP') {
+        Object.entries(states).forEach(([id, data]) => {
+            if (data.status === 'MISCONCEPTION' || data.status === 'GAP') {
                 queue.push(id);
             }
         });
@@ -57,7 +63,13 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
 
         // Apply Pruning: Blocked nodes become LOCKED
         blockedNodes.forEach(nodeId => {
-            states[nodeId] = 'LOCKED';
+            if (states[nodeId]) {
+                states[nodeId] = {
+                    ...states[nodeId],
+                    status: 'LOCKED',
+                    reason: states[nodeId].reason || 'Bloqueo por prerrequisito fallido'
+                };
+            }
         });
 
         return states;
@@ -83,7 +95,7 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
                 id: concept,
                 x: 100 + level * 200,
                 y: 100 + currentInLevel * 120,
-                state: nodeStates[concept] || 'UNKNOWN'
+                state: nodeStates[concept] || { status: 'UNKNOWN' }
             };
         });
     }, [matrix, nodeStates]);
@@ -117,7 +129,7 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
                                 x1={fromNode.x} y1={fromNode.y} x2={toNode.x} y2={toNode.y}
                                 stroke="currentColor" strokeWidth="2"
                                 markerEnd="url(#arrow)"
-                                className={nodeStates[p.from] === 'MISCONCEPTION' ? 'text-rose-500/20' : 'text-zinc-800'}
+                                className={nodeStates[p.from]?.status === 'MISCONCEPTION' ? 'text-rose-500/20' : 'text-zinc-800'}
                             />
                         );
                     })}
@@ -135,7 +147,7 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
                     >
                         <div className="relative">
                             {/* Infection Pulse for Bugs */}
-                            {node.state === 'MISCONCEPTION' && (
+                            {node.state.status === 'MISCONCEPTION' && (
                                 <motion.div
                                     animate={{ scale: [1, 1.4, 1], opacity: [0.5, 0, 0.5] }}
                                     transition={{ repeat: Infinity, duration: 2 }}
@@ -145,26 +157,33 @@ export const KnowledgeMap: React.FC<KnowledgeMapProps> = ({ result, matrix }) =>
 
                             <div className={`
                                 size-10 rounded-xl flex items-center justify-center border-2 transition-all duration-500
-                                ${node.state === 'MASTERED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''}
-                                ${node.state === 'MISCONCEPTION' ? 'bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : ''}
-                                ${node.state === 'GAP' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : ''}
-                                ${node.state === 'LOCKED' ? 'bg-zinc-950 border-zinc-900 text-zinc-800 grayscale scale-90' : ''}
-                                ${node.state === 'UNKNOWN' ? 'bg-zinc-900 border-zinc-800 text-zinc-600' : ''}
+                                ${node.state.status === 'MASTERED' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''}
+                                ${node.state.status === 'MISCONCEPTION' ? 'bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : ''}
+                                ${node.state.status === 'GAP' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : ''}
+                                ${node.state.status === 'LOCKED' ? 'bg-zinc-950 border-zinc-900 text-zinc-800 grayscale scale-90' : ''}
+                                ${node.state.status === 'UNKNOWN' ? 'bg-zinc-900 border-zinc-800 text-zinc-600' : ''}
                             `}>
-                                {node.state === 'MASTERED' && <Target className="size-4" />}
-                                {node.state === 'MISCONCEPTION' && <ShieldAlert className="size-4" />}
-                                {node.state === 'GAP' && <Hammer className="size-4" />}
-                                {node.state === 'LOCKED' && <Lock className="size-3" />}
-                                {node.state === 'UNKNOWN' && <Brain className="size-4" />}
+                                {node.state.status === 'MASTERED' && <Target className="size-4" />}
+                                {node.state.status === 'MISCONCEPTION' && <ShieldAlert className="size-4" />}
+                                {node.state.status === 'GAP' && <Hammer className="size-4" />}
+                                {node.state.status === 'LOCKED' && <Lock className="size-3" />}
+                                {node.state.status === 'UNKNOWN' && <Brain className="size-4" />}
                             </div>
 
-                            {/* Label */}
+                            {/* Label & Active Feedback */}
                             <div className="absolute top-full mt-3 left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-                                <p className={`text-[9px] font-black uppercase tracking-widest ${node.state === 'LOCKED' ? 'text-zinc-700' : 'text-white'}`}>
-                                    {node.state === 'LOCKED' ? 'Protección Pedagógica' : node.id}
+                                <p className={`text-[9px] font-black uppercase tracking-widest ${node.state.status === 'LOCKED' ? 'text-zinc-700' : 'text-white'}`}>
+                                    {node.state.status === 'LOCKED' ? 'Protección' : node.id}
                                 </p>
-                                {node.state === 'MISCONCEPTION' && (
-                                    <span className="text-[7px] font-bold text-rose-500 uppercase tracking-tighter">INFECTADO - REPARAR</span>
+
+                                {/* Infection Reason (Visible permanently or on group hover) */}
+                                {node.state.status === 'MISCONCEPTION' && (
+                                    <div className="flex flex-col items-center mt-1">
+                                        <span className="text-[7px] font-bold text-rose-500 uppercase tracking-tighter animate-pulse">INFECTADO</span>
+                                        <span className="text-[8px] text-rose-300/80 max-w-[120px] whitespace-normal bg-black/80 px-2 py-1 rounded border border-rose-500/20 mt-1 hidden group-hover:block z-50">
+                                            {node.state.reason}
+                                        </span>
+                                    </div>
                                 )}
                             </div>
                         </div>

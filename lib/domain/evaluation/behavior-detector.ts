@@ -46,27 +46,27 @@ export function calculateRTE(timeMs: number, expectedTimeSeconds?: number): numb
 /**
  * Detecta si una respuesta fue emitida demasiado rápido.
  * 
- * Si se proporciona RTE, usa la regla NT10 (RTE < 0.3).
- * Si no, usa el umbral absoluto (Legacy < 2s).
+ * Regla NT10: Respuesta es "Rapid Guessing" si RTE < 0.3 (Uses less than 30% of expected time).
+ * Fallback: Si no hay expected data, usa umbral absoluto < 2000ms.
  */
 export function isRapidGuessing(timeMs: number, rte?: number): boolean {
     if (rte !== undefined) {
-        return rte < RAPID_GUESSING_RTE_THRESHOLD;
+        return rte < 0.3; // NT10 Rule strict compliance
     }
-    return timeMs < RAPID_GUESSING_THRESHOLD_MS;
+    return timeMs < 2000; // Legacy absolute fallback
 }
 
 /**
  * Calculates Temporal Entropy (Hi) for Mobile Context.
- * Hi = (Changes * Volatility) + (Revisit Penalty)
- * 
  * Formula: Hi = (hesitationCount * 0.5) + (revisitCount * 1.0)
+ * 
+ * Used to detect "Duda Tóxica" or "Circular Navigation".
  */
 export function calculateTemporalEntropy(
     hesitationCount: number,
     revisitCount: number
 ): number {
-    return (hesitationCount * VOLATILITY_FACTOR) + (revisitCount * REVISIT_PENALTY);
+    return (hesitationCount * 0.5) + (revisitCount * 1.0);
 }
 
 /**

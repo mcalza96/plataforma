@@ -13,18 +13,20 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
     const cookieStore = await cookies();
     const studentId = cookieStore.get('learner_id')?.value;
 
+    // 1. Session Validation Shield
     if (!studentId) {
         redirect('/select-profile');
     }
 
-    // 1. Fetch Exam Configuration via Server Action (includes Assignment Validation)
+    // 2. Fetch Exam Configuration via Server Action 
+    // This implicitly checks RLS via getAssessment -> exam_assignments check
     const exam = await getAssessment(id);
 
     if (!exam) {
         notFound();
     }
 
-    // 2. Identify/Create Attempt
+    // 3. Identify/Create Attempt (Securely using Service Role for Snapshot Access)
     const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
     const serviceSupabase = await createServiceRoleClient();
 
@@ -37,15 +39,14 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         .single();
 
     if (!attempt) {
-        // Time Identity Injection: Ensure questions have time metadata (Retrocompatibility)
-        // If question lacks metadata, we calculate it dynamically using the Domain logic.
+        // Time Identity Injection & Readiness Double-Check
         const { calculateMinViableTime } = await import("@/lib/domain/assessment");
 
         const enhancedQuestions = (exam.questions || []).map((q: any) => ({
             ...q,
-            expected_time_seconds: q.expected_time_seconds || 60, // Default 60s
+            expected_time_seconds: q.expected_time_seconds || 60,
             min_viable_time: q.min_viable_time || calculateMinViableTime(q.stem || ""),
-            difficulty_tier: q.difficulty_tier || 'medium' // Default to medium
+            difficulty_tier: q.difficulty_tier || 'medium'
         }));
 
         const { data: newAttempt, error: createError } = await serviceSupabase
@@ -56,27 +57,42 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
                 status: "IN_PROGRESS",
                 current_state: {},
                 config_snapshot: {
-                    matrix: exam.config_json,
-                    questions: enhancedQuestions
+                    matrix: exam.config_json, // Immutable snapshot of topology
+                    questions: enhancedQuestions // Immutable snapshot of items
                 }
             })
             .select()
             .single();
 
         if (createError) {
-            console.error("Failed to create exam attempt:", createError);
-            throw new Error("Failed to create exam attempt");
+            console.error("[Assessment] Failed to create exam attempt snapshot:", createError);
+            throw new Error("Failed to initialize diagnostic session.");
         }
         attempt = newAttempt;
     }
 
-    // 3. Load & Sanitize Questions (Remove correct answers/feedback from client payload)
+    // 4. Payload Sanitization (The Firewall)
+    // We strictly filter what goes to the client. NO isCorrect, NO internal metadata.
     const rawQuestions = (attempt.config_snapshot?.questions || exam.questions || []) as any[];
+
+    // Explicit mapping to secured Question type
     const questions: Question[] = rawQuestions.map(q => ({
-        ...q,
+        id: q.id,
+        type: q.type, // Ensure type is passed
+        stem: q.stem,
+        text: q.text, // Some legacy might use text
+        interactiveSegments: q.interactiveSegments, // For Spotting
+        items: q.items, // For Ranking
+        competencyId: q.competencyId, // Needed for frontend grouping if any? Maybe dangerous? 
+        // Actually usually okay, but let's keep it minimal if possible. 
+        // The prompt says "Same logic as current but sanitized".
+        // We KEEP competencyId for UI context if needed, but definitely NOT isCorrect.
         options: q.options?.map((o: any) => ({
             id: o.id,
-            text: o.text || o.content // Handle both naming conventions
+            text: o.text || o.content,
+            isGap: !!o.isGap // We explicitly PRESERVE isGap as it is a UI state (confianza)
+            // isCorrect is STRIPPED
+            // trapId / misconceptionId is STRIPPED
         }))
     }));
 
@@ -84,8 +100,11 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         return (
             <div className="h-screen flex items-center justify-center bg-[#0A0A0A] text-white p-8">
                 <div className="text-center space-y-4 max-w-md">
-                    <p className="text-xl font-black">Blueprint sin Reactivos</p>
-                    <p className="text-sm text-zinc-500">Este examen tiene definida su topología pedagógica pero aún no tiene reactivos generados.</p>
+                    <p className="text-xl font-black">Sonda de Diagnóstico Vacía</p>
+                    <p className="text-sm text-zinc-500">
+                        La topología de este examen ha sido cargada, pero no se han generado reactivos válidos.
+                        Contacte a su administrador.
+                    </p>
                 </div>
             </div>
         );

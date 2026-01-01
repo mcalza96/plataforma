@@ -1,116 +1,68 @@
-/**
- * Feedback Generator - Natural Language Generation (NLG) Simple
- * 
- * Este servicio transforma los resultados del Motor de Inferencia en un
- * reporte narrativo empático y accionable para el estudiante.
- */
+import { DiagnosticResult } from '@/lib/domain/evaluation/types';
 
-import {
-    DiagnosticResult,
-    CompetencyDiagnosis,
-    CompetencyEvaluationState
-} from '../../domain/evaluation/types';
-
-export interface FeedbackNarrative {
-    title: string;
-    message: string;
-    tone: 'info' | 'success' | 'warning' | 'critical';
-}
-
-export interface FeedbackReport {
-    executiveSummary: string;
-    behavioralNote?: string;
-    competencyNarratives: Record<string, FeedbackNarrative>;
-    nextStepsHeadline: string;
+interface FeedbackNarrative {
+    glow: string[];
+    grow: string[];
+    meta: string;
 }
 
 /**
- * Genera el reporte narrativo basado en el resultado del diagnóstico.
+ * FeedbackGenerator
+ * Transform raw diagnostic data into qualitative pedagogical narratives.
+ * Logic: "Glow & Grow" - Reinforce mastery, isolate bugs without judgment.
  */
-export function generateNarrative(result: DiagnosticResult): FeedbackReport {
-    const { overallScore, behaviorProfile, competencyDiagnoses } = result;
+export class FeedbackGenerator {
 
-    // 1. Resumen Ejecutivo
-    let executiveSummary = '';
-    if (overallScore >= 85) {
-        executiveSummary = '¡Excelente desempeño! Demuestras una base sólida en la mayoría de los conceptos evaluados.';
-    } else if (overallScore >= 60) {
-        executiveSummary = 'Buen progreso. Tienes claridad en varios puntos, pero hemos identificado áreas específicas que necesitan refuerzo.';
-    } else {
-        executiveSummary = 'Este diagnóstico nos muestra que hay fundamentos clave que aún no están claros. Es el momento perfecto para nivelar.';
-    }
+    static generate(result: DiagnosticResult): FeedbackNarrative {
+        const glow: string[] = [];
+        const grow: string[] = [];
+        let meta = "";
 
-    // 2. Nota Conductual (Telemetría y Metacognición)
-    let behavioralNote: string | undefined;
-    const { eceScore, calibrationStatus } = result.calibration;
+        // 1. GLOW: Identify Mastered Competencies
+        const mastered = result.competencyDiagnoses.filter(d => d.state === 'MASTERED');
+        if (mastered.length > 0) {
+            const subjects = mastered.map(d => d.competencyId).join(", "); // Ideally use proper labels
+            if (mastered.length === 1) {
+                glow.push(`Has demostrado un control técnico sólido sobre ${mastered[0].competencyId}. Tu ejecución fue precisa y fluida.`);
+            } else {
+                glow.push(`Tu dominio sobre ${mastered.length} conceptos clave es evidente. Destacas especialmente en la aplicación de ${mastered[0].competencyId}.`);
+            }
+        } else {
+            glow.push("Has iniciado el proceso de calibración. Tu esfuerzo inicial establece la línea base para el crecimiento.");
+        }
 
-    if (eceScore > 20) {
-        behavioralNote = "Detectamos una desviación metacognitiva significativa. Tu percepción de éxito no coincide con tu ejecución real (Punto Ciego Cognitivo). Te recomendamos revisar los fundamentos con mayor detenimiento.";
-    } else if (calibrationStatus === 'OVERCONFIDENT') {
-        behavioralNote = "Tiendes a mostrar mucha seguridad incluso en temas que aún no dominas. Esto puede ocultar puntos ciegos en tu aprendizaje.";
-    } else if (calibrationStatus === 'UNDERCONFIDENT') {
-        behavioralNote = "Tienes más conocimientos de los que crees. ¡Confía más en tus respuestas!";
-    } else if (behaviorProfile.isImpulsive) {
-        behavioralNote = 'Notamos que respondes muy rápido. Para los próximos temas, te recomendamos tomarte un momento para leer cada opción en voz alta.';
-    } else if (behaviorProfile.isAnxious) {
-        behavioralNote = 'Vimos que dudaste en algunas respuestas. Esto es normal cuando estamos aprendiendo; la práctica te dará la seguridad que falta.';
-    }
+        // 2. GROW: Misconceptions (Bugs) & Gaps
+        const misconceptions = result.competencyDiagnoses.filter(d => d.state === 'MISCONCEPTION');
+        const gaps = result.competencyDiagnoses.filter(d => d.state === 'GAP');
 
-    // 3. Narrativas por Competencia
-    const competencyNarratives: Record<string, FeedbackNarrative> = {};
+        if (misconceptions.length > 0) {
+            misconceptions.forEach(m => {
+                // Template: Clinical isolation of the bug
+                grow.push(`En ${m.competencyId}, detectamos una inconsistencia: ${m.evidence.reason}.`);
+            });
+        }
 
-    for (const diagnosis of competencyDiagnoses) {
-        competencyNarratives[diagnosis.competencyId] = generateCompetencyNarrative(diagnosis);
-    }
+        if (gaps.length > 0) {
+            grow.push(`Identificamos ${gaps.length} áreas donde la falta de fundamentos impide la resolución: ${gaps.map(g => g.competencyId).slice(0, 2).join(", ")}.`);
+        }
 
-    // 4. Titular de Siguientes Pasos
-    const criticalBugs = competencyDiagnoses.filter(d => d.state === 'MISCONCEPTION').length;
-    const nextStepsHeadline = criticalBugs > 0
-        ? `Tienes ${criticalBugs} puntos críticos que requieren atención inmediata.`
-        : '¡Listo para tu plan de nivelación personalizado!';
+        if (misconceptions.length === 0 && gaps.length === 0) {
+            grow.push("No se detectaron bloqueos críticos en esta sesión. Estás listo para aumentar la complejidad.");
+        }
 
-    return {
-        executiveSummary,
-        behavioralNote,
-        competencyNarratives,
-        nextStepsHeadline
-    };
-}
+        // 3. META: Calibration Analysis
+        const { eceScore, calibrationStatus, blindSpots } = result.calibration;
 
-/**
- * Genera la narrativa específica para una sola competencia
- */
-function generateCompetencyNarrative(diagnosis: CompetencyDiagnosis): FeedbackNarrative {
-    const { state, evidence } = diagnosis;
+        if (blindSpots > 0) {
+            meta = `Alerta Metacognitiva: Tienes ${blindSpots} puntos ciegos. Reportaste alta seguridad en respuestas incorrectas, lo que indica un error de juicio que debemos recalibrar.`;
+        } else if (calibrationStatus === 'UNDERCONFIDENT') {
+            meta = "Tu precisión es mayor que tu confianza. Sabes más de lo que crees; confía en tu primer impulso.";
+        } else if (calibrationStatus === 'CALIBRATED') {
+            meta = "Tu autoevaluación es precisa. Sabes lo que sabes y reconoces lo que ignoras. Excelente madurez cognitiva.";
+        } else {
+            meta = "Tu calibración está dentro de rangos normales. Continúa monitoreando tu certeza antes de responder.";
+        }
 
-    switch (state) {
-        case 'MISCONCEPTION':
-            return {
-                title: 'Conflicto Cognitivo Detectado',
-                message: `Parece que hay una confusión específica: ${evidence.reason}. Necesitas ver la refutación visual para ajustar este concepto.`,
-                tone: 'critical'
-            };
-
-        case 'GAP':
-            return {
-                title: 'Nuevos Fundamentos',
-                message: 'Aún no hemos detectado una base sólida aquí. Empezaremos desde cero con andamiaje progresivo.',
-                tone: 'warning'
-            };
-
-        case 'MASTERED':
-            return {
-                title: 'Concepto Dominado',
-                message: 'Manejas este tema con solidez y seguridad. ¡Sigue así!',
-                tone: 'success'
-            };
-
-        case 'UNKNOWN':
-        default:
-            return {
-                title: 'Evidencia Insuficiente',
-                message: 'No logramos capturar suficiente información clara. Volveremos a evaluar este punto más adelante.',
-                tone: 'info'
-            };
+        return { glow, grow, meta };
     }
 }

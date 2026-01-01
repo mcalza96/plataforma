@@ -55,11 +55,17 @@ export const CognitiveMirror: React.FC<CognitiveMirrorProps> = ({ calibration })
                 <div className="flex-1 space-y-6">
                     <header>
                         <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                            Espejo Metacognitivo
-                            {isOverconfident && <AlertTriangle className="w-5 h-5 text-amber-500 animate-pulse" />}
+                            Calibración Metacognitiva
+                            {isOverconfident ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase tracking-wider">Desajuste: +{Math.round(calibrationGap)}%</span>
+                            ) : isUnderconfident ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">Desajuste: {Math.round(calibrationGap)}%</span>
+                            ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">ECE Nominal</span>
+                            )}
                         </h2>
                         <p className="text-sm text-slate-400">
-                            Analizamos la relación entre tu <span className="text-indigo-400 font-bold">seguridad reportada</span> y tus <span className="text-emerald-400 font-bold">resultados reales</span>.
+                            Análisis vectorial de <span className="text-indigo-400 font-bold">Certeza Subjetiva</span> vs <span className="text-emerald-400 font-bold">Precisión Empírica</span>.
                         </p>
                     </header>
 

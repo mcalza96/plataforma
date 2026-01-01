@@ -110,3 +110,40 @@ export async function submitAssessment(attemptId: string, questionId: string, se
 
     return { success: true };
 }
+
+/**
+ * getLatestDiagnosticResult
+ * Retrieves the most recent COMPLETED exam attempt for the student
+ * that serves as a diagnostic anchor (calibration probe).
+ */
+export async function getLatestDiagnosticResult() {
+    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const studentId = cookieStore.get('learner_id')?.value;
+
+    if (!studentId) return null;
+
+    // Fetch the latest COMPLETED attempt
+    const { data: attempt, error } = await supabase
+        .from('exam_attempts')
+        .select(`
+            *,
+            exams (
+                title,
+                type
+            )
+        `)
+        .eq('student_id', studentId)
+        .eq('status', 'COMPLETED')
+        .not('results_cache', 'is', null) // Must have processed results
+        .order('ended_at', { ascending: false })
+        .limit(1)
+        .single();
+
+    if (error || !attempt) {
+        return null;
+    }
+
+    // Return the cached diagnostic result strictly typed
+    return attempt.results_cache as any; // Cast to DiagnosticResult in consumption or imported type
+}

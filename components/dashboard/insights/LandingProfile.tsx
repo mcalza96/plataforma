@@ -10,33 +10,33 @@ interface LandingProfileProps {
 }
 
 export const LandingProfile: React.FC<LandingProfileProps> = ({ profile }) => {
-    // Determinar el arquetipo basado en el perfil
+    // Determinar el arquetipo basado en el perfil (Clinical Tone Refactor)
     let archetype = {
         name: 'Analista Equilibrado',
-        tag: 'Consistente',
+        tag: 'Coherencia Forense',
         icon: <ShieldCheck className="w-6 h-6" />,
         color: 'emerald',
-        description: 'Muestra un ritmo constante y seguridad acorde a sus conocimientos.',
-        strategy: 'Seguir con el plan de estudios estándar y aumentar complejidad progresivamente.'
+        description: 'Muestra una calibración metacognitiva óptima. Tu confianza se alinea con tu competencia real.',
+        strategy: 'Mantener la inercia cognitiva: abordar desafíos de mayor complejidad conceptual.'
     };
 
     if (profile.isImpulsive) {
         archetype = {
             name: 'Velocista Visual',
-            tag: 'Impulsivo',
+            tag: 'Latencia Invertida',
             icon: <Zap className="w-6 h-6" />,
             color: 'rose',
-            description: 'Llega rápido a conclusiones pero puede cometer errores por omitir detalles críticos.',
-            strategy: 'Usar "Time-boxing" inverso: forzar reflexión de 30s antes de permitir el envío de respuestas complejas.'
+            description: 'Patrón de respuesta prematura. El tiempo de lectura es inferior al umbral de procesamiento profundo.',
+            strategy: 'Protocolo de Freno Cognitivo: Forzar 5s de "Juicio de Pausa" antes de seleccionar.'
         };
     } else if (profile.isAnxious) {
         archetype = {
             name: 'Arquitecto Cauteloso',
-            tag: 'Dubitativo',
+            tag: 'Duda Sistemática',
             icon: <Clock className="w-6 h-6" />,
             color: 'amber',
-            description: 'Analiza múltiples veces cada opción, lo que genera fatiga cognitiva temprana.',
-            strategy: 'Refuerzo de confianza mediante micro-confirmaciones positivas y andamiaje visual simplificado.'
+            description: 'Exceso de entropía en la selección. Revisitaste la opción correcta múltiples veces antes de confirmar.',
+            strategy: 'Refuerzo de Certeza: Si la primera intuición es correcta > 80% de las veces, confía en el primer impulso.'
         };
     }
 

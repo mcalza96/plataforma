@@ -9,7 +9,8 @@ export class Student {
         public readonly teacher_id: string,
         public display_name: string,
         public level: number,
-        public avatar_url?: string
+        public avatar_url?: string,
+        public age?: number
     ) { }
 
     /**

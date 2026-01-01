@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { signOut } from '@/lib/auth-actions';
+import { signOut } from '@/lib/actions/shared/auth-actions';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 
 import { LearnerDTO } from '@/lib/domain/course';

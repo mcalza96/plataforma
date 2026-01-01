@@ -1,8 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getFamilyService, getLearnerService, getAdminService } from './di';
-import { getAuthUser, getUserRole } from './infrastructure/auth-utils';
+import { getFamilyService, getLearnerService, getAdminService } from '@/lib/infrastructure/di';
+import { getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
 
 /**
  * Obtiene todas las familias (profiles) con sus alumnos relacionados

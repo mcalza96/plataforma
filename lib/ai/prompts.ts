@@ -38,14 +38,14 @@ SHADOW WORK: Capture specific errors (distractor_artifact) and their logic.
 /**
  * buildArchitectPrompt - Lean version to avoid tool-calling hallucinations
  */
-export function buildArchitectPrompt(stage: string): string {
+export function buildArchitectPrompt(stage: string, selectedBlockId?: string | null): string {
    const protocols = {
       initial_profiling: "Define Subject and Audience Profile. Propose 2 common profiles if user is vague.",
       content_definition: "Define content boundaries. Suggest 2 core topics for the chosen subject/audience.",
       concept_extraction: "Identify key atomic concepts. Ask: 'What must be understood just before [Concept]?'",
-      shadow_work: "CAPTURE SPECIFIC ERRORS. If user doesn't know any, SUGGEST 2 classic misconceptions for this topic.",
       exam_configuration: "Define question count and time limit.",
-      synthesis: "Blueprint complete. Invite user to press 'Crear Prototipo'."
+      synthesis: "Blueprint complete. Invite user to press 'Crear Prototipo'.",
+      construction: "ACT AS A PSYCHOMETRIC QUALITY REVIEWER. Review blocks for rigor, distractors, and refutations. If a block is selected (selectedBlockId), focus specifically on it."
    };
 
    const phaseInstructions = protocols[stage as keyof typeof protocols] || protocols.initial_profiling;
@@ -55,6 +55,7 @@ You are TeacherOS Architect. Follow the role:
 ${METHODOLOGY_SUMMARY}
 
 CURRENT FSM PHASE: ${stage}
+${selectedBlockId ? `SELECTED BLOCK ID: ${selectedBlockId}` : ''}
 OBJECTIVE: ${phaseInstructions}
 
 CRITICAL RULES:

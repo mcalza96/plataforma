@@ -1,14 +1,21 @@
 'use client';
 
+import {
+    Sparkles,
+    Loader2
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PartialKnowledgeMap } from '@/lib/domain/discovery';
 import {
     StepContentVideo,
     StepContentQuiz,
     StepContentResource,
     StepContentPractice
 } from './step-types/ContentRenderers';
+import { TechnicalMetadataView } from './step-types/TechnicalMetadataView';
 
 export type StepType = 'video' | 'quiz' | 'resource' | 'practice';
 
@@ -18,7 +25,24 @@ export interface StepData {
     description: string;
     type: StepType;
     duration: number; // in minutes
+    metadata?: {
+        isDiagnostic?: boolean;
+        linkedProbeId?: string;
+        misconceptionIds?: string[];
+        [key: string]: any;
+    };
+    quizData?: {
+        stem: string;
+        options: {
+            id: string;
+            content: string;
+            isCorrect: boolean;
+            diagnosesMisconceptionId?: string | null;
+            feedback?: string;
+        }[];
+    };
 }
+
 
 /**
  * ISP: Clean interface for StepCard.
@@ -33,6 +57,7 @@ interface StepCardProps {
     errors?: string[];
     isSelected?: boolean;
     onFocus?: () => void;
+    liveContext?: PartialKnowledgeMap;
 }
 
 const TYPE_CONFIG = {
@@ -51,7 +76,8 @@ export default function StepCard({
     onRemove,
     errors,
     isSelected,
-    onFocus
+    onFocus,
+    liveContext
 }: StepCardProps) {
     const {
         attributes,
@@ -232,8 +258,18 @@ export default function StepCard({
                                         <Renderer
                                             step={step}
                                             onUpdate={(updates) => onUpdate(step.id, updates)}
+                                            liveContext={liveContext}
                                         />
                                     </div>
+
+                                    {/* Technical Metadata (NEW) */}
+                                    {/* Componente Atomizado: Datos Técnicos */}
+                                    {step.type === 'quiz' && step.metadata?.linkedProbeId && (
+                                        <TechnicalMetadataView
+                                            linkedProbeId={step.metadata.linkedProbeId}
+                                            misconceptionIds={step.metadata.misconceptionIds}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>

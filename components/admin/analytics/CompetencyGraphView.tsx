@@ -16,7 +16,7 @@ interface CompetencyGraphViewProps {
     className?: string;
 }
 
-import { useCelebration } from '@/hooks/use-celebration';
+import { useCelebration } from '@/hooks/ui/use-celebration';
 import { useRef, useEffect } from 'react';
 
 export default function CompetencyGraphView({

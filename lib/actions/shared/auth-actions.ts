@@ -1,11 +1,11 @@
 'use server';
 
-import { createClient } from './infrastructure/supabase/supabase-server';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
-import { AuthSchema } from './validations';
+import { AuthSchema } from '@/lib/validations';
 
 export async function signUp(formData: FormData) {
     const email = formData.get('email') as string;

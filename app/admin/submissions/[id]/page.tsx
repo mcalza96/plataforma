@@ -1,4 +1,4 @@
-import { getSubmissionDetail, getAvailableBadges, getLearnerFeedback } from '@/lib/feedback-actions';
+import { getSubmissionDetail, getAvailableBadges, getLearnerFeedback } from '@/lib/actions/shared/feedback-actions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReviewPanel from './review-panel';

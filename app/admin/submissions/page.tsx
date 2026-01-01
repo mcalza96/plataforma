@@ -1,4 +1,4 @@
-import { getAdminSubmissions } from '@/lib/feedback-actions';
+import { getAdminSubmissions } from '@/lib/actions/shared/feedback-actions';
 import SubmissionsGrid from './submissions-grid';
 import Link from 'next/link';
 

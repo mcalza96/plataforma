@@ -1,4 +1,4 @@
-import { getCourseService, getLessonService } from '@/lib/di';
+import { getCourseService, getLessonService } from '@/lib/infrastructure/di';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 
 interface AdminBreadcrumbsResolverProps {

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getLearnerSubmissions } from '@/lib/storage-actions';
+import { getLearnerSubmissions } from '@/lib/actions/shared/storage-actions';
 import { getLearnerById } from '@/lib/data/courses';
 import Header from '@/components/layout/header';
 import UploadZone from '@/components/gallery/UploadZone';

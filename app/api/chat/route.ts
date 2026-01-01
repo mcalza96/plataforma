@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { messages, lessonId, stage = 'initial_profiling', context } = await req.json();
+        const { messages, lessonId, stage = 'initial_profiling', context, selectedBlockId } = await req.json();
         const coreMessages = normalizeMessages(messages);
 
         // 2. Classify Intent
@@ -61,11 +61,11 @@ export async function POST(req: Request) {
 
                 const currentContext = dbSuccess && dbContext ? dbContext : (context || {});
 
-                console.log(`[Chat API] Using dynamic prompt for stage: ${stage}`);
+                console.log(`[Chat API] Using dynamic prompt for stage: ${stage} | Selected Block: ${selectedBlockId}`);
                 console.log(`[Chat API] Context source: ${dbSuccess ? 'DATABASE (fresh)' : 'CLIENT (fallback)'}`);
                 console.log(`[Chat API] Current context:`, currentContext);
 
-                return await continueInterview(coreMessages, stage, currentContext);
+                return await continueInterview(coreMessages, stage, currentContext, selectedBlockId);
 
 
             case 'CHAT':

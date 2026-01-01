@@ -1,5 +1,5 @@
-import { getLearnerService, getLessonService } from './di';
-import { LearnerStats } from './domain/dtos/learner';
+import { getLearnerService, getFeedbackService } from '@/lib/infrastructure/di';
+import { LearnerStats, KnowledgeDelta, LearningFrontier } from '@/lib/domain/dtos/learner';
 
 export async function getLearnerFullStats(learnerId: string): Promise<LearnerStats> {
     const service = getLearnerService();
@@ -7,7 +7,7 @@ export async function getLearnerFullStats(learnerId: string): Promise<LearnerSta
 }
 
 export async function getInstructorFeedback(learnerId: string) {
-    const service = getLessonService();
+    const service = getFeedbackService();
     return await service.getLearnerFeedback(learnerId);
 }
 
@@ -16,12 +16,12 @@ export async function getLearnerAchievements(learnerId: string) {
     return await service.getLearnerAchievements(learnerId);
 }
 
-export async function getKnowledgeDelta(learnerId: string) {
+export async function getKnowledgeDelta(learnerId: string): Promise<KnowledgeDelta[]> {
     const service = getLearnerService();
     return await service.calculateKnowledgeDelta(learnerId);
 }
 
-export async function getLearningFrontier(learnerId: string) {
+export async function getLearningFrontier(learnerId: string): Promise<LearningFrontier[]> {
     const service = getLearnerService();
     return await service.getStudentFrontier(learnerId);
 }

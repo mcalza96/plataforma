@@ -3,6 +3,7 @@
 import React, { ReactNode } from 'react';
 import { Lesson } from '@/lib/domain/course';
 import { StepData } from '@/components/admin/StepCard';
+import { PartialKnowledgeMap } from '@/lib/domain/discovery';
 import { PhaseMetadata } from './PhaseMetadata';
 import { PhaseTimeline } from './PhaseTimeline';
 
@@ -18,6 +19,7 @@ interface PhaseDocumentProps {
     stepErrors?: Record<string, string[]>;
     selectedBlockId?: string | null;
     onFocusBlock?: (id: string | null) => void;
+    liveContext?: PartialKnowledgeMap;
 }
 
 /**
@@ -35,7 +37,8 @@ export function PhaseDocument({
     contextErrors,
     stepErrors,
     selectedBlockId,
-    onFocusBlock
+    onFocusBlock,
+    liveContext
 }: PhaseDocumentProps) {
     return (
         <div className="w-full min-h-full bg-transparent">
@@ -58,6 +61,7 @@ export function PhaseDocument({
                     stepErrors={stepErrors}
                     selectedStepId={selectedBlockId}
                     onFocusStep={onFocusBlock}
+                    liveContext={liveContext}
                 />
             </div>
 

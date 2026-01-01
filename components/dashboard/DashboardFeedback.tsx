@@ -1,4 +1,4 @@
-import { getInstructorFeedback } from '@/lib/parent';
+import { getInstructorFeedback } from '@/lib/actions/parent-actions';
 import Link from 'next/link';
 
 interface DashboardFeedbackProps {

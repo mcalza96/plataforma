@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn, signUp } from '@/lib/auth-actions';
+import { signIn, signUp } from '@/lib/actions/shared/auth-actions';
 
 export default function LoginPage() {
     const [isSignUp, setIsSignUp] = useState(false);

@@ -20,18 +20,36 @@ const VideoBlockSchema = StepBaseSchema.extend({
     // but for now relying on logic used in ContextPanel or generic description
 });
 
+const QuizOptionSchema = z.object({
+    id: z.string(),
+    content: z.string().min(1, "La opción no puede estar vacía"),
+    isCorrect: z.boolean(),
+    diagnosesMisconceptionId: z.string().uuid().nullable().optional(),
+    feedback: z.string().optional()
+});
+
 const QuizBlockSchema = StepBaseSchema.extend({
     type: z.literal('quiz'),
-    description: z.string().refine(val => {
-        // Naive check: should be JSON or non-empty if plain text
-        try {
-            const parsed = JSON.parse(val);
-            return Array.isArray(parsed) && parsed.length > 0;
-        } catch {
-            // If not JSON, enforce min length
-            return val.length > 10;
-        }
-    }, "Debe incluir al menos una pregunta válida"),
+    metadata: z.object({
+        isDiagnostic: z.boolean().optional(),
+        linkedProbeId: z.string().uuid().optional(),
+        misconceptionIds: z.array(z.string()).optional()
+    }).optional(),
+    quizData: z.object({
+        stem: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
+        options: z.array(QuizOptionSchema).min(2, "Se requieren al menos 2 opciones")
+    }).optional()
+}).refine(data => {
+    // Zero-Gap Rule: If diagnostic, at least one distractor must have a misconception ID
+    if (data.metadata?.isDiagnostic) {
+        if (!data.quizData) return false;
+        const hasDiagonal = data.quizData.options.some(opt => !opt.isCorrect && !!opt.diagnosesMisconceptionId);
+        return hasDiagonal;
+    }
+    return true;
+}, {
+    message: "Un bloque de diagnóstico debe vincular al menos un distractor a un malentendido (Mapeo Q)",
+    path: ["quizData"]
 });
 
 const PracticeBlockSchema = StepBaseSchema.extend({

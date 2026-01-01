@@ -15,6 +15,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { type ArchitectState } from '@/lib/domain/architect';
+import { Badge as UIBadge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { PrototypeCanvas } from './PrototypeCanvas';
 
@@ -151,9 +152,16 @@ export function DiagnosticBlueprint({ state, onGenerate, onGeneratePrototypes }:
                                 animate={{ opacity: 1, x: 0 }}
                                 className="bg-amber-500/5 border border-amber-500/20 p-5 rounded-xl space-y-3"
                             >
-                                <div className="flex items-center gap-3 text-amber-500">
-                                    <TriangleAlert className="h-5 w-5" />
-                                    <span className="font-bold text-sm">MALENTENDIDO DETECTADO</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 text-amber-500">
+                                        <TriangleAlert className="h-5 w-5" />
+                                        <span className="font-bold text-sm">MALENTENDIDO DETECTADO</span>
+                                    </div>
+                                    {state.generatedProbeId && (
+                                        <UIBadge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] uppercase tracking-widest px-2 py-0.5 font-black">
+                                            Inyectado
+                                        </UIBadge>
+                                    )}
                                 </div>
                                 <p className="text-gray-200">{item.error}</p>
                                 <div className="pl-4 border-l-2 border-emerald-500/30">
@@ -201,6 +209,40 @@ export function DiagnosticBlueprint({ state, onGenerate, onGeneratePrototypes }:
                         >
                             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                             CREAR PROTOTIPO
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Injected Preview Action (NEW) */}
+            <AnimatePresence>
+                {state.generatedProbeId && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-[#1A1A1A] border border-blue-500/30 rounded-2xl p-6 flex flex-col items-center gap-4 text-center shadow-2xl shadow-blue-500/5"
+                    >
+                        <div className="size-12 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+                            <Zap className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1">
+                            <h3 className="text-white font-bold">Inyección en Caliente Exitosa</h3>
+                            <p className="text-gray-500 text-xs">El reactivo psicométrico ya está disponible como un bloque de Quiz en el Canvas derecho.</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                // Logic: Use a DOM scroll or focus the element if possible
+                                const element = document.getElementById(`probe-step-`); // We don't have the exact ID here, but we can search for the prefix
+                                const probeElement = Array.from(document.querySelectorAll('[id^="probe-step-"]')).pop();
+                                if (probeElement) {
+                                    probeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    (probeElement as HTMLElement).click(); // Trigger focus
+                                }
+                            }}
+                            className="text-blue-400 text-xs font-black uppercase tracking-widest hover:text-blue-300 transition-colors flex items-center gap-2 group"
+                        >
+                            Ver en Canvas
+                            <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </motion.div>
                 )}

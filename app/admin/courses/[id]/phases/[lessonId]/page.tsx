@@ -1,4 +1,4 @@
-import { getLessonService } from '@/lib/di';
+import { getLessonService } from '@/lib/infrastructure/di';
 import { notFound } from 'next/navigation';
 import PhaseWorkshop from './PhaseWorkshop';
 import { CourseMapper } from '@/lib/application/mappers/course-mapper';

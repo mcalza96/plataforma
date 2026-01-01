@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { getCourseService } from './di';
-import { createClient } from './infrastructure/supabase/supabase-server';
+import { getCourseService } from '@/lib/infrastructure/di';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 
 export async function createLearner(displayName: string) {
     const supabase = await createClient();

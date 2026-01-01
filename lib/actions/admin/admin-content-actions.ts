@@ -1,10 +1,10 @@
 'use server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getUserRole, validateAdmin } from './infrastructure/auth-utils';
-import { getCourseService, getLessonService } from './di';
+import { getUserRole, validateAdmin } from '@/lib/infrastructure/auth-utils';
+import { getCourseService, getLessonService } from '@/lib/infrastructure/di';
 
-import { CourseSchema, LessonSchema } from './validations';
+import { CourseSchema, LessonSchema } from '@/lib/validations';
 
 export type ActionResponse<T = any> =
     | { success: true; data: T }

@@ -6,7 +6,7 @@ import {
     getLearnerAchievements,
     getKnowledgeDelta,
     getLearningFrontier
-} from '@/lib/parent';
+} from '@/lib/actions/parent-actions';
 import { getLearnerById } from '@/lib/data/courses';
 import Header from '@/components/layout/header';
 import ParentDashboardView from '@/components/parent/ParentDashboardView';
@@ -36,13 +36,6 @@ export default async function ParentDashboardPage() {
         getLearningFrontier(learnerId)
     ]);
 
-    // Format knowledge delta for UI pure components
-    const uiKnowledgeDelta = knowledgeDelta.map(d => ({
-        category: d.category,
-        initial: d.initial_score,
-        current: d.current_mastery
-    }));
-
     return (
         <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
             <ParentDashboardView
@@ -53,7 +46,7 @@ export default async function ParentDashboardPage() {
                 }}
                 feedback={feedback}
                 achievements={achievements}
-                knowledgeDelta={uiKnowledgeDelta}
+                knowledgeDelta={knowledgeDelta}
                 frontier={frontier}
             />
         </div>

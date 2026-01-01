@@ -19,7 +19,8 @@ import type { DiscoveryResponse } from './types';
 export async function continueInterview(
     messages: any[],
     stage: string = 'initial_profiling',
-    currentContext?: any
+    currentContext?: any,
+    selectedBlockId?: string | null
 ): Promise<Response> {
     const groq = getGroqClient();
 
@@ -48,7 +49,7 @@ export async function continueInterview(
             console.log(`[DiscoveryService] Attempting call with primary model: ${MODEL_NAME}`);
             completion = await groq.chat.completions.create({
                 model: MODEL_NAME,
-                messages: buildInitialMessages(coreMessages, stage, currentContext),
+                messages: buildInitialMessages(coreMessages, stage, currentContext, selectedBlockId),
                 tools: [UPDATE_CONTEXT_TOOL],
                 tool_choice: 'auto'
             });
@@ -57,7 +58,7 @@ export async function continueInterview(
                 console.warn(`[DiscoveryService] Rate limit hit for ${MODEL_NAME}. Falling back to ${FALLBACK_MODEL_NAME}...`);
                 completion = await groq.chat.completions.create({
                     model: FALLBACK_MODEL_NAME,
-                    messages: buildInitialMessages(coreMessages, stage, currentContext),
+                    messages: buildInitialMessages(coreMessages, stage, currentContext, selectedBlockId),
                     tools: [UPDATE_CONTEXT_TOOL],
                     tool_choice: 'auto'
                 });
@@ -78,47 +79,17 @@ export async function continueInterview(
         if (toolResults.length > 0) {
             console.log('[DiscoveryService] Persisting context updates to DB...');
 
-            // Fusión inteligente del contexto
+            const { ContextReducer } = await import('./context-reducer');
             let mergedContext = { ...currentContext };
 
             toolResults.forEach(res => {
                 if (res.toolName === 'updateContext' && res.result.success) {
-                    const update = res.args;
-
-                    // Actualizar campos escalares
-                    if (update.subject) mergedContext.subject = update.subject;
-                    if (update.targetAudience) mergedContext.targetAudience = update.targetAudience;
-                    if (update.pedagogicalGoal) mergedContext.pedagogicalGoal = update.pedagogicalGoal;
-                    if (update.studentProfile) mergedContext.studentProfile = update.studentProfile;
-                    if (update.contentPreference) mergedContext.contentPreference = update.contentPreference;
-                    if (update.examConfig) mergedContext.examConfig = update.examConfig;
-
-                    // Actualizar Arrays (Acumulativo)
-
-                    // Concepts
-                    const newConcepts = update.keyConcepts || [];
-                    if (newConcepts.length > 0) {
-                        const existing = mergedContext.keyConcepts || [];
-                        // Deduplicar strings
-                        mergedContext.keyConcepts = [...new Set([...existing, ...newConcepts])];
-                    }
-
-                    // Misconceptions
-                    const newMisconceptions = update.identifiedMisconceptions || [];
-                    if (newMisconceptions.length > 0) {
-                        const existing = mergedContext.identifiedMisconceptions || [];
-                        // Agregar nuevos (simple push por ahora, idealmente deduplicar por contenido de error)
-                        // Para evitar duplicados exactos:
-                        const existingErrors = new Set(existing.map((m: any) => m.error));
-                        const uniqueNew = newMisconceptions.filter((m: any) => !existingErrors.has(m.error));
-
-                        mergedContext.identifiedMisconceptions = [...existing, ...uniqueNew];
-                    }
+                    mergedContext = ContextReducer.merge(mergedContext, res.args as any);
                 }
             });
 
             // Guardar en Supabase
-            // Usamos 'draft-exam' como ID placeholder, la action busca por UserID + Status=DRAFT
+            // TODO: Integrar ID real de lección/sesión desde el orquestador
             await saveDiscoveryContext('draft-exam', mergedContext)
                 .then(res => console.log('[DiscoveryService] DB Save result:', res))
                 .catch(err => console.error('[DiscoveryService] DB Save failed:', err));
@@ -135,7 +106,7 @@ export async function continueInterview(
 
             const followUp = await groq.chat.completions.create({
                 model: MODEL_NAME,
-                messages: buildFollowUpMessages(coreMessages, message.tool_calls!, toolResults, stage, currentContext),
+                messages: buildFollowUpMessages(coreMessages, message.tool_calls!, toolResults, stage, currentContext, selectedBlockId),
                 tools: [UPDATE_CONTEXT_TOOL],
                 tool_choice: 'none' // Forzar respuesta de texto
             });

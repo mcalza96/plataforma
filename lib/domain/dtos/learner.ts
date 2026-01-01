@@ -41,3 +41,16 @@ export interface LearnerStats {
     completedLections: number;
     skills: { name: string; percentage: number; color: string }[];
 }
+
+export interface KnowledgeDelta {
+    category: string;
+    initial: number;
+    current: number;
+}
+
+export interface LearningFrontier {
+    id: string;
+    description: string;
+    mastery_score: number;
+    recommended_content: string[];
+}

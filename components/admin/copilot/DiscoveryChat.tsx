@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TypewriterText } from '@/components/ui/TypewriterText';
-import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/use-copilot-session';
 
 interface DiscoveryChatProps {
     session: CopilotSessionHelper;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getLearnerFeedback, markFeedbackAsRead } from '@/lib/feedback-actions';
+import { getLearnerFeedback, markFeedbackAsRead } from '@/lib/actions/shared/feedback-actions';
 import Link from 'next/link';
 
 export default function NotificationCenter({ learnerId }: { learnerId: string }) {

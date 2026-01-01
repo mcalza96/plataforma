@@ -1,8 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
-import { type ArchitectState } from './domain/architect';
-import { generateProbeFromContext } from './application/services/assessment';
+import { type ArchitectState } from '@/lib/domain/architect';
+import { generateProbeFromContext } from '@/lib/application/services/assessment';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -76,7 +76,9 @@ export async function compileDiagnosticProbe(state: ArchitectState) {
         return {
             success: true,
             probeId: probe.id,
-            competencyId: competency.id
+            competencyId: competency.id,
+            stem: probe.stem,
+            options: probeData.options // Include options for the Hot Injection mapping
         };
 
     } catch (error: any) {
@@ -96,7 +98,7 @@ export async function generatePrototypes(state: ArchitectState) {
     console.log("[ArchitectAction] Generating prototypes...");
 
     try {
-        const { generatePrototypesFromContext } = await import('./application/services/assessment');
+        const { generatePrototypesFromContext } = await import('@/lib/application/services/assessment');
         const prototypes = await generatePrototypesFromContext(state.context);
 
         return {

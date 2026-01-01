@@ -63,7 +63,7 @@ export function useCopilotSession(
             // 2. Persist to DB (Server Action)
             try {
                 setIsSyncing(true);
-                const { saveDiscoveryContext } = await import('@/lib/ai-actions');
+                const { saveDiscoveryContext } = await import('@/lib/actions/shared/ai-actions');
                 await saveDiscoveryContext(lessonId, mapArgs);
                 setLastSyncedAt(new Date());
             } catch (err) {

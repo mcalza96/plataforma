@@ -18,7 +18,8 @@ function getModel(useFallback: boolean = false) {
 
     if (groqApiKey) {
         const groq = createGroq({ apiKey: groqApiKey });
-        return groq(useFallback ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile');
+        // Usar modelos GPT-OSS de OpenAI disponibles en Groq - soportan json_schema
+        return groq(useFallback ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b');
     }
 
     if (openaiApiKey) {
@@ -43,7 +44,12 @@ export async function generateProbe(
         model,
         system: systemPrompt,
         schema: ProbeGenerationSchema,
-        prompt: `Genera un instrumento de evaluación de alta fidelidad para la competencia "${competency.title}".`
+        prompt: `Genera un instrumento de evaluación de alta fidelidad para la competencia "${competency.title}".`,
+        experimental_telemetry: { isEnabled: false },
+        // @ts-ignore - Disable strict mode for Groq compatibility
+        experimental_providerMetadata: {
+            groq: { structuredOutputs: false }
+        }
     });
 
     return {
@@ -76,6 +82,11 @@ export async function generateProbeFromContext(
             schema: ProbeGenerationSchema,
             prompt: `Genera una pregunta de diagnóstico experta sobre "${context.subject}" para una audiencia de "${context.targetAudience}".`,
             temperature: 0.1,
+            experimental_telemetry: { isEnabled: false },
+            // @ts-ignore - Disable strict mode for Groq compatibility
+            experimental_providerMetadata: {
+                groq: { structuredOutputs: false }
+            }
         });
 
         return {
@@ -103,6 +114,11 @@ export async function generateProbeFromContext(
                 schema: ProbeGenerationSchema,
                 prompt: `Genera una pregunta de diagnóstico experta sobre "${context.subject}" para una audiencia de "${context.targetAudience}".`,
                 temperature: 0.1,
+                experimental_telemetry: { isEnabled: false },
+                // @ts-ignore - Disable strict mode for Groq compatibility
+                experimental_providerMetadata: {
+                    groq: { structuredOutputs: false }
+                }
             });
             return {
                 type: object.type as ProbeType,
@@ -154,6 +170,11 @@ REQUISITOS:
             schema: PrototypeSchema,
             prompt: `Genera 3 prototipos de preguntas de diagnóstico (Legos) para "${context.subject}".`,
             temperature: 0.1,
+            experimental_telemetry: { isEnabled: false },
+            // @ts-ignore - Disable strict mode for Groq compatibility
+            experimental_providerMetadata: {
+                groq: { structuredOutputs: false }
+            }
         });
 
         return object;
@@ -167,6 +188,11 @@ REQUISITOS:
                 schema: PrototypeSchema,
                 prompt: `Genera 3 prototipos de preguntas de diagnóstico (Legos) para "${context.subject}".`,
                 temperature: 0.1,
+                experimental_telemetry: { isEnabled: false },
+                // @ts-ignore - Disable strict mode for Groq compatibility
+                experimental_providerMetadata: {
+                    groq: { structuredOutputs: false }
+                }
             });
             return object;
         }

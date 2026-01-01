@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { submitReview } from '@/lib/feedback-actions';
+import { submitReview } from '@/lib/actions/shared/feedback-actions';
 
 interface ReviewPanelProps {
     submissionId: string;
@@ -92,8 +92,8 @@ export default function ReviewPanel({ submissionId, learnerId, badges, history }
                                             }`}
                                     >
                                         <div className={`size-12 rounded-2xl flex items-center justify-center transition-all ${selectedBadge === badge.id
-                                                ? 'bg-black text-amber-500'
-                                                : 'bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/20 text-amber-500'
+                                            ? 'bg-black text-amber-500'
+                                            : 'bg-gradient-to-br from-amber-500/20 to-amber-500/5 border border-amber-500/20 text-amber-500'
                                             }`}>
                                             <span className="material-symbols-outlined text-2xl font-black">
                                                 {badge.icon_name}

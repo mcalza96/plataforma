@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { StorageService } from '@/lib/infrastructure/storage/storage-service';
 
 interface ResourceUploaderProps {
     onUploadComplete: (url: string) => void;
     label?: string;
     accept?: string;
     folder?: string;
+    bucket?: string;
     initialUrl?: string;
 }
 
@@ -16,6 +17,7 @@ export default function ResourceUploader({
     label = "Subir Recurso",
     accept = "image/*,.brushset,.pdf,.procreate",
     folder = "resources",
+    bucket = "art-portfolio",
     initialUrl
 }: ResourceUploaderProps) {
     const [isUploading, setIsUploading] = useState(false);
@@ -30,7 +32,7 @@ export default function ResourceUploader({
         setUploadProgress(0);
         setFileName(file.name);
 
-        // Simulación de progreso para mejorar UX
+        // Simulation for UX
         const progressInterval = setInterval(() => {
             setUploadProgress(prev => {
                 if (prev >= 95) {
@@ -42,22 +44,10 @@ export default function ResourceUploader({
         }, 200);
 
         try {
-            const fileExt = file.name.split('.').pop();
-            const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-            const filePath = `${folder}/${cleanFileName}`;
-
-            const { data, error } = await supabase.storage
-                .from('art-portfolio')
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (error) throw error;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('art-portfolio')
-                .getPublicUrl(filePath);
+            const { publicUrl } = await StorageService.uploadFile(file, {
+                bucket,
+                folder
+            });
 
             onUploadComplete(publicUrl);
             setPreviewUrl(publicUrl);
@@ -117,8 +107,8 @@ export default function ResourceUploader({
 
             <div
                 className={`group relative border-2 border-dashed rounded-3xl overflow-hidden min-h-[140px] flex items-center justify-center transition-all duration-500 cursor-pointer ${dragActive
-                        ? 'border-amber-500 bg-amber-500/5'
-                        : 'border-white/10 bg-black/20 hover:border-white/20'
+                    ? 'border-amber-500 bg-amber-500/5'
+                    : 'border-white/10 bg-black/20 hover:border-white/20'
                     } ${isUploading ? 'pointer-events-none' : ''}`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}

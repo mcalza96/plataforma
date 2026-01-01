@@ -69,9 +69,10 @@ function buildStructuredMemory(context: any): string {
 export function buildInitialMessages(
     coreMessages: any[],
     stage: string,
-    currentContext?: PartialKnowledgeMap
+    currentContext?: PartialKnowledgeMap,
+    selectedBlockId?: string | null
 ): any[] {
-    const systemPrompt = buildArchitectPrompt(stage);
+    const systemPrompt = buildArchitectPrompt(stage, selectedBlockId);
 
     const messages: any[] = [
         {
@@ -102,9 +103,10 @@ export function buildFollowUpMessages(
     toolCalls: any[],
     toolResults: any[],
     stage: string,
-    currentContext?: PartialKnowledgeMap
+    currentContext?: PartialKnowledgeMap,
+    selectedBlockId?: string | null
 ): any[] {
-    const systemPrompt = buildArchitectPrompt(stage);
+    const systemPrompt = buildArchitectPrompt(stage, selectedBlockId);
 
     const messages: any[] = [
         {

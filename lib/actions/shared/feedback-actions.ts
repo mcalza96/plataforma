@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { getSubmissionService, getFeedbackService } from './di';
-import { getUserRole, validateAdmin } from './infrastructure/auth-utils';
-import { FeedbackSchema } from './validations';
+import { getSubmissionService, getFeedbackService } from '@/lib/infrastructure/di';
+import { getUserRole, validateAdmin } from '@/lib/infrastructure/auth-utils';
+import { FeedbackSchema } from '@/lib/validations';
 
 /**
  * Obtiene las entregas filtradas para el administrador

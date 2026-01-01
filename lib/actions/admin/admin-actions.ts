@@ -1,11 +1,11 @@
 import { revalidatePath } from 'next/cache';
-import { getLessonService } from './di';
-import { getUserRole } from './infrastructure/auth-utils';
+import { getSubmissionService } from '@/lib/infrastructure/di';
+import { getUserRole } from '@/lib/infrastructure/auth-utils';
 
 export async function sendFeedback(learnerId: string, content: string) {
     try {
         const role = await getUserRole();
-        const service = getLessonService();
+        const service = getSubmissionService();
 
         // We use submitReview but with minimal data since it's just a general feedback message
         // Actually, let's use the repository method directly via service if available, 

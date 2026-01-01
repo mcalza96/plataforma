@@ -1,9 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
-import { DiagnosticProbe, ProbeOption } from './domain/assessment';
-import { AssessmentResult } from './domain/triage';
-import { processAssessmentUseCase } from './application/use-cases/process-assessment-use-case';
+import { DiagnosticProbe, ProbeOption } from '@/lib/domain/assessment';
+import { AssessmentResult } from '@/lib/domain/triage';
+import { processAssessmentUseCase } from '@/lib/application/use-cases/process-assessment-use-case';
 import { cookies } from 'next/headers';
 
 /**

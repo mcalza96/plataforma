@@ -12,7 +12,8 @@ export const ArchitectStageSchema = z.enum([
     'concept_extraction',    // Identifying key concepts/topics
     'shadow_work',           // Probing for misconceptions and hidden errors
     'exam_configuration',    // Defining number of questions and duration
-    'synthesis'              // Final review and prototype generation
+    'synthesis',             // Final review and prototype generation
+    'construction'           // Technical building and block refinement
 ]);
 
 export type ArchitectStage = z.infer<typeof ArchitectStageSchema>;
@@ -39,10 +40,30 @@ export const ArchitectStateSchema = z.object({
     context: PartialKnowledgeMapSchema,
     readiness: DiagnosticReadinessSchema,
     isGenerating: z.boolean().default(false),
+    isCanvasReady: z.boolean().default(false),
     generatedProbeId: z.string().uuid().optional()
 });
 
 export type ArchitectState = z.infer<typeof ArchitectStateSchema>;
+
+export const INITIAL_ARCHITECT_STATE: ArchitectState = {
+    stage: 'initial_profiling',
+    context: {
+        subject: '',
+        targetAudience: '',
+        keyConcepts: [],
+        identifiedMisconceptions: [],
+        pedagogicalGoal: ''
+    },
+    readiness: {
+        hasTargetAudience: false,
+        conceptCount: 0,
+        misconceptionCount: 0,
+        isValid: false
+    },
+    isGenerating: false,
+    isCanvasReady: false
+};
 
 /**
  * calculateReadiness
@@ -71,4 +92,35 @@ export function calculateReadiness(context: PartialKnowledgeMap): DiagnosticRead
         misconceptionCount,
         isValid
     };
+}
+
+/**
+ * getNextStage
+ * Determines the next stage of the Architect FSM based on the current stage and updated context.
+ */
+export function getNextStage(currentStage: ArchitectStage, context: PartialKnowledgeMap): ArchitectStage {
+    const hasSubjectAndTarget = context.subject && (context.targetAudience || context.studentProfile);
+    let newStage = currentStage;
+
+    if (hasSubjectAndTarget && currentStage === 'initial_profiling') {
+        newStage = 'content_definition';
+    }
+
+    if (context.contentPreference && newStage === 'content_definition') {
+        newStage = 'concept_extraction';
+    }
+
+    if ((context.keyConcepts || []).length >= 2 && newStage === 'concept_extraction') {
+        newStage = 'shadow_work';
+    }
+
+    if ((context.identifiedMisconceptions || []).length >= 1 && newStage === 'shadow_work') {
+        newStage = 'exam_configuration';
+    }
+
+    if (context.examConfig?.questionCount && newStage === 'exam_configuration') {
+        newStage = 'synthesis';
+    }
+
+    return newStage;
 }

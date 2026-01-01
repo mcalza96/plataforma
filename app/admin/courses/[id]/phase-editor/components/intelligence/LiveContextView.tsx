@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
-import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/use-copilot-session';
 import { Lightbulb, AlertTriangle, Target, Map as MapIcon, ChevronRight } from 'lucide-react';
 
 interface LiveContextViewProps {

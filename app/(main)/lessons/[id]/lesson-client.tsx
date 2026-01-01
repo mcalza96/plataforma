@@ -1,7 +1,7 @@
 'use client';
 
 import { LessonDTO as Lesson, LearnerProgress } from '@/lib/domain/course';
-import { useLessonController } from '@/hooks/use-lesson-controller';
+import { useLessonController } from '@/hooks/learner/use-lesson-controller';
 import { useRef } from 'react';
 
 // Pure Components

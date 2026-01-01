@@ -1,13 +1,13 @@
 import 'server-only';
 import { cache } from 'react';
-import { getCourseReader, getLearnerRepository } from '../di';
+import { getCourseReader, getLearnerRepository } from '@/lib/infrastructure/di';
 import {
     CourseCardDTO,
     CourseDetailDTO,
     LessonDTO as Lesson,
     Learner,
     LearnerProgress
-} from '../domain/course';
+} from '@/lib/domain/course';
 
 // Loaders only below. Types are imported from @/lib/domain/course.
 

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { selectLearner } from '@/lib/learner-actions';
-import { createLearner } from '@/lib/learner-create-action';
+import { selectLearner } from '@/lib/actions/learner/learner-actions';
+import { createLearner } from '@/lib/actions/learner/learner-create-action';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import { Learner } from '@/lib/domain/course';
 

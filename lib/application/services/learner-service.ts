@@ -2,7 +2,7 @@ import { ILearnerRepository } from '../../domain/repositories/learner-repository
 import { IStatsRepository } from '../../domain/repositories/stats-repository';
 import { ICourseReader } from '../../domain/repositories/course-repository';
 import { Learner } from '../../domain/entities/learner';
-import { LearnerStats, LearnerAchievement } from '../../domain/dtos/learner';
+import { LearnerStats, LearnerAchievement, KnowledgeDelta, LearningFrontier } from '../../domain/dtos/learner';
 import { LearnerLevel } from '../../domain/value-objects';
 import { AuthGuard } from '../guards/auth-guard';
 import { GetLearnerStatsUseCase } from '../use-cases/get-learner-stats-use-case';
@@ -48,12 +48,12 @@ export class LearnerService {
         return this.learnerRepository.getLearnersByParentId(parentId);
     }
 
-    async getStudentFrontier(learnerId: string): Promise<any[]> {
+    async getStudentFrontier(learnerId: string): Promise<LearningFrontier[]> {
         // Delegated to stats repository to preserve abstraction
         return this.statsRepository.getStudentFrontier(learnerId);
     }
 
-    async calculateKnowledgeDelta(learnerId: string): Promise<any[]> {
+    async calculateKnowledgeDelta(learnerId: string): Promise<KnowledgeDelta[]> {
         const stats = await this.getLearnerFullStats(learnerId);
 
         // Calculate delta with a more realistic baseline (75% of current)

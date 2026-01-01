@@ -1,4 +1,4 @@
-import { getCourseService } from '@/lib/di';
+import { getCourseService } from '@/lib/infrastructure/di';
 import Link from 'next/link';
 import EmptyState from '@/components/ui/EmptyState';
 

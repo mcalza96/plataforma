@@ -6,7 +6,7 @@ import { CopilotShell } from '../../phase-editor/components/intelligence/Copilot
 import { PhaseDocument } from '../../phase-editor/components/canvas/PhaseDocument';
 import { PhaseHeader } from '@/components/admin/phase-editor/PhaseHeader';
 
-import { useEditorOrchestrator } from '@/hooks/admin/phase-editor/useEditorOrchestrator';
+import { useEditorOrchestrator } from '@/hooks/admin/phase-editor/use-editor-orchestrator';
 
 interface PhaseWorkshopClientProps {
     initialLesson: Lesson;
@@ -62,6 +62,7 @@ export default function PhaseWorkshop({ initialLesson, courseId }: PhaseWorkshop
                     stepErrors={editor.ui.stepErrors}
                     selectedBlockId={editor.ui.selectedBlockId}
                     onFocusBlock={editor.ui.focusBlock}
+                    liveContext={editor.copilot.liveContext}
                 />
             }
         />

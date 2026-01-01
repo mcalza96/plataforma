@@ -1,7 +1,7 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { getSubmissionService } from './di';
-import { createClient } from './infrastructure/supabase/supabase-server';
+import { getSubmissionService } from '@/lib/infrastructure/di';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 
 export async function uploadSubmission(formData: FormData) {
     const supabase = await createClient();

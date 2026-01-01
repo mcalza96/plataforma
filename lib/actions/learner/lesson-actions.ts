@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getLessonService } from './di';
+import { getLessonService } from '@/lib/infrastructure/di';
 
 export async function toggleStepCompletion(
     learnerId: string,

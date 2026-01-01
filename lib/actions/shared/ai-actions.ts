@@ -5,8 +5,8 @@ import {
     getCourseReader,
     getCourseWriter,
     getCompetencyRepository
-} from './di';
-import { PartialKnowledgeMap } from './domain/discovery';
+} from '@/lib/infrastructure/di';
+import { PartialKnowledgeMap } from '@/lib/domain/discovery';
 
 /**
  * Persists the discovered pedagogical context into the database.

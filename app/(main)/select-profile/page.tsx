@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import ProfilesClient from './profiles-client';
 import { getAuthUser } from '@/lib/infrastructure/auth-utils';
-import { getCourseService } from '@/lib/di';
+import { getLearnerService } from '@/lib/infrastructure/di';
 
 export default async function SelectProfilePage() {
     const user = await getAuthUser();
@@ -10,7 +10,7 @@ export default async function SelectProfilePage() {
         return redirect('/login');
     }
 
-    const service = getCourseService();
+    const service = getLearnerService();
     const learners = await service.getLearnersByParentId(user.id);
 
     return (

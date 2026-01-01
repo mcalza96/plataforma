@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { uploadSubmission } from '@/lib/storage-actions';
+import { uploadSubmission } from '@/lib/actions/shared/storage-actions';
 
 interface UploadZoneProps {
     learnerId: string;

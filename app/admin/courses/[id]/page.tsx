@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import CourseForm from './CourseForm';
-import { getCourseService, getLessonService } from '@/lib/di';
+import { getCourseService, getLessonService } from '@/lib/infrastructure/di';
 import AdminBreadcrumbsResolver from '@/components/admin/AdminBreadcrumbsResolver';
 import { CourseMapper } from '@/lib/application/mappers/course-mapper';
 

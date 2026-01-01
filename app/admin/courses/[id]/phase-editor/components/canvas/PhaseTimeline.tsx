@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     DndContext,
     closestCenter,
@@ -17,6 +18,7 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import StepCard, { StepData } from '@/components/admin/StepCard';
+import { PartialKnowledgeMap } from '@/lib/domain/discovery';
 
 interface PhaseTimelineProps {
     steps: StepData[];
@@ -26,7 +28,8 @@ interface PhaseTimelineProps {
     onReorderSteps: (activeId: string, overId: string) => void;
     stepErrors?: Record<string, string[]>;
     selectedStepId?: string | null;
-    onFocusStep?: (id: string) => void;
+    onFocusStep?: (id: string | null) => void;
+    liveContext?: PartialKnowledgeMap;
 }
 
 /**
@@ -41,7 +44,8 @@ export function PhaseTimeline({
     onReorderSteps,
     stepErrors = {},
     selectedStepId,
-    onFocusStep
+    onFocusStep,
+    liveContext
 }: PhaseTimelineProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -93,29 +97,40 @@ export function PhaseTimeline({
                     strategy={verticalListSortingStrategy}
                 >
                     <div className="space-y-4">
-                        {steps.map((item, index) => (
-                            <div key={item.id} className="relative group">
-                                {/* Connector Line */}
-                                {index < steps.length - 1 && (
-                                    <div className="absolute left-[34px] top-20 bottom-0 w-[1px] bg-white/5 z-0 group-hover:bg-amber-500/20 transition-colors" />
-                                )}
+                        <AnimatePresence initial={false}>
+                            {steps.map((item, index) => (
+                                <motion.div
+                                    key={item.id}
+                                    layout
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                                    className="relative group"
+                                >
+                                    {/* Connector Line */}
+                                    {index < steps.length - 1 && (
+                                        <div className="absolute left-[34px] top-20 bottom-0 w-[1px] bg-white/5 z-0 group-hover:bg-amber-500/20 transition-colors" />
+                                    )}
 
-                                <StepCard
-                                    step={item}
-                                    index={index}
-                                    isExpanded={expandedId === item.id}
-                                    isSelected={selectedStepId === item.id}
-                                    onFocus={() => onFocusStep?.(item.id)}
-                                    onToggleExpand={() => {
-                                        setExpandedId(expandedId === item.id ? null : item.id);
-                                        onFocusStep?.(item.id);
-                                    }}
-                                    onUpdate={onUpdateStep}
-                                    onRemove={onRemoveStep}
-                                    errors={stepErrors[item.id]}
-                                />
-                            </div>
-                        ))}
+                                    <StepCard
+                                        step={item}
+                                        index={index}
+                                        isExpanded={expandedId === item.id}
+                                        isSelected={selectedStepId === item.id}
+                                        onFocus={() => onFocusStep?.(item.id)}
+                                        onToggleExpand={() => {
+                                            setExpandedId(expandedId === item.id ? null : item.id);
+                                            onFocusStep?.(item.id);
+                                        }}
+                                        onUpdate={onUpdateStep}
+                                        onRemove={onRemoveStep}
+                                        errors={stepErrors[item.id]}
+                                        liveContext={liveContext}
+                                    />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
                     </div>
                 </SortableContext>
             </DndContext>

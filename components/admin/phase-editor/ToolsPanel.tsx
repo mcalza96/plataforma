@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import DiscoveryChat from '../copilot/DiscoveryChat';
 import ResourceUploader from '../ResourceUploader';
-import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/use-copilot-session';
 
 interface ToolsPanelProps {
     copilotSession: CopilotSessionHelper;

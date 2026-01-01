@@ -5,7 +5,7 @@ import { ExamSidebar } from './ExamSidebar';
 import { LegoCBM } from '../legos/LegoCBM';
 import { LegoRanking } from '../legos/LegoRanking';
 import { LegoSpotting } from '../legos/LegoSpotting';
-import { useExamSync } from '@/hooks/useExamSync';
+import { useExamSync } from '@/hooks/learner/use-exam-sync';
 import { useRouter } from 'next/navigation';
 import {
     Question,

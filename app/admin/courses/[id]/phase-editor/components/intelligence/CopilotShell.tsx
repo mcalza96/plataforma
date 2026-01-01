@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/use-copilot-session';
 import { ActiveChat } from './ActiveChat';
 import { LiveContextView } from './LiveContextView';
 

@@ -1,32 +1,32 @@
-import { SupabaseCourseRepository } from './infrastructure/supabase/supabase-course-repository';
-import { SupabaseLessonRepository } from './infrastructure/supabase/supabase-lesson-repository';
-import { SupabaseContentRepository } from './infrastructure/supabase/supabase-content-repository';
-import { SupabaseCompetencyRepository } from './infrastructure/supabase/supabase-competency-repository';
-import { SupabaseLearnerRepository } from './infrastructure/supabase/supabase-learner-repository';
-import { SupabaseStatsRepository } from './infrastructure/supabase/supabase-stats-repository';
+import { SupabaseCourseRepository } from '@/lib/infrastructure/supabase/supabase-course-repository';
+import { SupabaseLessonRepository } from '@/lib/infrastructure/supabase/supabase-lesson-repository';
+import { SupabaseContentRepository } from '@/lib/infrastructure/supabase/supabase-content-repository';
+import { SupabaseCompetencyRepository } from '@/lib/infrastructure/supabase/supabase-competency-repository';
+import { SupabaseLearnerRepository } from '@/lib/infrastructure/supabase/supabase-learner-repository';
+import { SupabaseStatsRepository } from '@/lib/infrastructure/supabase/supabase-stats-repository';
 
 import {
     ICourseReader,
     ICourseWriter
-} from './domain/repositories/course-repository';
-import { ILearnerRepository } from './domain/repositories/learner-repository';
-import { IStatsRepository } from './domain/repositories/stats-repository';
-import { ILessonRepository } from './domain/repositories/lesson-repository';
-import { IContentRepository } from './domain/repositories/content-repository';
-import { ICompetencyRepository } from './domain/repositories/competency-repository';
+} from '@/lib/domain/repositories/course-repository';
+import { ILearnerRepository } from '@/lib/domain/repositories/learner-repository';
+import { IStatsRepository } from '@/lib/domain/repositories/stats-repository';
+import { ILessonRepository } from '@/lib/domain/repositories/lesson-repository';
+import { IContentRepository } from '@/lib/domain/repositories/content-repository';
+import { ICompetencyRepository } from '@/lib/domain/repositories/competency-repository';
 
-import { CourseService } from './application/services/course-service';
-import { LessonService } from './application/services/lesson-service';
-import { SubmissionService } from './application/services/submission-service';
-import { FeedbackService } from './application/services/feedback-service';
-import { MetadataService } from './application/services/metadata';
-import { AIOrchestratorService } from './application/services/orchestrator';
-import { LearnerService } from './application/services/learner-service';
-import { FamilyService } from './application/services/family-service';
-import { AdminService } from './application/services/admin-service';
+import { CourseService } from '@/lib/application/services/course-service';
+import { LessonService } from '@/lib/application/services/lesson-service';
+import { SubmissionService } from '@/lib/application/services/submission-service';
+import { FeedbackService } from '@/lib/application/services/feedback-service';
+import { MetadataService } from '@/lib/application/services/metadata';
+import { AIOrchestratorService } from '@/lib/application/services/orchestrator';
+import { LearnerService } from '@/lib/application/services/learner-service';
+import { FamilyService } from '@/lib/application/services/family-service';
+import { AdminService } from '@/lib/application/services/admin-service';
 
-import { IAIProvider } from './domain/repositories/ai-provider';
-import { LangChainAIAdapter } from './adapters/ai-adapter';
+import { IAIProvider } from '@/lib/domain/repositories/ai-provider';
+import { LangChainAIAdapter } from '@/lib/adapters/ai-adapter';
 
 
 /**

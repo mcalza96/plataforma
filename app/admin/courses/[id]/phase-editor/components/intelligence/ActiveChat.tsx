@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TypewriterText } from '@/components/ui/TypewriterText';
-import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/useCopilotSession';
+import { CopilotSessionHelper } from '@/hooks/admin/phase-editor/use-copilot-session';
 
 interface ActiveChatProps {
     session: CopilotSessionHelper;

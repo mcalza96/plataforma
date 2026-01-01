@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { useContextController } from './useContextController';
-import { useTimelineController } from './useTimelineController';
-import { useCopilotSession, generateStepsFromSuggestions } from './useCopilotSession';
+import { useContextController } from './use-context-controller';
+import { useTimelineController } from './use-timeline-controller';
+import { useCopilotSession, generateStepsFromSuggestions } from './use-copilot-session';
 import { Lesson } from '@/lib/domain/course';
+import { StepData } from '@/components/admin/StepCard';
 import { validatePhase } from '@/lib/validators/phase-editor';
-import { useAutoSave } from '@/hooks/use-auto-save';
+import { useAutoSave } from '@/hooks/shared/use-auto-save';
 
 /**
  * useEditorOrchestrator: The master "brain" of the Creative Studio.
@@ -36,6 +37,43 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
                 }
             }, 100);
         }
+    }, [timeline]);
+
+    // Bridge Method: Inject a server-generated probe as a quiz step
+    const injectProbeAsStep = useCallback((probeId: string, metadata: { title: string; misconceptionIds: string[]; options?: any[] }) => {
+        const newStep: StepData = {
+            id: `probe-step-${Date.now()}`,
+            type: 'quiz',
+            title: `[IA] Sonda: ${metadata.title}`,
+            description: 'Reactivo generado automáticamente para validar malentendidos presentados en el diseño.',
+            duration: 5,
+            metadata: {
+                isDiagnostic: true,
+                linkedProbeId: probeId,
+                misconceptionIds: metadata.misconceptionIds
+            },
+            quizData: metadata.options ? {
+                stem: metadata.title,
+                options: metadata.options.map((opt, idx) => ({
+                    id: `${Date.now()}-${idx}`,
+                    content: opt.content,
+                    isCorrect: opt.isCorrect,
+                    feedback: opt.feedback,
+                    diagnosesMisconceptionId: opt.diagnosesMisconceptionId
+                }))
+            } : undefined
+        };
+
+        timeline.addGeneratedSteps([newStep]);
+
+        // UX: Scroll to the newly created content smoothly
+        setTimeout(() => {
+            const element = document.getElementById(newStep.id);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setSelectedBlockId(newStep.id);
+            }
+        }, 150);
     }, [timeline]);
 
     // Instance the copilot with dynamic external context awareness
@@ -90,7 +128,8 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
         stepErrors,
         isValid,
         autoSaveStatus,
-        handleManualSave
+        handleManualSave,
+        injectProbeAsStep
     }), [
         selectedBlockId,
         focusBlock,
@@ -98,7 +137,8 @@ export function useEditorOrchestrator(initialLesson: Lesson) {
         stepErrors,
         isValid,
         autoSaveStatus,
-        handleManualSave
+        handleManualSave,
+        injectProbeAsStep
     ]);
 
     return {

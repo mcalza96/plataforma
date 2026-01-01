@@ -3,7 +3,7 @@
 import LegoStack from '@/components/ui/LegoStack';
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import { useViewTransition } from '@/hooks/use-view-transition';
+import { useViewTransition } from '@/hooks/ui/use-view-transition';
 
 interface CourseCardProps {
     id: string;

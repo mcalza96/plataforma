@@ -1,4 +1,4 @@
-import { getAdminService } from '@/lib/di';
+import { getAdminService } from '@/lib/infrastructure/di';
 import StatCard from '@/components/ui/StatCard';
 
 export default async function AdminStatsPage() {

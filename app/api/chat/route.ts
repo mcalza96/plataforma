@@ -52,7 +52,7 @@ export async function POST(req: Request) {
             case 'PEDAGOGICAL_QUERY':
                 // Use FSM-based dynamic prompt for Curriculum Architect
                 const { continueInterview } = await import('@/lib/application/services/discovery');
-                const { loadDraftExam } = await import('@/lib/actions/discovery-actions');
+                const { loadDraftExam } = await import('@/lib/actions/assessment/discovery-actions');
 
                 // Fetch current context from database (Única Fuente de Verdad)
                 // This ensures we always have the latest Blueprint state, even if the client is out of sync

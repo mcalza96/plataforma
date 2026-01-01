@@ -12,6 +12,9 @@ interface DeltaChartProps {
     data: DeltaItem[];
 }
 
+/**
+ * DeltaChart: Visualizes the incremental growth in student competencies.
+ */
 export default function DeltaChart({ data }: DeltaChartProps) {
     return (
         <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group/card">
@@ -21,7 +24,7 @@ export default function DeltaChart({ data }: DeltaChartProps) {
                 <div className="flex items-center justify-between">
                     <h3 className="text-xl font-black text-white italic tracking-tighter flex items-center gap-3">
                         <span className="material-symbols-outlined text-amber-500">trending_up</span>
-                        Evolución de Talento
+                        Evolución de Competencias
                     </h3>
                     <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
                         <span className="relative flex h-2 w-2">
@@ -53,7 +56,7 @@ export default function DeltaChart({ data }: DeltaChartProps) {
                                             transition={{ delay: index * 0.15 + 0.5 }}
                                             className="text-amber-500 font-black"
                                         >
-                                            +{growth}% IMPACTO
+                                            +{growth}% IMPACTO ACADÉMICO
                                         </motion.span>
                                     </div>
                                 </div>

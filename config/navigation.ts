@@ -9,16 +9,16 @@ export const marketingNav: NavItem[] = [
     { label: 'Método', href: '/#metodo', icon: 'auto_fix' },
 ];
 
-export const learnerNav: NavItem[] = [
+export const studentNav: NavItem[] = [
     { label: 'Misión Control', href: '/dashboard', icon: 'rocket_launch' },
     { label: 'Galería', href: '/gallery', icon: 'gallery_thumbnail' },
-    { label: 'Zona Padres', href: '/parent-dashboard', icon: 'family_restroom' },
+    { label: 'Panel del Profesor', href: '/teacher-dashboard', icon: 'school' },
     { label: 'Recursos', href: '/resources', icon: 'folder_open' },
 ];
 
 export const adminNav: NavItem[] = [
     { label: 'Estadísticas', href: '/admin/stats', icon: 'leaderboard' },
-    { label: 'Misiones', href: '/admin/courses', icon: 'brush' },
+    { label: 'Cursos', href: '/admin/courses', icon: 'brush' },
     { label: 'Correcciones', href: '/admin/submissions', icon: 'video_stable' },
-    { label: 'Artistas', href: '/admin/users', icon: 'group' },
+    { label: 'Estudiantes', href: '/admin/users', icon: 'group' },
 ];

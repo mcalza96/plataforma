@@ -26,7 +26,7 @@ vi.mock('ai', () => ({
 }));
 
 // 3. Mock Server Actions
-vi.mock('@/lib/actions/discovery-actions', () => ({
+vi.mock('@/lib/actions/assessment/discovery-actions', () => ({
     saveDiscoveryContext: vi.fn().mockResolvedValue({ success: true }),
     loadDraftExam: vi.fn().mockResolvedValue({ success: true, context: {} })
 }));

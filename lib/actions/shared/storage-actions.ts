@@ -3,22 +3,25 @@ import { revalidatePath } from 'next/cache';
 import { getSubmissionService } from '@/lib/infrastructure/di';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 
+/**
+ * Sube una entrega de un estudiante al almacenamiento y la registra en la base de datos.
+ */
 export async function uploadSubmission(formData: FormData) {
     const supabase = await createClient();
 
     const file = formData.get('file') as File;
-    const learnerId = formData.get('learnerId') as string;
+    const studentId = formData.get('studentId') as string;
     const lessonId = formData.get('lessonId') as string | null;
     const title = formData.get('title') as string;
     const category = formData.get('category') as string;
 
-    if (!file || !learnerId) {
-        throw new Error('Archivo o ID de alumno faltante');
+    if (!file || !studentId) {
+        throw new Error('Archivo o ID de estudiante faltante');
     }
 
     // 1. Upload to Storage
     const fileExt = file.name.split('.').pop();
-    const fileName = `${learnerId}/${Date.now()}.${fileExt}`;
+    const fileName = `${studentId}/${Date.now()}.${fileExt}`;
     const filePath = `submissions/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
@@ -44,7 +47,7 @@ export async function uploadSubmission(formData: FormData) {
     try {
         const service = getSubmissionService();
         const dbData = await service.createSubmission({
-            learnerId,
+            studentId,
             lessonId,
             title: title || 'Mi Obra Maestra',
             fileUrl,
@@ -63,8 +66,10 @@ export async function uploadSubmission(formData: FormData) {
     }
 }
 
-export async function getLearnerSubmissions(learnerId: string) {
+/**
+ * Obtiene el historial de entregas de un estudiante.
+ */
+export async function getStudentSubmissions(studentId: string) {
     const service = getSubmissionService();
-    return await service.getLearnerSubmissions(learnerId);
+    return await service.getStudentSubmissions(studentId);
 }
-

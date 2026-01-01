@@ -76,7 +76,7 @@ export function useArchitectActions({
         if (!state.readiness.isValid) return;
         setState(prev => ({ ...prev, isGenerating: true }));
         try {
-            const { publishExam } = await import("@/lib/actions/exam-actions");
+            const { publishExam } = await import("@/lib/actions/assessment/exam-actions");
             const result = await publishExam({
                 title: examTitle,
                 matrix: state.context,
@@ -99,7 +99,7 @@ export function useArchitectActions({
     const handleReset = async () => {
         setIsLoading(true);
         try {
-            const { resetDiscoveryContext } = await import("@/lib/actions/discovery-actions");
+            const { resetDiscoveryContext } = await import("@/lib/actions/assessment/discovery-actions");
             const result = await resetDiscoveryContext();
             if (result.success) {
                 setMessages([]);

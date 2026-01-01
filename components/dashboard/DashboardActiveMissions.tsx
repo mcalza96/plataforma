@@ -6,11 +6,11 @@ import OptimizedImage from '@/components/ui/OptimizedImage';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface DashboardActiveMissionsProps {
-    learnerId: string;
+    studentId: string;
 }
 
-export default async function DashboardActiveMissions({ learnerId }: DashboardActiveMissionsProps) {
-    const courses = await getCoursesWithProgress(learnerId);
+export default async function DashboardActiveMissions({ studentId }: DashboardActiveMissionsProps) {
+    const courses = await getCoursesWithProgress(studentId);
     const courseList = Array.isArray(courses) ? courses : [];
 
     const activeMissions = courseList.filter(c => c.progress && c.progress.completed_steps > 0);

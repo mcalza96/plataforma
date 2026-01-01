@@ -1,71 +1,71 @@
-import { ILearnerRepository } from '../../domain/repositories/learner-repository';
-import { Learner } from '../../domain/entities/learner';
-import { FamilyDTO } from '../../domain/dtos/learner';
+import { IStudentRepository } from '../../domain/repositories/learner-repository';
+import { Student } from '../../domain/entities/learner';
+import { TeacherTenantDTO } from '../../domain/dtos/learner';
 import { createClient } from './supabase-server';
 
-export class SupabaseLearnerRepository implements ILearnerRepository {
-    async getLearnerById(learnerId: string): Promise<Learner | null> {
+export class SupabaseLearnerRepository implements IStudentRepository {
+    async getStudentById(studentId: string): Promise<Student | null> {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('learners')
             .select('*')
-            .eq('id', learnerId)
+            .eq('id', studentId)
             .single();
 
         if (error) {
-            console.error('Error fetching learner in repository:', error);
+            console.error('Error fetching student in repository:', error);
             return null;
         }
 
         return data;
     }
 
-    async getFamilies(): Promise<FamilyDTO[]> {
+    async getTeachers(): Promise<TeacherTenantDTO[]> {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('profiles')
             .select(`
                 *,
-                learners (*)
+                students:learners (*)
             `)
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Error fetching families in repository:', error);
-            throw new Error('No se pudieron obtener las familias.');
+            console.error('Error fetching teachers in repository:', error);
+            throw new Error('No se pudieron obtener los profesores.');
         }
 
         return data || [];
     }
 
-    async getFamilyById(id: string): Promise<FamilyDTO | null> {
+    async getTeacherById(id: string): Promise<TeacherTenantDTO | null> {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('profiles')
             .select(`
                 *,
-                learners (*)
+                students:learners (*)
             `)
             .eq('id', id)
             .single();
 
         if (error) {
-            console.error('Error fetching family in repository:', error);
-            throw new Error('No se pudo encontrar la familia solicitada.');
+            console.error('Error fetching teacher in repository:', error);
+            throw new Error('No se pudo encontrar el profesor solicitado.');
         }
 
         return data;
     }
 
-    async updateLearnerLevel(learnerId: string, newLevel: number): Promise<void> {
+    async updateStudentLevel(studentId: string, newLevel: number): Promise<void> {
         const supabase = await createClient();
         const { error } = await supabase
             .from('learners')
             .update({ level: newLevel })
-            .eq('id', learnerId);
+            .eq('id', studentId);
 
         if (error) {
-            console.error('Error updating learner level in repository:', error);
+            console.error('Error updating student level in repository:', error);
             throw new Error('Error al actualizar el nivel.');
         }
     }
@@ -83,16 +83,16 @@ export class SupabaseLearnerRepository implements ILearnerRepository {
         }
     }
 
-    async createLearner(data: {
-        parentId: string;
+    async createStudent(data: {
+        teacherId: string;
         displayName: string;
         avatarUrl: string;
-    }): Promise<Learner> {
+    }): Promise<Student> {
         const supabase = await createClient();
         const { data: dbData, error } = await supabase
             .from('learners')
             .insert({
-                parent_id: data.parentId,
+                teacher_id: data.teacherId,
                 display_name: data.displayName,
                 avatar_url: data.avatarUrl,
                 level: 1
@@ -101,7 +101,7 @@ export class SupabaseLearnerRepository implements ILearnerRepository {
             .single();
 
         if (error) {
-            console.error('Error creating learner in repository:', error);
+            console.error('Error creating student in repository:', error);
             throw new Error(error.message);
         }
 
@@ -122,21 +122,21 @@ export class SupabaseLearnerRepository implements ILearnerRepository {
 
         if (error) {
             console.error('Error ensuring profile existence in repository:', data.id, error);
-            throw new Error(`No se pudo crear tu perfil de padre: ${error.message}.`);
+            throw new Error(`No se pudo crear tu perfil de profesor: ${error.message}.`);
         }
     }
 
-    async getLearnersByParentId(parentId: string): Promise<Learner[]> {
+    async getStudentsByTeacherId(teacherId: string): Promise<Student[]> {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('learners')
             .select('*')
-            .eq('parent_id', parentId)
+            .eq('teacher_id', teacherId)
             .order('created_at', { ascending: true });
 
         if (error) {
-            console.error('Error fetching learners for parent in repository:', error);
-            throw new Error('Error al obtener los alumnos.');
+            console.error('Error fetching students for teacher in repository:', error);
+            throw new Error('Error al obtener los estudiantes.');
         }
 
         return data || [];

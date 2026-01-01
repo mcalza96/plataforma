@@ -40,9 +40,17 @@ export function generateNarrative(result: DiagnosticResult): FeedbackReport {
         executiveSummary = 'Este diagnóstico nos muestra que hay fundamentos clave que aún no están claros. Es el momento perfecto para nivelar.';
     }
 
-    // 2. Nota Conductual (Telemetría)
+    // 2. Nota Conductual (Telemetría y Metacognición)
     let behavioralNote: string | undefined;
-    if (behaviorProfile.isImpulsive) {
+    const { eceScore, calibrationStatus } = result.calibration;
+
+    if (eceScore > 20) {
+        behavioralNote = "Detectamos una desviación metacognitiva significativa. Tu percepción de éxito no coincide con tu ejecución real (Punto Ciego Cognitivo). Te recomendamos revisar los fundamentos con mayor detenimiento.";
+    } else if (calibrationStatus === 'OVERCONFIDENT') {
+        behavioralNote = "Tiendes a mostrar mucha seguridad incluso en temas que aún no dominas. Esto puede ocultar puntos ciegos en tu aprendizaje.";
+    } else if (calibrationStatus === 'UNDERCONFIDENT') {
+        behavioralNote = "Tienes más conocimientos de los que crees. ¡Confía más en tus respuestas!";
+    } else if (behaviorProfile.isImpulsive) {
         behavioralNote = 'Notamos que respondes muy rápido. Para los próximos temas, te recomendamos tomarte un momento para leer cada opción en voz alta.';
     } else if (behaviorProfile.isAnxious) {
         behavioralNote = 'Vimos que dudaste en algunas respuestas. Esto es normal cuando estamos aprendiendo; la práctica te dará la seguridad que falta.';

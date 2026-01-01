@@ -30,13 +30,21 @@ export function evaluateSession(
 ): DiagnosticResult {
     const diagnosesMap = new Map<string, CompetencyDiagnosis>();
 
-    // Iterar sobre cada respuesta para acumular evidencia
+    // 1. Calcular métricas de calibración primero (Espejo Metacognitivo)
+    const calibration = calculateCalibration(responses);
+
+    // 2. Iterar sobre cada respuesta para acumular evidencia, usando el estado de calibración
     for (const response of responses) {
         const mapping = qMatrix.find((m) => m.questionId === response.questionId);
         if (!mapping) continue;
 
         const currentDiagnosis = diagnosesMap.get(mapping.competencyId);
-        const newDiagnosis = processResponseEvidence(response, mapping, currentDiagnosis);
+        const newDiagnosis = processResponseEvidence(
+            response,
+            mapping,
+            calibration.calibrationStatus,
+            currentDiagnosis
+        );
 
         if (newDiagnosis) {
             diagnosesMap.set(mapping.competencyId, newDiagnosis);
@@ -53,9 +61,6 @@ export function evaluateSession(
         ? Math.round((correctCount / validResponses.length) * 100)
         : 0;
 
-    // Calcular métricas de calibración (Metacognición)
-    const calibration = calculateCalibration(responses);
-
     return {
         attemptId,
         studentId,
@@ -70,22 +75,66 @@ export function evaluateSession(
 /**
  * Calcula la calibración entre confianza y acierto.
  */
+/**
+ * Calcula la calibración avanzada usando Expected Calibration Error (ECE).
+ * Agrupa respuestas en bins por nivel de confianza y calcula la desviación ponderada.
+ */
 function calculateCalibration(responses: StudentResponse[]) {
     const valid = responses.filter(isEvidenceQualitySufficient);
-    if (valid.length === 0) return { certaintyAverage: 0, accuracyAverage: 0, blindSpots: 0, fragileKnowledge: 0 };
+    if (valid.length === 0) {
+        return {
+            certaintyAverage: 0,
+            accuracyAverage: 0,
+            eceScore: 0,
+            calibrationStatus: 'CALIBRATED' as const,
+            blindSpots: 0,
+            fragileKnowledge: 0
+        };
+    }
 
-    const confidenceValueMap = { 'HIGH': 100, 'MEDIUM': 66, 'LOW': 33, 'NONE': 0 };
-    const avgCertainty = valid.reduce((acc, r) => acc + confidenceValueMap[r.confidence], 0) / valid.length;
-    const avgAccuracy = (valid.filter(r => r.isCorrect).length / valid.length) * 100;
+    const confidenceValueMap: Record<string, number> = { 'HIGH': 100, 'MEDIUM': 66, 'LOW': 33, 'NONE': 0 };
+    const bins = ['NONE', 'LOW', 'MEDIUM', 'HIGH'];
 
-    const blindSpots = valid.filter(r => !r.isCorrect && r.confidence === 'HIGH').length;
-    const fragileKnowledge = valid.filter(r => r.isCorrect && (r.confidence === 'LOW' || r.confidence === 'MEDIUM')).length;
+    let totalWeightedError = 0;
+    let totalCertainty = 0;
+    let totalAccuracy = 0;
+
+    // Calcular métricas por cada bin (cubeta de confianza)
+    for (const binLevel of bins) {
+        const binResponses = valid.filter(r => r.confidence === binLevel);
+        if (binResponses.length === 0) continue;
+
+        const binAccuracy = (binResponses.filter(r => r.isCorrect).length / binResponses.length) * 100;
+        const binConfidence = confidenceValueMap[binLevel]; // En este caso es constante por bin
+
+        // Error Absoluto del Bin
+        const binError = Math.abs(binAccuracy - binConfidence);
+
+        // El ECE es la suma ponderada del error de cada bin
+        totalWeightedError += (binResponses.length / valid.length) * binError;
+
+        totalCertainty += binConfidence * binResponses.length;
+        totalAccuracy += binAccuracy * binResponses.length;
+    }
+
+    const avgCertainty = totalCertainty / valid.length;
+    const avgAccuracy = totalAccuracy / valid.length;
+
+    // Determinación del Estado Clínico
+    let calibrationStatus: 'CALIBRATED' | 'OVERCONFIDENT' | 'UNDERCONFIDENT' = 'CALIBRATED';
+    if (avgCertainty > avgAccuracy + 15) {
+        calibrationStatus = 'OVERCONFIDENT';
+    } else if (avgAccuracy > avgCertainty + 15) {
+        calibrationStatus = 'UNDERCONFIDENT';
+    }
 
     return {
         certaintyAverage: Math.round(avgCertainty),
         accuracyAverage: Math.round(avgAccuracy),
-        blindSpots,
-        fragileKnowledge
+        eceScore: Math.round(totalWeightedError),
+        calibrationStatus,
+        blindSpots: valid.filter(r => !r.isCorrect && r.confidence === 'HIGH').length,
+        fragileKnowledge: valid.filter(r => r.isCorrect && (r.confidence === 'LOW' || r.confidence === 'MEDIUM')).length
     };
 }
 
@@ -98,6 +147,7 @@ function calculateCalibration(responses: StudentResponse[]) {
 function processResponseEvidence(
     response: StudentResponse,
     mapping: QMatrixMapping,
+    calibrationStatus: 'CALIBRATED' | 'OVERCONFIDENT' | 'UNDERCONFIDENT',
     existingDiagnosis?: CompetencyDiagnosis
 ): CompetencyDiagnosis {
     let state: CompetencyEvaluationState = 'UNKNOWN';
@@ -134,7 +184,12 @@ function processResponseEvidence(
     ) {
         state = 'MISCONCEPTION';
         reason = `Evidencia de error conceptual: seleccionó opción trampa para "${mapping.misconceptionId}" con alta seguridad`;
-        confidenceScore = 0.9;
+
+        // PENALIZACIÓN METACOGNITIVA: Si es crónicamente OVERCONFIDENT, penalizamos la calidad de la evidencia
+        confidenceScore = calibrationStatus === 'OVERCONFIDENT' ? 0.95 : 0.9;
+        if (calibrationStatus === 'OVERCONFIDENT') {
+            reason += " (Reforzado por Desviación Metacognitiva: Punto Ciego Cognitivo)";
+        }
     }
     // Caso C: MASTERY - Correcto con seguridad aceptable
     else if (response.isCorrect && (response.confidence === 'HIGH' || response.confidence === 'MEDIUM')) {

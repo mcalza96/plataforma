@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getSubmissionService, getFeedbackService } from '@/lib/infrastructure/di';
-import { getUserRole, validateAdmin } from '@/lib/infrastructure/auth-utils';
+import { getUserRole } from '@/lib/infrastructure/auth-utils';
 import { FeedbackSchema } from '@/lib/validations';
 
 /**
- * Obtiene las entregas filtradas para el administrador
+ * Obtiene las entregas filtradas para el administrador o profesor
  */
 export async function getAdminSubmissions(filter: 'pending' | 'reviewed' = 'pending') {
     try {
@@ -43,12 +43,17 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
         const role = await getUserRole();
         const service = getSubmissionService();
 
-        await service.submitReview(validated, role);
+        await service.submitReview({
+            submissionId: validated.submissionId,
+            studentId: validated.learnerId, // Se mapea por compatibilidad con el schema actual
+            content: validated.content,
+            badgeId: validated.badgeId
+        }, role);
 
         revalidatePath('/admin/submissions');
         revalidatePath(`/admin/submissions/${validated.submissionId}`);
         revalidatePath('/dashboard');
-        revalidatePath('/parent-dashboard');
+        revalidatePath('/teacher-dashboard');
         revalidatePath('/gallery');
 
         return { success: true };
@@ -72,25 +77,25 @@ export async function getAvailableBadges() {
 }
 
 /**
- * Obtiene el historial de feedback de un alumno
+ * Obtiene el historial de feedback de un estudiante
  */
-export async function getLearnerFeedback(learnerId: string) {
+export async function getStudentFeedback(studentId: string) {
     try {
         const service = getFeedbackService();
-        return await service.getLearnerFeedback(learnerId);
+        return await service.getStudentFeedback(studentId);
     } catch (error: any) {
-        console.error('Error in getLearnerFeedback action:', error);
+        console.error('Error in getStudentFeedback action:', error);
         return [];
     }
 }
 
 /**
- * Obtiene el historial de un alumno con conteo de no leídos
+ * Obtiene el historial de un estudiante con conteo de no leídos
  */
-export async function getUnreadFeedbackCount(learnerId: string) {
+export async function getUnreadFeedbackCount(studentId: string) {
     try {
         const service = getFeedbackService();
-        return await service.getUnreadFeedbackCount(learnerId);
+        return await service.getUnreadFeedbackCount(studentId);
     } catch (error: any) {
         console.error('Error in getUnreadFeedbackCount action:', error);
         return 0;
@@ -98,7 +103,7 @@ export async function getUnreadFeedbackCount(learnerId: string) {
 }
 
 /**
- * Marca un mensaje como leído por el alumno
+ * Marca un mensaje como leído por el estudiante
  */
 export async function markFeedbackAsRead(messageId: string) {
     try {
@@ -112,4 +117,3 @@ export async function markFeedbackAsRead(messageId: string) {
         throw error;
     }
 }
-

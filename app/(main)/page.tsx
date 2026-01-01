@@ -11,11 +11,12 @@ export default async function LandingPage() {
 
   if (user) {
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    if (learnerId) {
-      redirect('/dashboard');
-    } else {
+    if (studentId) {
+      return redirect('/dashboard');
+    }
+    else {
       redirect('/select-profile');
     }
   }

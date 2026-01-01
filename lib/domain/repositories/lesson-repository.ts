@@ -34,10 +34,10 @@ export interface ILessonRepository {
     getMaxOrder(courseId: string): Promise<number>;
 
     /**
-     * Mark a step as complete for a learner in a specific lesson.
+     * Mark a step as complete for a student in a specific lesson.
      */
     markStepComplete(
-        learnerId: string,
+        studentId: string,
         lessonId: string,
         completedSteps: number,
         isCompleted: boolean
@@ -58,7 +58,7 @@ export interface ILessonRepository {
      */
     submitReview(data: {
         submissionId: string;
-        learnerId: string;
+        studentId: string;
         content: string;
         badgeId?: string | null;
     }): Promise<void>;
@@ -69,14 +69,14 @@ export interface ILessonRepository {
     getAvailableBadges(): Promise<Achievement[]>;
 
     /**
-     * Get feedback for a learner.
+     * Get feedback for a student.
      */
-    getLearnerFeedback(learnerId: string): Promise<any[]>;
+    getStudentFeedback(studentId: string): Promise<any[]>;
 
     /**
-     * Get unread feedback count for a learner.
+     * Get unread feedback count for a student.
      */
-    getUnreadFeedbackCount(learnerId: string): Promise<number>;
+    getUnreadFeedbackCount(studentId: string): Promise<number>;
 
     /**
      * Mark feedback message as read.
@@ -87,7 +87,7 @@ export interface ILessonRepository {
      * Create a new submission.
      */
     createSubmission(data: {
-        learnerId: string;
+        studentId: string;
         lessonId: string | null;
         title: string;
         fileUrl: string;
@@ -95,12 +95,12 @@ export interface ILessonRepository {
     }): Promise<Submission>;
 
     /**
-     * Get submissions for a learner.
+     * Get submissions for a student.
      */
-    getLearnerSubmissions(learnerId: string): Promise<Submission[]>;
+    getStudentSubmissions(studentId: string): Promise<Submission[]>;
 
     /**
-     * Verify if a path of lessons is unlocked for a learner.
+     * Verify if a path of lessons is unlocked for a student.
      */
-    checkLessonPath(lessonId: string, learnerId: string): Promise<LessonNode[]>;
+    checkLessonPath(lessonId: string, studentId: string): Promise<LessonNode[]>;
 }

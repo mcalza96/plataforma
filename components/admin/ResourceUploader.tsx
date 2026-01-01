@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { StorageService } from '@/lib/infrastructure/storage/storage-service';
+import { useToast } from '@/context/ToastContext';
 
 interface ResourceUploaderProps {
     onUploadComplete: (url: string) => void;
@@ -26,6 +27,7 @@ export default function ResourceUploader({
     const [dragActive, setDragActive] = useState(false);
     const [fileName, setFileName] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { showToast } = useToast();
 
     const handleUpload = async (file: File) => {
         setIsUploading(true);
@@ -58,7 +60,7 @@ export default function ResourceUploader({
             }, 1000);
         } catch (error: any) {
             console.error('Error uploading:', error);
-            alert('Error en el despliegue al almacenamiento: ' + error.message);
+            showToast('Error en el despliegue al almacenamiento: ' + error.message, 'error');
         } finally {
             setIsUploading(false);
             clearInterval(progressInterval);

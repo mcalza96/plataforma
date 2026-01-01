@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
     const isAuthRoute = url.pathname.startsWith('/login') || url.pathname.startsWith('/signup');
     const isProtectedRoute =
         url.pathname.startsWith('/dashboard') ||
-        url.pathname.startsWith('/parent-dashboard') ||
+        url.pathname.startsWith('/teacher-dashboard') ||
         url.pathname.startsWith('/gallery') ||
         url.pathname.startsWith('/lessons') ||
         url.pathname.startsWith('/admin') ||

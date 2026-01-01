@@ -6,12 +6,12 @@ import { submitReview } from '@/lib/actions/shared/feedback-actions';
 
 interface ReviewPanelProps {
     submissionId: string;
-    learnerId: string;
+    studentId: string;
     badges: any[];
     history: any[];
 }
 
-export default function ReviewPanel({ submissionId, learnerId, badges, history }: ReviewPanelProps) {
+export default function ReviewPanel({ submissionId, studentId, badges, history }: ReviewPanelProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [content, setContent] = useState('');
@@ -24,7 +24,7 @@ export default function ReviewPanel({ submissionId, learnerId, badges, history }
         startTransition(async () => {
             const result = await submitReview({
                 submissionId,
-                learnerId,
+                studentId,
                 content,
                 badgeId: selectedBadge
             });

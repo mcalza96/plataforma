@@ -1,15 +1,17 @@
-import { getFamilyById } from '@/lib/admin-users-actions';
+import { getTeacherById } from '@/lib/actions/admin/admin-users-actions';
 import Link from 'next/link';
-import LearnerLevelControl from './level-control';
+import StudentLevelControl from './level-control';
 import RoleSelector from '@/components/admin/RoleSelector';
 
 interface PageProps {
     params: Promise<{ id: string }>;
 }
 
-export default async function FamilyDetailPage({ params }: PageProps) {
+export default async function TeacherDetailPage({ params }: PageProps) {
     const { id } = await params;
-    const family = await getFamilyById(id);
+    const teacher = await getTeacherById(id);
+
+    if (!teacher) return null;
 
     return (
         <div className="space-y-10 animate-in fade-in duration-700">
@@ -19,31 +21,31 @@ export default async function FamilyDetailPage({ params }: PageProps) {
                     <span className="material-symbols-outlined text-gray-500">arrow_back</span>
                 </Link>
                 <div>
-                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Detalle de Familia</p>
+                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Detalle de Profesor</p>
                     <h1 className="text-2xl font-black text-white tracking-tight leading-none italic uppercase">
-                        {family.email}
+                        {teacher.email}
                     </h1>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* Family Info Sidebar */}
+                {/* Teacher Info Sidebar */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-surface/30 border border-white/5 rounded-[2.5rem] p-8 space-y-8 backdrop-blur-sm">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Información del Padre</label>
+                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Información del Profesor</label>
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined text-amber-500/50">mail</span>
-                                    <span className="text-sm text-gray-300">{family.email}</span>
+                                    <span className="text-sm text-gray-300">{teacher.email}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined text-amber-500/50">calendar_month</span>
-                                    <span className="text-sm text-gray-300">Unido el {new Date(family.created_at).toLocaleDateString()}</span>
+                                    <span className="text-sm text-gray-300">Unido el {new Date(teacher.created_at).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <span className="material-symbols-outlined text-amber-500/50">fingerprint</span>
-                                    <span className="text-[10px] text-gray-600 font-mono truncate">{family.id}</span>
+                                    <span className="text-[10px] text-gray-600 font-mono truncate">{teacher.id}</span>
                                 </div>
                             </div>
                         </div>
@@ -58,33 +60,33 @@ export default async function FamilyDetailPage({ params }: PageProps) {
                             </div>
 
                             <RoleSelector
-                                userId={family.id}
-                                currentRole={family.role || 'user'}
-                                userName={family.email || 'Usuario'}
+                                userId={teacher.id}
+                                currentRole={teacher.role || 'teacher'}
+                                userName={teacher.email || 'Usuario'}
                             />
                         </div>
                     </div>
                 </div>
 
-                {/* Artists Section */}
+                {/* Students Section */}
                 <div className="lg:col-span-2 space-y-8">
                     <div className="flex items-center justify-between">
                         <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">
-                            Artistas de la Familia <span className="text-gray-700 ml-2">({family.learners?.length || 0})</span>
+                            Estudiantes del Profesor <span className="text-gray-700 ml-2">({teacher.students?.length || 0})</span>
                         </h2>
                     </div>
 
-                    {!family.learners || family.learners.length === 0 ? (
+                    {!teacher.students || teacher.students.length === 0 ? (
                         <div className="p-12 text-center bg-white/[0.02] border border-dashed border-white/5 rounded-[2.5rem]">
-                            <p className="text-gray-500 font-medium italic">Esta familia aún no ha creado perfiles de artistas.</p>
+                            <p className="text-gray-500 font-medium italic">Este profesor aún no ha registrado estudiantes.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {family.learners.map((learner: any) => (
-                                <LearnerLevelControl
-                                    key={learner.id}
-                                    learner={learner}
-                                    profileId={family.id}
+                            {teacher.students.map((student: any) => (
+                                <StudentLevelControl
+                                    key={student.id}
+                                    student={student}
+                                    profileId={teacher.id}
                                 />
                             ))}
                         </div>

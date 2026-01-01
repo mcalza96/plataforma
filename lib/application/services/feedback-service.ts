@@ -1,17 +1,17 @@
 import { ILessonRepository } from '../../domain/repositories/lesson-repository';
 
 /**
- * Service for managing learner feedback
+ * Service for managing student feedback
  */
 export class FeedbackService {
     constructor(private lessonRepository: ILessonRepository) { }
 
-    async getLearnerFeedback(learnerId: string): Promise<any[]> {
-        return this.lessonRepository.getLearnerFeedback(learnerId);
+    async getStudentFeedback(studentId: string): Promise<any[]> {
+        return this.lessonRepository.getStudentFeedback(studentId);
     }
 
-    async getUnreadFeedbackCount(learnerId: string): Promise<number> {
-        return this.lessonRepository.getUnreadFeedbackCount(learnerId);
+    async getUnreadFeedbackCount(studentId: string): Promise<number> {
+        return this.lessonRepository.getUnreadFeedbackCount(studentId);
     }
 
     async markFeedbackAsRead(messageId: string): Promise<void> {

@@ -1,13 +1,13 @@
 import { ILessonRepository } from '../../domain/repositories/lesson-repository';
 import { Lesson } from '../../domain/entities/course';
 import { UpsertLessonInput, LessonNode } from '../../domain/dtos/course';
-import { Submission, Achievement } from '../../domain/dtos/learner';
+import { Submission, Achievement, StudentProgress } from '../../domain/dtos/learner';
 
 import { createClient } from './supabase-server';
 import { CourseMapper } from '../../application/mappers/course-mapper';
 
 /**
- * Supabase implementation of the ILessonRepository.
+ * Supabase implementation of the IStudentRepository (formerly ILessonRepository).
  */
 export class SupabaseLessonRepository implements ILessonRepository {
 
@@ -97,7 +97,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
     }
 
     async markStepComplete(
-        learnerId: string,
+        studentId: string,
         lessonId: string,
         completedSteps: number,
         isCompleted: boolean
@@ -107,7 +107,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
         const { error } = await supabase
             .from('learner_progress')
             .upsert({
-                learner_id: learnerId,
+                learner_id: studentId,
                 lesson_id: lessonId,
                 completed_steps: completedSteps,
                 is_completed: isCompleted,
@@ -129,8 +129,8 @@ export class SupabaseLessonRepository implements ILessonRepository {
             .from('submissions')
             .select(`
                 *,
-                learners (id, display_name, avatar_url, level),
-                lessons (id, title)
+                student:learners (id, display_name, avatar_url, level),
+                lesson:lessons (id, title)
             `)
             .order('created_at', { ascending: filter === 'pending' });
 
@@ -154,8 +154,8 @@ export class SupabaseLessonRepository implements ILessonRepository {
             .from('submissions')
             .select(`
                 *,
-                learners (*, profiles (email)),
-                lessons (*)
+                student:learners (*, profiles (email)),
+                lesson:lessons (*)
             `)
             .eq('id', id)
             .single();
@@ -166,26 +166,26 @@ export class SupabaseLessonRepository implements ILessonRepository {
 
     async submitReview(data: {
         submissionId: string;
-        learnerId: string;
+        studentId: string;
         content: string;
         badgeId?: string | null;
     }): Promise<void> {
         const supabase = await createClient();
 
-        // 1. Get parent_id
-        const { data: learnerData } = await supabase
+        // 1. Get teacher_id
+        const { data: studentData } = await supabase
             .from('learners')
-            .select('parent_id')
-            .eq('id', data.learnerId)
+            .select('teacher_id')
+            .eq('id', data.studentId)
             .single();
 
         // 2. Insert feedback message
         const { error: msgError } = await supabase
             .from('feedback_messages')
             .insert({
-                learner_id: data.learnerId,
-                parent_id: learnerData?.parent_id,
-                sender_name: 'Instructor Procreate Studio',
+                learner_id: data.studentId,
+                teacher_id: studentData?.teacher_id,
+                sender_name: 'Profesor TeacherOS',
                 content: data.content,
                 is_read_by_learner: false
             });
@@ -197,7 +197,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
             await supabase
                 .from('learner_achievements')
                 .upsert({
-                    learner_id: data.learnerId,
+                    learner_id: data.studentId,
                     achievement_id: data.badgeId
                 }, { onConflict: 'learner_id,achievement_id' });
         }
@@ -219,22 +219,22 @@ export class SupabaseLessonRepository implements ILessonRepository {
         return data || [];
     }
 
-    async getLearnerFeedback(learnerId: string): Promise<any[]> {
+    async getStudentFeedback(studentId: string): Promise<any[]> {
         const supabase = await createClient();
         const { data } = await supabase
             .from('feedback_messages')
             .select('*')
-            .eq('learner_id', learnerId)
+            .eq('learner_id', studentId)
             .order('created_at', { ascending: false });
         return data || [];
     }
 
-    async getUnreadFeedbackCount(learnerId: string): Promise<number> {
+    async getUnreadFeedbackCount(studentId: string): Promise<number> {
         const supabase = await createClient();
         const { count, error } = await supabase
             .from('feedback_messages')
             .select('*', { count: 'exact', head: true })
-            .eq('learner_id', learnerId)
+            .eq('learner_id', studentId)
             .eq('is_read_by_learner', false);
 
         if (error) return 0;
@@ -252,7 +252,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
     }
 
     async createSubmission(data: {
-        learnerId: string;
+        studentId: string;
         lessonId: string | null;
         title: string;
         fileUrl: string;
@@ -262,7 +262,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
         const { data: dbData, error: dbError } = await supabase
             .from('submissions')
             .insert({
-                learner_id: data.learnerId,
+                learner_id: data.studentId,
                 lesson_id: data.lessonId || null,
                 title: data.title || 'Mi Obra Maestra',
                 file_url: data.fileUrl,
@@ -280,7 +280,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
         return dbData;
     }
 
-    async getLearnerSubmissions(learnerId: string): Promise<Submission[]> {
+    async getStudentSubmissions(studentId: string): Promise<Submission[]> {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('submissions')
@@ -288,7 +288,7 @@ export class SupabaseLessonRepository implements ILessonRepository {
                 *,
                 lessons (title)
             `)
-            .eq('learner_id', learnerId)
+            .eq('learner_id', studentId)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -299,13 +299,12 @@ export class SupabaseLessonRepository implements ILessonRepository {
         return data || [];
     }
 
-    async checkLessonPath(lessonId: string, learnerId: string): Promise<LessonNode[]> {
+    async checkLessonPath(lessonId: string, studentId: string): Promise<LessonNode[]> {
         const supabase = await createClient();
-        const { data, error } = await supabase
-            .rpc('get_lesson_path_status', {
-                target_lesson_id: lessonId,
-                learner_uuid: learnerId
-            });
+        const { data, error } = await supabase.rpc('get_lesson_path_status', {
+            target_lesson_id: lessonId,
+            learner_uuid: studentId
+        });
 
         if (error) {
             console.error('Error checking lesson path:', error);

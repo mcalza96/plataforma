@@ -84,6 +84,7 @@ export class SupabaseTelemetryRepository {
             startedAt: data.started_at,
             lastActiveAt: data.last_active_at,
             finishedAt: data.finished_at,
+            configSnapshot: data.config_snapshot,
         };
     }
 }

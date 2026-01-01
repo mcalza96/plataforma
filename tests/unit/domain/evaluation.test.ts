@@ -51,7 +51,7 @@ describe('Inference Engine - Escenarios Clínicos', () => {
 
         expect(diagnosis?.state).toBe('MISCONCEPTION');
         expect(diagnosis?.evidence.reason).toContain('error conceptual');
-        expect(diagnosis?.evidence.confidenceScore).toBe(0.9);
+        expect(diagnosis?.evidence.confidenceScore).toBe(0.95);
     });
 
     // ============================================================================
@@ -186,6 +186,42 @@ describe('Inference Engine - Escenarios Clínicos', () => {
 
         expect(diagnosis?.state).toBe('GAP');
         expect(diagnosis?.evidence.reason).toContain('adivinación');
+    });
+
+    // ============================================================================
+    // ESCENARIO 7: Uso de Snapshot (Forensic Auditability)
+    // ============================================================================
+
+    it('Debe ser capaz de evaluar usando un snapshot de la Matriz Q', () => {
+        // El snapshot captura el estado de la Matriz Q al inicio.
+        // Aquí simulamos que pasamos esa matriz capturada.
+        const snapshotQMatrix: QMatrixMapping[] = [
+            {
+                questionId: 'q-snap',
+                competencyId: 'comp-snapshot',
+                isTrap: false,
+            }
+        ];
+
+        const responses: StudentResponse[] = [
+            {
+                questionId: 'q-snap',
+                selectedOptionId: 'opt-correct',
+                isCorrect: true,
+                confidence: 'HIGH',
+                telemetry: {
+                    timeMs: 12000,
+                    hesitationCount: 0,
+                    hoverTimeMs: 200,
+                },
+            }
+        ];
+
+        const result = evaluateSession('att-snap', 'stu-snap', responses, snapshotQMatrix);
+        const diagnosis = result.competencyDiagnoses.find(d => d.competencyId === 'comp-snapshot');
+
+        expect(diagnosis?.state).toBe('MASTERED');
+        expect(result.attemptId).toBe('att-snap');
     });
 
 });

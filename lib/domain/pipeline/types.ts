@@ -49,6 +49,10 @@ export const ExamStateSchema = z.object({
     startedAt: z.string().datetime(),
     lastActiveAt: z.string().datetime(),
     finishedAt: z.string().datetime().nullable().optional(),
+    configSnapshot: z.object({
+        matrix: z.any(), // The full config_json from exams
+        questions: z.array(z.any()), // The Question[] array
+    }),
 });
 export type ExamState = z.infer<typeof ExamStateSchema>;
 

@@ -7,9 +7,10 @@ import { usePathname } from 'next/navigation';
 interface AdminSidebarProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
+    role: 'admin' | 'instructor' | 'teacher';
 }
 
-export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps) {
+export default function AdminSidebar({ isOpen, onOpenChange, role }: AdminSidebarProps) {
     const pathname = usePathname();
 
     // Prevent body scroll when mobile menu is open
@@ -25,13 +26,13 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
     }, [isOpen]);
 
     const navLinks = [
-        { href: '/admin/courses', label: 'Gestión de Cursos', icon: 'school' },
-        { href: '/admin/exam-builder', label: 'Constructor', icon: 'rocket_launch' },
-        { href: '/admin/exams', label: 'Gestión de Exámenes', icon: 'description' },
-        { href: '/admin/users', label: 'Gestión de Familias', icon: 'group' },
-        { href: '/admin/submissions', label: 'Entregas y Feedback', icon: 'reviews' },
-        { href: '/admin/stats', label: 'Estadísticas Globales', icon: 'analytics' },
-    ];
+        { href: '/admin/courses', label: 'Gestión de Cursos', icon: 'school', visible: true },
+        { href: '/admin/exam-builder', label: 'Constructor', icon: 'rocket_launch', visible: role === 'admin' || role === 'instructor' || role === 'teacher' },
+        { href: '/admin/exams', label: 'Gestión de Exámenes', icon: 'description', visible: role === 'admin' || role === 'instructor' || role === 'teacher' },
+        { href: '/admin/users', label: 'Gestión de Estudiantes', icon: 'group', visible: true },
+        { href: '/admin/submissions', label: 'Entregas y Feedback', icon: 'reviews', visible: true },
+        { href: '/admin/stats', label: 'Estadísticas Globales', icon: 'analytics', visible: role === 'admin' },
+    ].filter(link => link.visible);
 
     return (
         <>

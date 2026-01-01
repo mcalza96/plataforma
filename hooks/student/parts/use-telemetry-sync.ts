@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import { TelemetryEvent, TelemetryBatch } from '@/lib/domain/pipeline/types';
-import { submitTelemetryBatch } from '@/lib/actions/telemetry-actions';
+import { submitTelemetryBatch } from '@/lib/actions/telemetry/telemetry-actions';
 
 interface UseTelemetrySyncProps {
     attemptId: string;

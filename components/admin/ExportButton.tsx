@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { exportExamResultsToCSV } from '@/lib/actions/export-actions';
+import { useToast } from '@/context/ToastContext';
 
 interface ExportButtonProps {
     examId: string;
@@ -12,6 +13,7 @@ interface ExportButtonProps {
 
 export function ExportButton({ examId, variant = 'primary', className = "" }: ExportButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
+    const { showToast } = useToast();
 
     const handleExport = async () => {
         setIsLoading(true);
@@ -30,11 +32,11 @@ export function ExportButton({ examId, variant = 'primary', className = "" }: Ex
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             } else {
-                alert("No se pudieron exportar los resultados.");
+                showToast('No se pudieron exportar los resultados', 'error');
             }
         } catch (error) {
             console.error("Export error:", error);
-            alert("Error crítico durante la exportación.");
+            showToast('Error crítico durante la exportación', 'error');
         } finally {
             setIsLoading(false);
         }

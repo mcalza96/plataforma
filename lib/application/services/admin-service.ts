@@ -1,10 +1,10 @@
-import { ILearnerRepository } from '../../domain/repositories/learner-repository';
+import { IStudentRepository } from '../../domain/repositories/learner-repository';
 import { IStatsRepository } from '../../domain/repositories/stats-repository';
 import { AuthGuard } from '../guards/auth-guard';
 
 export class AdminService {
     constructor(
-        private learnerRepository: ILearnerRepository,
+        private learnerRepository: IStudentRepository,
         private statsRepository: IStatsRepository
     ) { }
 
@@ -16,7 +16,8 @@ export class AdminService {
         return this.learnerRepository.updateUserRole(targetUserId, targetNewRole);
     }
 
-    async getGlobalStats() {
-        return this.statsRepository.getGlobalStats();
+    async getGlobalStats(currentUserRole: string, teacherId?: string) {
+        AuthGuard.check(currentUserRole, ['admin']);
+        return this.statsRepository.getGlobalStats(teacherId);
     }
 }

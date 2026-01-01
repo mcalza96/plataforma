@@ -15,7 +15,7 @@ import { CourseMapper } from '../../application/mappers/course-mapper';
  */
 export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
 
-    async getCoursesWithProgress(learnerId: string): Promise<CourseCardDTO[]> {
+    async getCoursesWithProgress(studentId: string): Promise<CourseCardDTO[]> {
         const supabase = await createClient();
 
         // Obtener el rol del usuario para filtrar por ID de maestro si es necesario
@@ -46,7 +46,7 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
         const { data: progress, error: progressError } = await supabase
             .from('learner_progress')
             .select('*')
-            .eq('learner_id', learnerId);
+            .eq('learner_id', studentId);
 
         if (progressError) {
             console.error('Error fetching progress in repository:', progressError);
@@ -80,7 +80,7 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
         });
     }
 
-    async getCourseWithLessonsAndProgress(courseId: string, learnerId: string): Promise<CourseDetailDTO | null> {
+    async getCourseWithLessonsAndProgress(courseId: string, studentId: string): Promise<CourseDetailDTO | null> {
         const supabase = await createClient();
 
         const { data: course, error: courseError } = await supabase
@@ -103,11 +103,11 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
         const { data: progress, error: progressError } = await supabase
             .from('learner_progress')
             .select('*')
-            .eq('learner_id', learnerId)
+            .eq('learner_id', studentId)
             .in('lesson_id', lessonIds);
 
         if (progressError) {
-            console.error('Error fetching learner progress in repository:', progressError);
+            console.error('Error fetching student progress in repository:', progressError);
         }
 
         const completedSteps = (progress || []).reduce((acc: number, p: any) => acc + (p.completed_steps || 0), 0);
@@ -123,7 +123,7 @@ export class SupabaseCourseRepository implements ICourseReader, ICourseWriter {
             category: course.category,
             teacher_id: course.teacher_id,
             lessons: lessons,
-            learnerProgress: progress || [],
+            studentProgress: progress || [],
             is_published: course.is_published,
             progress: {
                 completed_steps: completedSteps,

@@ -1,12 +1,12 @@
-import { getInstructorFeedback } from '@/lib/actions/parent-actions';
+import { getTeacherFeedback } from '@/lib/actions/teacher/teacher-actions';
 import Link from 'next/link';
 
 interface DashboardFeedbackProps {
-    learnerId: string;
+    studentId: string;
 }
 
-export default async function DashboardFeedback({ learnerId }: DashboardFeedbackProps) {
-    const feedback = await getInstructorFeedback(learnerId);
+export default async function DashboardFeedback({ studentId }: DashboardFeedbackProps) {
+    const feedback = await getTeacherFeedback(studentId);
     const feedbackList = Array.isArray(feedback) ? feedback : [];
     const recentFeedback = feedbackList.slice(0, 1);
 
@@ -18,13 +18,13 @@ export default async function DashboardFeedback({ learnerId }: DashboardFeedback
                 <span className="material-symbols-outlined text-3xl text-primary">chat_bubble</span>
             </div>
             <div className="flex-1 text-center sm:text-left">
-                <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">Nuevo mensaje de tu Instructor</p>
+                <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">Nuevo mensaje de tu Profesor</p>
                 <p className="text-white text-lg font-medium leading-tight">
                     "{recentFeedback[0].content}"
                 </p>
             </div>
             <Link
-                href="/parent-dashboard"
+                href="/dashboard/messages"
                 className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl text-sm font-bold transition-all shrink-0"
             >
                 Ver todo

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useTransition, useOptimistic } from 'react';
-import { toggleStepCompletion } from '@/lib/lesson-actions';
+import { toggleStepCompletion } from '@/lib/actions/student/lesson-actions';
 import { useToast } from '@/context/ToastContext';
 import { useRouter } from 'next/navigation';
 
 interface UseLessonControllerProps {
     courseId: string;
-    learnerId: string;
+    studentId: string;
     lessonId: string;
     totalSteps: number;
     initialCompletedSteps: number;
@@ -20,7 +20,7 @@ interface UseLessonControllerProps {
  */
 export function useLessonController({
     courseId,
-    learnerId,
+    studentId,
     lessonId,
     totalSteps,
     initialCompletedSteps,
@@ -62,7 +62,7 @@ export function useLessonController({
             setOptimisticSteps(newCount);
             try {
                 // LLamada a la Server Action (Infraestructura)
-                await toggleStepCompletion(learnerId, lessonId, newCount, totalSteps, courseId);
+                await toggleStepCompletion(studentId, lessonId, newCount, totalSteps, courseId);
                 setCompletedSteps(newCount);
             } catch (error) {
                 showToast("No pudimos guardar tu progreso. Inténtalo de nuevo.", "error");

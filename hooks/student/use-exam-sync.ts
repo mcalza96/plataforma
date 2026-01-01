@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useEffect, useRef, useCallback, useState } from "react";
-import { getExamState } from "@/lib/actions/telemetry-actions";
+import { getExamState } from "@/lib/actions/telemetry/telemetry-actions";
 import { useTelemetryQueue } from "./parts/use-telemetry-queue";
 import { useTelemetrySync } from "./parts/use-telemetry-sync";
 

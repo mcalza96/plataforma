@@ -1,18 +1,18 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { selectLearner } from '@/lib/actions/learner/learner-actions';
-import { createLearner } from '@/lib/actions/learner/learner-create-action';
+import { selectStudent } from '@/lib/actions/student/student-actions';
+import { createStudent } from '@/lib/actions/student/student-create-action';
 import OptimizedImage from '@/components/ui/OptimizedImage';
-import { Learner } from '@/lib/domain/course';
+import { Student } from '@/lib/domain/entities/learner';
 
-export default function ProfilesClient({ learners }: { learners: Learner[] }) {
+export default function ProfilesClient({ students }: { students: Student[] }) {
     const [isPending, startTransition] = useTransition();
     const [isCreating, setIsCreating] = useState(false);
     const [newName, setNewName] = useState('');
 
     const handleSelect = async (id: string) => {
-        await selectLearner(id);
+        await selectStudent(id);
     };
 
     const handleCreate = async (e: React.FormEvent) => {
@@ -20,7 +20,7 @@ export default function ProfilesClient({ learners }: { learners: Learner[] }) {
         if (!newName.trim()) return;
 
         startTransition(async () => {
-            const result = await createLearner(newName);
+            const result = await createStudent(newName);
             if (result.success) {
                 setIsCreating(false);
                 setNewName('');
@@ -32,16 +32,16 @@ export default function ProfilesClient({ learners }: { learners: Learner[] }) {
         <div className="flex-1 flex items-center justify-center relative z-10 w-full px-6">
             <div className="flex flex-wrap justify-center gap-8 md:gap-14 w-full max-w-5xl">
 
-                {learners.map((learner) => (
+                {students.map((student) => (
                     <div
-                        key={learner.id}
-                        onClick={() => handleSelect(learner.id)}
+                        key={student.id}
+                        onClick={() => handleSelect(student.id)}
                         className="group/avatar flex flex-col items-center gap-6 cursor-pointer"
                     >
                         <div className="relative w-32 h-32 md:w-44 md:h-44 avatar-glow rounded-[3rem] border-4 border-surface transition-all duration-300 group-hover/avatar:scale-105 active:scale-95 bg-neutral-900 overflow-hidden">
                             <OptimizedImage
-                                src={learner.avatar_url || ''}
-                                alt={learner.display_name}
+                                src={student.avatar_url || ''}
+                                alt={student.display_name}
                                 fill
                                 className="object-cover"
                                 fallbackIcon="person"
@@ -51,9 +51,9 @@ export default function ProfilesClient({ learners }: { learners: Learner[] }) {
                                 <circle cx="50" cy="50" fill="none" r="48" stroke="rgba(255,255,255,0.05)" strokeWidth="2"></circle>
                                 <circle
                                     cx="50" cy="50" fill="none" r="48"
-                                    stroke={learner.level > 5 ? "#a855f7" : "#0d93f2"}
+                                    stroke={student.level > 5 ? "#a855f7" : "#0d93f2"}
                                     strokeDasharray="301.59"
-                                    strokeDashoffset={301.59 - (301.59 * (Math.min(learner.level, 10) / 10))}
+                                    strokeDashoffset={301.59 - (301.59 * (Math.min(student.level, 10) / 10))}
                                     strokeLinecap="round"
                                     strokeWidth="2"
                                 ></circle>
@@ -61,10 +61,10 @@ export default function ProfilesClient({ learners }: { learners: Learner[] }) {
                         </div>
                         <div className="text-center group-hover/avatar:translate-y-1 transition-transform">
                             <p className="text-2xl font-black text-white group-hover/avatar:text-primary transition-colors italic uppercase tracking-tighter">
-                                {learner.display_name}
+                                {student.display_name}
                             </p>
                             <p className="text-[10px] text-gray-500 font-black uppercase tracking-[0.2em] mt-2">
-                                Nivel {learner.level}
+                                Nivel {student.level}
                             </p>
                         </div>
                     </div>
@@ -80,14 +80,14 @@ export default function ProfilesClient({ learners }: { learners: Learner[] }) {
                             <span className="material-symbols-outlined text-5xl text-gray-600 group-hover/add:text-primary transition-colors">add</span>
                         </div>
                         <div className="text-center group-hover/add:translate-y-1 transition-transform">
-                            <p className="text-xl font-black text-gray-500 group-hover/add:text-white transition-colors uppercase italic tracking-tighter">Nuevo Artista</p>
+                            <p className="text-xl font-black text-gray-500 group-hover/add:text-white transition-colors uppercase italic tracking-tighter">Nuevo Estudiante</p>
                         </div>
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-6 bg-[#252525] p-10 rounded-[3rem] border border-white/5 animate-in fade-in zoom-in duration-300 shadow-2xl">
                         <form onSubmit={handleCreate} className="flex flex-col gap-6 w-full min-w-[300px]">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Nombre del Artista</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Nombre del Estudiante</label>
                                 <input
                                     type="text"
                                     autoFocus

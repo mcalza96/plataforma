@@ -3,11 +3,16 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-export async function selectLearner(learnerId: string) {
+/**
+ * Selecciona un estudiante para la sesión actual e inicia su experiencia.
+ */
+export async function selectStudent(studentId: string) {
     const cookieStore = await cookies();
 
     // Guardamos el learner_id en una cookie segura de solo lectura en el servidor
-    cookieStore.set('learner_id', learnerId, {
+    // Mantenemos el nombre de la cookie 'learner_id' por compatibilidad con RLS si fuera necesario, 
+    // pero la función refleja la nueva nomenclatura.
+    cookieStore.set('learner_id', studentId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -15,5 +20,5 @@ export async function selectLearner(learnerId: string) {
         maxAge: 60 * 60 * 24 * 7, // 1 semana
     });
 
-    return redirect('/dashboard'); // Redirigir al dashboard del niño
+    return redirect('/dashboard');
 }

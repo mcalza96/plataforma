@@ -1,29 +1,27 @@
+'use server';
+
 import { revalidatePath } from 'next/cache';
-import { getSubmissionService } from '@/lib/infrastructure/di';
-import { getUserRole } from '@/lib/infrastructure/auth-utils';
+import { getLessonRepository } from '@/lib/infrastructure/di';
 
-export async function sendFeedback(learnerId: string, content: string) {
+/**
+ * Sends a general feedback message to a student from the admin panel.
+ */
+export async function sendFeedback(studentId: string, content: string) {
+    const repository = getLessonRepository();
+
     try {
-        const role = await getUserRole();
-        const service = getSubmissionService();
-
-        // We use submitReview but with minimal data since it's just a general feedback message
-        // Actually, let's use the repository method directly via service if available, 
-        // but submitReview is already designed for this.
-        await service.submitReview({
-            learnerId,
-            content,
-            submissionId: '00000000-0000-0000-0000-000000000000' // Generic or optional in DB?
-        }, role);
-        // Wait, if it's general feedback without submission, maybe I should add a sendGeneralFeedback method.
-        // For now, I'll assume it's for the dashboard.
+        await repository.submitReview({
+            submissionId: '00000000-0000-0000-0000-000000000000', // Generic feedback
+            studentId,
+            content
+        });
 
         revalidatePath('/dashboard');
-        revalidatePath('/parent-dashboard');
+        revalidatePath('/teacher-dashboard');
+
         return { success: true };
     } catch (error: any) {
         console.error('Error in sendFeedback action:', error);
-        throw new Error(error.message);
+        throw new Error(error.message || 'Error al enviar el feedback');
     }
 }
-

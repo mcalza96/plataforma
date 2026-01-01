@@ -1,24 +1,72 @@
 import { getAdminService } from '@/lib/infrastructure/di';
 import StatCard from '@/components/ui/StatCard';
+import TenantSelector from '@/components/admin/TenantSelector';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
+import { redirect } from 'next/navigation';
 
-export default async function AdminStatsPage() {
+interface AdminStatsPageProps {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function AdminStatsPage({ searchParams }: AdminStatsPageProps) {
+    const params = await searchParams;
+    const teacherId = params.teacherId as string | undefined;
+
     const service = getAdminService();
-    const { totalLearners, totalSubmissions, totalCourses } = await service.getGlobalStats();
+
+    // Fetch current user and role
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) return redirect('/login');
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    const currentUserRole = profile?.role || 'user';
+
+    // Use totalStudents to match repository return type, but map to prop expected by StatCard or use generic name
+    const { totalStudents, totalSubmissions, totalCourses } = await service.getGlobalStats(currentUserRole, teacherId || undefined);
 
     return (
         <div className="space-y-10 animate-in fade-in duration-500 pb-20">
-            <div className="flex flex-col gap-2">
-                <span className="text-xs font-black text-amber-500 uppercase tracking-[0.2em]">Centro de Comando</span>
-                <h1 className="text-4xl lg:text-5xl font-black tracking-tighter text-white">Estadísticas Globales</h1>
-                <p className="text-gray-400 max-w-2xl text-lg">
-                    Visión general del rendimiento de la academia y actividad de los estudiantes.
-                </p>
+            <div className="flex flex-col gap-6 md:flex-row md:items-end justify-between">
+                <div className="flex flex-col gap-2">
+                    <span className="text-xs font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        Centro de Comando
+                        {teacherId && (
+                            <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[9px] border border-amber-500/20 animate-pulse">
+                                MODO AUDITORÍA
+                            </span>
+                        )}
+                    </span>
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tighter text-white">Estadísticas Globales</h1>
+                    <p className="text-gray-400 max-w-2xl text-lg">
+                        Visión general del rendimiento de la academia y actividad de los estudiantes.
+                    </p>
+                </div>
+                <TenantSelector />
             </div>
+
+            {teacherId && (
+                <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500">
+                        <span className="material-symbols-outlined">visibility</span>
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-amber-500 uppercase tracking-wide">Vista Filtrada por Profesor</h4>
+                        <p className="text-xs text-gray-400">Estás viendo métricas exclusivas del Tenant seleccionado. Las estadísticas globales están ocultas.</p>
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     label="Total Alumnos"
-                    value={totalLearners || 0}
+                    value={totalStudents || 0}
                     icon="groups"
                     variant="default"
                 />

@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getLearnerFeedback, markFeedbackAsRead } from '@/lib/actions/shared/feedback-actions';
+import { getStudentFeedback, markFeedbackAsRead } from '@/lib/actions/shared/feedback-actions';
 import Link from 'next/link';
 
-export default function NotificationCenter({ learnerId }: { learnerId: string }) {
+export default function NotificationCenter({ studentId }: { studentId: string }) {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const unreadCount = notifications.filter(n => !n.is_read_by_learner).length;
 
     useEffect(() => {
         const fetchNotifications = async () => {
-            const data = await getLearnerFeedback(learnerId);
+            const data = await getStudentFeedback(studentId);
             setNotifications(data);
         };
         fetchNotifications();
-    }, [learnerId]);
+    }, [studentId]);
 
     const handleMarkAsRead = async (id: string) => {
         try {
@@ -49,7 +49,7 @@ export default function NotificationCenter({ learnerId }: { learnerId: string })
             {isOpen && (
                 <div className="absolute top-14 right-0 w-80 bg-[#1A1A1A] border border-white/10 rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.8)] overflow-hidden z-[200] animate-in slide-in-from-top-4 duration-500 ring-1 ring-white/5">
                     <div className="p-6 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] leading-none">Sala de Prensa Alpha</p>
+                        <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] leading-none">Notificaciones del Profesor</p>
                         {unreadCount > 0 && <span className="size-2 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]" />}
                     </div>
 
@@ -72,7 +72,7 @@ export default function NotificationCenter({ learnerId }: { learnerId: string })
                                                 <div className="size-5 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
                                                     <span className="material-symbols-outlined text-[10px] text-amber-500">brush</span>
                                                 </div>
-                                                <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Instructor</span>
+                                                <span className="text-[10px] font-black text-white uppercase tracking-widest italic">Profesor</span>
                                             </div>
                                             <span className="text-[9px] text-gray-600 font-bold uppercase">{new Date(notif.created_at).toLocaleDateString()}</span>
                                         </div>
@@ -81,7 +81,7 @@ export default function NotificationCenter({ learnerId }: { learnerId: string })
                                         </p>
                                         {!notif.is_read_by_learner && (
                                             <div className="mt-4 flex items-center gap-2">
-                                                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase tracking-widest">Nueva Crítica</span>
+                                                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-black text-[8px] font-black uppercase tracking-widest">Nuevo Feedback</span>
                                             </div>
                                         )}
                                     </div>
@@ -91,7 +91,7 @@ export default function NotificationCenter({ learnerId }: { learnerId: string })
                     </div>
 
                     <Link
-                        href="/parent-dashboard"
+                        href="/teacher-dashboard"
                         onClick={() => setIsOpen(false)}
                         className="block w-full text-center py-5 bg-white/[0.02] text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] hover:text-white hover:bg-white/5 transition-all border-t border-white/5"
                     >

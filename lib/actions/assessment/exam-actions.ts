@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { checkRateLimit } from "@/lib/infrastructure/rate-limit";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 
 export async function publishExam(config: { title: string; matrix: any; questions?: any[] }) {
     const supabase = await createClient();
@@ -44,6 +45,31 @@ export async function publishExam(config: { title: string; matrix: any; question
         return { success: false, error: error.message };
     }
 
+    // 3. Auto-assign to all students of the teacher
+    try {
+        const { getStudentRepository } = await import("@/lib/infrastructure/di");
+        const studentRepo = getStudentRepository();
+        const students = await studentRepo.getStudentsByTeacherId(user.id);
+
+        if (students.length > 0) {
+            const assignments = students.map(student => ({
+                exam_id: data.id,
+                student_id: student.id
+            }));
+
+            const { error: assignError } = await supabase
+                .from("exam_assignments")
+                .insert(assignments);
+
+            if (assignError) {
+                console.warn("Failed to auto-assign exam to students:", assignError);
+                // We don't fail the whole operation if assignment fails, but we log it
+            }
+        }
+    } catch (repoError) {
+        console.error("Error during auto-assignment phase:", repoError);
+    }
+
     return {
         success: true,
         examId: data.id,
@@ -72,16 +98,19 @@ export async function finalizeAttempt(attemptId: string) {
         };
     }
 
-    // 1. Mark as completed and get final state + exam config
-    const { data: attempt, error: attemptError } = await supabase
+    // 1. Mark as completed and get final state + snapshot
+    const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
+    const serviceSupabase = await createServiceRoleClient();
+
+    const { data: attempt, error: attemptError } = await serviceSupabase
         .from("exam_attempts")
         .update({
             status: "COMPLETED",
             finished_at: new Date().toISOString()
         })
         .eq("id", attemptId)
-        .eq("learner_id", user.id)
-        .select("*, exams(config_json, questions)")
+        .eq("learner_id", user.id) // Security check: must belong to the user
+        .select("*")
         .single();
 
     if (attemptError || !attempt) {
@@ -89,7 +118,7 @@ export async function finalizeAttempt(attemptId: string) {
         return { success: false, error: "Attempt not found or unauthorized" };
     }
 
-    const examData = attempt.exams;
+    const examData = attempt.config_snapshot; // Use the Snapshot!
 
     // 2. Fetch all telemetry for this attempt from the Forensic Log (telemetry_logs)
     const { data: logs, error: logError } = await supabase
@@ -134,7 +163,7 @@ export async function finalizeAttempt(attemptId: string) {
     // We map each question back to its competency and misconception
     const qMatrix: any[] = questions.map(q => {
         // Find if this question is a "trap" for a misconception
-        const misconception = examData.config_json?.misconceptions?.find((m: any) =>
+        const misconception = examData.matrix?.misconceptions?.find((m: any) =>
             m.description.includes(q.stem) || q.options?.some((o: any) => o.id === m.trapOptionId)
         );
 
@@ -160,5 +189,29 @@ export async function finalizeAttempt(attemptId: string) {
         console.error("Failed to cache results:", updateError);
     }
 
+    return { success: true };
+}
+
+export async function toggleExamAssignment(examId: string, studentId: string, isActive: boolean) {
+    const supabase = await createClient();
+
+    if (isActive) {
+        // Assign logic
+        const { error } = await supabase
+            .from('exam_assignments')
+            .upsert({ exam_id: examId, student_id: studentId, status: 'ASSIGNED' });
+
+        if (error) throw new Error(error.message);
+    } else {
+        // Unassign logic (soft delete or status change)
+        const { error } = await supabase
+            .from('exam_assignments')
+            .delete()
+            .match({ exam_id: examId, student_id: studentId });
+
+        if (error) throw new Error(error.message);
+    }
+
+    revalidatePath('/admin/exams');
     return { success: true };
 }

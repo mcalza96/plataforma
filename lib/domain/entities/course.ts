@@ -48,9 +48,9 @@ export class Lesson {
     }
 }
 
-export interface LearnerProgress {
+export interface StudentProgress {
     id: string;
-    learner_id: string;
+    student_id: string;
     lesson_id: string;
     completed_steps: number;
     is_completed: boolean;
@@ -122,10 +122,10 @@ export class Course {
     /**
      * Calculates the overall progress of the course based on learner progress records.
      */
-    public calculateProgress(learnerProgress: LearnerProgress[]): CourseProgressInfo {
-        const completedSteps = learnerProgress.reduce((sum, p) => sum + p.completed_steps, 0);
+    public calculateProgress(studentProgress: StudentProgress[]): CourseProgressInfo {
+        const completedSteps = studentProgress.reduce((sum, p) => sum + p.completed_steps, 0);
         const totalSteps = this._lessons.reduce((sum, l) => sum + l.total_steps, 0);
-        const isCompleted = learnerProgress.length === this._lessons.length && learnerProgress.every(p => p.is_completed);
+        const isCompleted = studentProgress.length === this._lessons.length && studentProgress.every(p => p.is_completed);
 
         return {
             completed_steps: completedSteps,

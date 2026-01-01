@@ -1,26 +1,27 @@
-import { Learner, Profile } from '../entities/learner';
+import { Student, Profile } from '../entities/learner';
 
-export type LearnerDTO = {
+export type StudentDTO = {
     id: string;
     display_name: string;
     level: number;
     avatar_url?: string;
 };
 
-export interface FamilyDTO extends Profile {
-    learners: Learner[];
+export interface TeacherTenantDTO extends Profile {
+    students: Student[];
 }
 
 export interface Submission {
     id: string;
-    learner_id: string;
+    student_id: string;
     lesson_id: string | null;
     title: string;
     file_url: string;
     category: string;
     is_reviewed: boolean;
     created_at: string;
-    lessons?: { title: string };
+    student?: StudentDTO;
+    lesson?: { title: string };
 }
 
 export interface Achievement {
@@ -30,12 +31,15 @@ export interface Achievement {
     icon_url: string;
 }
 
-export interface LearnerAchievement {
+export interface StudentAchievement {
     unlocked_at: string;
     achievements: Achievement;
 }
 
-export interface LearnerStats {
+import { StudentProgress } from '../entities/course';
+export type { StudentProgress };
+
+export interface StudentStats {
     totalProjects: number;
     hoursPracticed: number;
     completedLections: number;

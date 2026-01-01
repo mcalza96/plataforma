@@ -13,13 +13,13 @@ export default async function LessonPage({ params, searchParams }: PageProps) {
     const { id: courseId } = await params;
     const { lessonId } = await searchParams;
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    if (!learnerId) {
+    if (!studentId) {
         return redirect('/select-profile');
     }
 
-    const courseData = await getCourseWithLessonsAndProgress(courseId, learnerId);
+    const courseData = await getCourseWithLessonsAndProgress(courseId, studentId);
 
     if (!courseData) {
         return redirect('/dashboard');
@@ -49,14 +49,14 @@ export default async function LessonPage({ params, searchParams }: PageProps) {
     const nextLesson = lessons[currentIndex + 1];
 
     // Get progress for the current lesson
-    const lessonProgress = courseData.learnerProgress.find(p => p.lesson_id === currentLesson.id);
+    const lessonProgress = courseData.studentProgress.find(p => p.lesson_id === currentLesson.id);
 
     return (
         <div className="min-h-screen flex flex-col bg-[#1A1A1A] text-white">
             <LessonHeader courseTitle={courseData.title} />
             <LessonClient
                 courseId={courseId}
-                learnerId={learnerId}
+                studentId={studentId}
                 lesson={currentLesson}
                 initialProgress={lessonProgress}
                 nextLessonId={nextLesson?.id}

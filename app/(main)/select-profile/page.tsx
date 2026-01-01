@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import ProfilesClient from './profiles-client';
 import { getAuthUser } from '@/lib/infrastructure/auth-utils';
-import { getLearnerService } from '@/lib/infrastructure/di';
+import { getStudentService } from '@/lib/infrastructure/di';
 
 export default async function SelectProfilePage() {
     const user = await getAuthUser();
@@ -10,8 +10,8 @@ export default async function SelectProfilePage() {
         return redirect('/login');
     }
 
-    const service = getLearnerService();
-    const learners = await service.getLearnersByParentId(user.id);
+    const service = getStudentService();
+    const students = await service.getStudentsByTeacherId(user.id);
 
     return (
         <main className="flex-grow flex flex-col justify-center py-12 px-6 relative">
@@ -22,17 +22,17 @@ export default async function SelectProfilePage() {
                 {/* Page Heading */}
                 <div className="text-center space-y-3 mb-4">
                     <h2 className="text-4xl md:text-5xl font-black tracking-[-0.033em] text-white">
-                        ¿Quién va a crear hoy?
+                        ¿A qué estudiante desea supervisar?
                     </h2>
                     <p className="text-gray-400 text-lg font-normal">
-                        Selecciona tu espacio de trabajo
+                        Selecciona el perfil para iniciar la sesión académica
                     </p>
                 </div>
 
                 {/* Split Card Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 md:gap-8 items-stretch">
 
-                    {/* PARENT ZONE (Left) */}
+                    {/* TEACHER ZONE (Left) */}
                     <div className="group relative flex flex-col bg-surface border border-white/5 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_30px_rgba(0,0,0,0.3)]">
                         {/* Header Image Area */}
                         <div
@@ -50,9 +50,9 @@ export default async function SelectProfilePage() {
                             <div className="mb-4 bg-surface-hover p-3 rounded-xl inline-flex text-primary">
                                 <span className="material-symbols-outlined text-3xl">admin_panel_settings</span>
                             </div>
-                            <h3 className="text-2xl font-bold text-white mb-2">Zona de Padres</h3>
+                            <h3 className="text-2xl font-bold text-white mb-2">Panel de Control Docente</h3>
                             <p className="text-gray-400 text-sm leading-relaxed mb-8 max-w-xs">
-                                Gestiona suscripciones, revisa el progreso de las lecciones y configura los controles parentales.
+                                Gestiona tus grupos, asigna exámenes y revisa el progreso de tus estudiantes.
                             </p>
                             <div className="mt-auto w-full">
                                 <button className="w-full flex items-center justify-center gap-2 bg-surface-hover hover:bg-surface border border-white/10 text-white font-medium py-3 px-6 rounded-lg transition-all group-hover:bg-primary group-hover:border-primary group-hover:text-white">
@@ -67,13 +67,13 @@ export default async function SelectProfilePage() {
                         </div>
                     </div>
 
-                    {/* KIDS ZONE (Right) */}
+                    {/* STUDENTS ZONE (Right) */}
                     <div className="flex flex-col bg-surface border border-white/5 rounded-2xl p-8 lg:p-12 shadow-2xl relative overflow-hidden">
                         <div className="absolute -top-24 -right-24 w-64 h-64 bg-gradient-to-br from-purple-500/10 to-primary/10 rounded-full blur-3xl pointer-events-none"></div>
 
                         <div className="flex items-center justify-between mb-8 relative z-10">
                             <div>
-                                <h3 className="text-2xl font-bold text-white">Artistas</h3>
+                                <h3 className="text-2xl font-bold text-white">Estudiantes</h3>
                                 <p className="text-gray-400 text-sm">Continúa tu aventura creativa</p>
                             </div>
                             <div className="hidden sm:flex items-center gap-2 text-primary text-sm font-medium bg-primary/10 px-3 py-1.5 rounded-full">
@@ -83,7 +83,7 @@ export default async function SelectProfilePage() {
                         </div>
 
                         {/* Client Component for Avatar Grid and Selection Logic */}
-                        <ProfilesClient learners={learners || []} />
+                        <ProfilesClient students={students || []} />
                     </div>
                 </div>
             </div>

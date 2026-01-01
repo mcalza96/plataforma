@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getLearnerById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/courses';
 import { Suspense } from 'react';
 import DashboardFeedback from '@/components/dashboard/DashboardFeedback';
 import DashboardActiveMissions from '@/components/dashboard/DashboardActiveMissions';
@@ -8,14 +8,14 @@ import { GridSkeleton } from '@/components/ui/skeletons';
 
 export default async function DashboardPage() {
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    if (!learnerId) {
+    if (!studentId) {
         return redirect('/select-profile');
     }
 
-    const learner = await getLearnerById(learnerId);
-    if (!learner) {
+    const student = await getStudentById(studentId);
+    if (!student) {
         return redirect('/select-profile');
     }
 
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
                 <div className="flex flex-wrap justify-between items-end gap-6 pb-4 border-b border-[#223949]">
                     <div className="flex min-w-72 flex-col gap-2">
                         <h1 className="text-white text-4xl sm:text-5xl font-black leading-tight tracking-[-0.033em]">
-                            Hola, <span className="text-primary">{learner.display_name}.</span>
+                            Hola, <span className="text-primary">{student.display_name}.</span>
                         </h1>
                         <p className="text-[#90b2cb] text-lg font-normal leading-normal">
                             Tu estudio creativo está listo. ¿Qué vamos a crear hoy?
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
                             <span className="text-xs font-bold text-[#90b2cb] uppercase tracking-wider">Nivel Actual</span>
                             <span className="text-xl font-bold text-white flex items-center gap-1">
                                 <span className="material-symbols-outlined text-secondary fill-1">bolt</span>
-                                Artista Nvl. {learner.level}
+                                Estudiante Nvl. {student.level}
                             </span>
                         </div>
                     </div>
@@ -46,12 +46,12 @@ export default async function DashboardPage() {
 
                 {/* Professor Feedback Notification - Streamed */}
                 <Suspense fallback={<div className="h-24 bg-white/5 animate-pulse rounded-2xl" />}>
-                    <DashboardFeedback learnerId={learnerId} />
+                    <DashboardFeedback studentId={studentId} />
                 </Suspense>
 
                 {/* Missions & Challenges - Streamed */}
                 <Suspense fallback={<GridSkeleton count={3} />}>
-                    <DashboardActiveMissions learnerId={learnerId} />
+                    <DashboardActiveMissions studentId={studentId} />
                 </Suspense>
 
             </div>

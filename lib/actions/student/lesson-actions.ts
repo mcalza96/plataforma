@@ -3,8 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { getLessonService } from '@/lib/infrastructure/di';
 
+/**
+ * Alterna el estado de completado de un paso de una lección para un estudiante.
+ */
 export async function toggleStepCompletion(
-    learnerId: string,
+    studentId: string,
     lessonId: string,
     completedSteps: number,
     totalSteps: number,
@@ -12,7 +15,7 @@ export async function toggleStepCompletion(
 ) {
     try {
         const service = getLessonService();
-        await service.markStepComplete(learnerId, lessonId, completedSteps, totalSteps);
+        await service.markStepComplete(studentId, lessonId, completedSteps, totalSteps);
 
         revalidatePath(`/lessons/${courseId}`);
         revalidatePath('/dashboard');
@@ -20,6 +23,6 @@ export async function toggleStepCompletion(
         return { success: true };
     } catch (error: any) {
         console.error('Error in toggleStepCompletion action:', error);
-        return { success: false, error: error.message || 'Error updating progress' };
+        return { success: false, error: error.message || 'Error al actualizar el progreso' };
     }
 }

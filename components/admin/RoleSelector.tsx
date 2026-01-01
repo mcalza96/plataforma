@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { updateUserRole } from '@/lib/admin-users-actions';
+import { updateUserRole } from '@/lib/actions/admin/admin-users-actions';
 import { useToast } from '@/context/ToastContext';
 
 interface RoleSelectorProps {
     userId: string;
-    currentRole: 'admin' | 'instructor' | 'user';
+    currentRole: 'admin' | 'instructor' | 'teacher';
     userName: string;
 }
 
@@ -15,7 +15,7 @@ export default function RoleSelector({ userId, currentRole, userName }: RoleSele
     const [isLoading, setIsLoading] = useState(false);
     const { showToast } = useToast();
 
-    const handleRoleChange = async (newRole: 'admin' | 'instructor' | 'user') => {
+    const handleRoleChange = async (newRole: 'admin' | 'instructor' | 'teacher') => {
         if (newRole === role) return;
 
         if (!confirm(`¿Estás seguro de que quieres cambiar el rol de "${userName}" a ${newRole.toUpperCase()}?`)) {
@@ -55,7 +55,7 @@ export default function RoleSelector({ userId, currentRole, userName }: RoleSele
             </p>
 
             <div className="grid grid-cols-1 gap-2 mt-2">
-                {(['user', 'instructor', 'admin'] as const).map((r) => (
+                {(['teacher', 'instructor', 'admin'] as const).map((r) => (
                     <button
                         key={r}
                         onClick={() => handleRoleChange(r)}
@@ -68,7 +68,7 @@ export default function RoleSelector({ userId, currentRole, userName }: RoleSele
                         `}
                     >
                         <span className="text-xs font-black uppercase tracking-widest">
-                            {r === 'admin' ? 'Administrador' : r === 'instructor' ? 'Instructor' : 'Usuario / Padre'}
+                            {r === 'admin' ? 'Administrador' : r === 'instructor' ? 'Instructor' : 'Profesor / Institución'}
                         </span>
                         {role === r && (
                             <span className="material-symbols-outlined text-[18px]">check_circle</span>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getPersonalizedInterventions } from '@/lib/actions/intervention-actions';
+import { getPersonalizedInterventions } from '@/lib/actions/assessment/intervention-actions';
 import { Play, BookOpen, CheckCircle, ChevronRight, Lock, Sparkles, AlertCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

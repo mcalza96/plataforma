@@ -4,12 +4,12 @@ import { useState, useRef } from 'react';
 import { uploadSubmission } from '@/lib/actions/shared/storage-actions';
 
 interface UploadZoneProps {
-    learnerId: string;
+    studentId: string;
     courseId?: string;
     lessonId?: string;
 }
 
-export default function UploadZone({ learnerId, courseId, lessonId }: UploadZoneProps) {
+export default function UploadZone({ studentId, courseId, lessonId }: UploadZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -28,7 +28,7 @@ export default function UploadZone({ learnerId, courseId, lessonId }: UploadZone
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('learnerId', learnerId);
+        formData.append('studentId', studentId);
         if (lessonId) formData.append('lessonId', lessonId);
         formData.append('title', file.name.split('.')[0]);
         formData.append('category', 'Procreate Time-lapse');

@@ -1,7 +1,8 @@
-import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
+import { getAssessment } from "@/lib/actions/student/assessment-actions";
 import { notFound, redirect } from "next/navigation";
 import { ExamShell } from "@/components/assessment/shell/ExamShell";
 import { Question } from "@/lib/domain/assessment";
+import { cookies } from "next/headers";
 
 interface AssessmentPageProps {
     params: Promise<{ id: string }>;
@@ -9,60 +10,66 @@ interface AssessmentPageProps {
 
 export default async function AssessmentPage({ params }: AssessmentPageProps) {
     const { id } = await params;
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    // 1. Fetch Exam Configuration
-    const { data: exam, error: examError } = await supabase
-        .from("exams")
-        .select("*")
-        .eq("id", id)
-        .single();
+    if (!studentId) {
+        redirect('/select-profile');
+    }
 
-    if (examError || !exam) {
+    // 1. Fetch Exam Configuration via Server Action (includes Assignment Validation)
+    const exam = await getAssessment(id);
+
+    if (!exam) {
         notFound();
     }
 
-    if (exam.status !== 'PUBLISHED') {
-        // Only creator can see draft
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.id !== exam.creator_id) {
-            return redirect('/404'); // Or a "Not Published" specialized page
-        }
-    }
-
     // 2. Identify/Create Attempt
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect('/login');
+    const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
+    const serviceSupabase = await createServiceRoleClient();
 
-    let { data: attempt, error: attemptError } = await supabase
+    let { data: attempt, error: attemptError } = await serviceSupabase
         .from("exam_attempts")
         .select("*")
         .eq("exam_config_id", id)
-        .eq("learner_id", user.id)
+        .eq("learner_id", studentId)
         .eq("status", "IN_PROGRESS")
         .single();
 
     if (!attempt) {
-        const { data: newAttempt, error: createError } = await supabase
+        const { data: newAttempt, error: createError } = await serviceSupabase
             .from("exam_attempts")
             .insert({
                 exam_config_id: id,
-                learner_id: user.id,
+                learner_id: studentId,
                 status: "IN_PROGRESS",
-                current_state: {}
+                current_state: {},
+                config_snapshot: {
+                    matrix: exam.config_json,
+                    questions: exam.questions || []
+                }
             })
             .select()
             .single();
 
-        if (createError) throw new Error("Failed to create exam attempt");
+        if (createError) {
+            console.error("Failed to create exam attempt:", createError);
+            throw new Error("Failed to create exam attempt");
+        }
         attempt = newAttempt;
     }
 
-    // 3. Load Questions (Maquetación dinámica)
-    const questions = (exam.questions?.length ? exam.questions : exam.config_json?.questions || []) as Question[];
+    // 3. Load & Sanitize Questions (Remove correct answers/feedback from client payload)
+    const rawQuestions = (attempt.config_snapshot?.questions || exam.questions || []) as any[];
+    const questions: Question[] = rawQuestions.map(q => ({
+        ...q,
+        options: q.options?.map((o: any) => ({
+            id: o.id,
+            text: o.text || o.content // Handle both naming conventions
+        }))
+    }));
 
     if (questions.length === 0) {
-        // Fallback for exams with only the topology (matrix) but no rendered items
         return (
             <div className="h-screen flex items-center justify-center bg-[#0A0A0A] text-white p-8">
                 <div className="text-center space-y-4 max-w-md">

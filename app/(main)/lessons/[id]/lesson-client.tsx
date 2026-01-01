@@ -1,7 +1,7 @@
 'use client';
 
-import { LessonDTO as Lesson, LearnerProgress } from '@/lib/domain/course';
-import { useLessonController } from '@/hooks/learner/use-lesson-controller';
+import { LessonDTO as Lesson, StudentProgress } from '@/lib/domain/course';
+import { useLessonController } from '@/hooks/student/use-lesson-controller';
 import { useRef } from 'react';
 
 // Pure Components
@@ -12,9 +12,9 @@ import LessonFooter from '@/components/lesson-view/LessonFooter';
 
 interface LessonClientProps {
     courseId: string;
-    learnerId: string;
+    studentId: string;
     lesson: Lesson;
-    initialProgress?: LearnerProgress;
+    initialProgress?: StudentProgress;
     nextLessonId?: string;
 }
 
@@ -25,7 +25,7 @@ interface LessonClientProps {
  */
 export default function LessonClient({
     courseId,
-    learnerId,
+    studentId,
     lesson,
     initialProgress,
     nextLessonId
@@ -42,7 +42,7 @@ export default function LessonClient({
         handleNextLesson
     } = useLessonController({
         courseId,
-        learnerId,
+        studentId,
         lessonId: lesson.id!,
         totalSteps: lesson.total_steps,
         initialCompletedSteps: initialProgress?.completed_steps || 0,

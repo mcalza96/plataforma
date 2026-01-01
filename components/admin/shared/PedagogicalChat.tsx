@@ -148,10 +148,8 @@ export function PedagogicalChat({
             <div className="p-6 bg-gradient-to-t from-black/40 to-transparent border-t border-white/5">
                 <form
                     onSubmit={(e) => {
-                        console.log("[PedagogicalChat] Form onSubmit triggered");
                         e.preventDefault();
                         if (!input?.trim() || isLoading) {
-                            console.warn("[PedagogicalChat] Submit blocked:", { input: !!input, isLoading });
                             return;
                         }
                         handleSubmit(e);
@@ -167,7 +165,6 @@ export function PedagogicalChat({
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
                                 if (input?.trim() && !isLoading) {
-                                    console.log("[PedagogicalChat] Enter key submit");
                                     handleSubmit(e as any);
                                 }
                             }
@@ -177,7 +174,6 @@ export function PedagogicalChat({
                     <button
                         type="submit"
                         disabled={isLoading || !input?.trim()}
-                        onClick={() => console.log("[PedagogicalChat] Send button clicked")}
                         className="absolute right-2 top-2 bottom-2 aspect-square bg-amber-500 hover:bg-amber-600 text-black rounded-xl flex items-center justify-center disabled:opacity-30 transition-all active:scale-95 shadow-lg shadow-amber-500/10 z-10"
                     >
                         {isLoading ? (

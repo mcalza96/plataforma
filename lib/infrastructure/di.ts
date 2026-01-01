@@ -9,7 +9,7 @@ import {
     ICourseReader,
     ICourseWriter
 } from '@/lib/domain/repositories/course-repository';
-import { ILearnerRepository } from '@/lib/domain/repositories/learner-repository';
+import { IStudentRepository } from '@/lib/domain/repositories/learner-repository';
 import { IStatsRepository } from '@/lib/domain/repositories/stats-repository';
 import { ILessonRepository } from '@/lib/domain/repositories/lesson-repository';
 import { IContentRepository } from '@/lib/domain/repositories/content-repository';
@@ -21,8 +21,8 @@ import { SubmissionService } from '@/lib/application/services/submission-service
 import { FeedbackService } from '@/lib/application/services/feedback-service';
 import { MetadataService } from '@/lib/application/services/metadata';
 import { AIOrchestratorService } from '@/lib/application/services/orchestrator';
-import { LearnerService } from '@/lib/application/services/learner-service';
-import { FamilyService } from '@/lib/application/services/family-service';
+import { StudentService } from '@/lib/application/services/student-service';
+import { TeacherService } from '@/lib/application/services/teacher-service';
 import { AdminService } from '@/lib/application/services/admin-service';
 
 import { IAIProvider } from '@/lib/domain/repositories/ai-provider';
@@ -36,7 +36,7 @@ import { LangChainAIAdapter } from '@/lib/adapters/ai-adapter';
 
 // Repositories & Adapters
 let supabaseCourseRepo: SupabaseCourseRepository | null = null;
-let learnerRepository: ILearnerRepository | null = null;
+let studentRepository: IStudentRepository | null = null;
 let statsRepository: IStatsRepository | null = null;
 let lessonRepository: ILessonRepository | null = null;
 let contentRepository: IContentRepository | null = null;
@@ -50,8 +50,8 @@ let submissionService: SubmissionService | null = null;
 let feedbackService: FeedbackService | null = null;
 let metadataService: MetadataService | null = null;
 let aiOrchestratorService: AIOrchestratorService | null = null;
-let learnerService: LearnerService | null = null;
-let familyService: FamilyService | null = null;
+let studentService: StudentService | null = null;
+let teacherService: TeacherService | null = null;
 let adminService: AdminService | null = null;
 
 /**
@@ -67,9 +67,9 @@ export function getCourseWriter(): ICourseWriter {
     return supabaseCourseRepo;
 }
 
-export function getLearnerRepository(): ILearnerRepository {
-    if (!learnerRepository) learnerRepository = new SupabaseLearnerRepository();
-    return learnerRepository;
+export function getStudentRepository(): IStudentRepository {
+    if (!studentRepository) studentRepository = new SupabaseLearnerRepository();
+    return studentRepository;
 }
 
 export function getStatsRepository(): IStatsRepository {
@@ -111,27 +111,27 @@ export function getCourseService(): CourseService {
 }
 
 /**
- * Singleton instance of the Learner Service.
+ * Singleton instance of the Student Service.
  */
-export function getLearnerService(): LearnerService {
-    if (!learnerService) {
-        learnerService = new LearnerService(
-            getLearnerRepository(),
+export function getStudentService(): StudentService {
+    if (!studentService) {
+        studentService = new StudentService(
+            getStudentRepository(),
             getStatsRepository(),
             getCourseReader()
         );
     }
-    return learnerService;
+    return studentService;
 }
 
 /**
- * Singleton instance of the Family Service.
+ * Singleton instance of the Teacher Service.
  */
-export function getFamilyService(): FamilyService {
-    if (!familyService) {
-        familyService = new FamilyService(getLearnerRepository());
+export function getTeacherService(): TeacherService {
+    if (!teacherService) {
+        teacherService = new TeacherService(getStudentRepository());
     }
-    return familyService;
+    return teacherService;
 }
 
 /**
@@ -140,7 +140,7 @@ export function getFamilyService(): FamilyService {
 export function getAdminService(): AdminService {
     if (!adminService) {
         adminService = new AdminService(
-            getLearnerRepository(),
+            getStudentRepository(),
             getStatsRepository()
         );
     }

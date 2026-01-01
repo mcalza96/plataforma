@@ -2,16 +2,16 @@
 
 import { usePathname } from 'next/navigation';
 import NavLinks from './NavLinks';
-import { marketingNav, learnerNav, adminNav } from '@/config/navigation';
+import { marketingNav, studentNav, adminNav } from '@/config/navigation';
 import Link from 'next/link';
 
 interface HeaderNavProps {
     hasUser: boolean;
-    hasLearner: boolean;
+    hasStudent: boolean;
     isAdmin: boolean;
 }
 
-export default function HeaderNav({ hasUser, hasLearner, isAdmin }: HeaderNavProps) {
+export default function HeaderNav({ hasUser, hasStudent, isAdmin }: HeaderNavProps) {
     const pathname = usePathname();
 
     const isAdminRoute = pathname.startsWith('/admin');
@@ -20,8 +20,8 @@ export default function HeaderNav({ hasUser, hasLearner, isAdmin }: HeaderNavPro
     let navItems = marketingNav;
     if (isAdminRoute || (isAdmin && pathname.startsWith('/admin'))) {
         navItems = adminNav;
-    } else if (hasUser && hasLearner) {
-        navItems = learnerNav;
+    } else if (hasUser && hasStudent) {
+        navItems = studentNav;
     }
 
     return (

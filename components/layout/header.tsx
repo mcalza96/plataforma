@@ -3,7 +3,7 @@ import { getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
 import { cookies } from 'next/headers';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
-import { getLearnerById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/courses';
 import HeaderNav from './HeaderNav';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
@@ -14,9 +14,9 @@ export default async function Header() {
     ]);
 
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    const learner = learnerId ? await getLearnerById(learnerId) : null;
+    const student = studentId ? await getStudentById(studentId) : null;
 
     return (
         <header className="fixed top-0 left-0 right-0 z-[100] px-6 py-4 group/header">
@@ -43,14 +43,14 @@ export default async function Header() {
                 </div>
 
                 {/* Center: Contextual Navigation */}
-                <HeaderNav hasUser={!!user} hasLearner={!!learnerId} isAdmin={role === 'admin'} />
+                <HeaderNav hasUser={!!user} hasStudent={!!studentId} isAdmin={role === 'admin'} />
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-4">
                     {user ? (
                         <div className="flex items-center gap-4">
-                            {learnerId && <NotificationCenter learnerId={learnerId} />}
-                            <UserMenu user={user} learner={learner} role={role} />
+                            {studentId && <NotificationCenter studentId={studentId} />}
+                            <UserMenu user={user} student={student} role={role} />
                         </div>
                     ) : (
                         <Link

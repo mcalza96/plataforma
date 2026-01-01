@@ -1,11 +1,11 @@
-import { LearnerStats, LearnerAchievement, LearningFrontier } from '../dtos/learner';
+import { StudentStats, StudentAchievement, LearningFrontier } from '../dtos/learner';
 
 export interface IStatsRepository {
-    getLearnerFullStats(learnerId: string): Promise<LearnerStats>;
-    getLearnerAchievements(learnerId: string): Promise<LearnerAchievement[]>;
-    getStudentFrontier(learnerId: string): Promise<LearningFrontier[]>;
-    getGlobalStats(): Promise<{
-        totalLearners: number;
+    getStudentFullStats(studentId: string): Promise<StudentStats>;
+    getStudentAchievements(studentId: string): Promise<StudentAchievement[]>;
+    getStudentFrontier(studentId: string): Promise<LearningFrontier[]>;
+    getGlobalStats(teacherId?: string): Promise<{
+        totalStudents: number;
         totalSubmissions: number;
         totalCourses: number;
     }>;

@@ -25,7 +25,7 @@ export async function continueInterview(
     const groq = getGroqClient();
 
     // Importar acciones de servidor para persistencia
-    const { saveDiscoveryContext } = await import('@/lib/actions/discovery-actions');
+    const { saveDiscoveryContext } = await import('@/lib/actions/assessment/discovery-actions');
 
     // Importar utilidades de compresión
     const { compressConversationHistory } = await import('./compression-utils');

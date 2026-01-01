@@ -1,40 +1,39 @@
 import 'server-only';
 import { cache } from 'react';
-import { getCourseReader, getLearnerRepository } from '@/lib/infrastructure/di';
+import { getCourseReader, getStudentRepository } from '@/lib/infrastructure/di';
 import {
     CourseCardDTO,
     CourseDetailDTO,
-    LessonDTO as Lesson,
-    Learner,
-    LearnerProgress
+    LessonDTO as Lesson
 } from '@/lib/domain/course';
+import { Student } from '@/lib/domain/entities/learner';
 
 // Loaders only below. Types are imported from @/lib/domain/course.
 
 
 /**
- * Fetch all courses with progress for a specific learner.
+ * Fetch all courses with progress for a specific student.
  * Optimized with React.cache for per-request memoization.
  */
-export const getCoursesWithProgress = cache(async (learnerId: string): Promise<CourseCardDTO[]> => {
+export const getCoursesWithProgress = cache(async (studentId: string): Promise<CourseCardDTO[]> => {
     const repository = getCourseReader();
-    return repository.getCoursesWithProgress(learnerId);
+    return repository.getCoursesWithProgress(studentId);
 });
 
 /**
- * Fetch a single course with its lessons and learner progress.
+ * Fetch a single course with its lessons and student progress.
  */
-export const getCourseWithLessonsAndProgress = cache(async (courseId: string, learnerId: string): Promise<CourseDetailDTO | null> => {
+export const getCourseWithLessonsAndProgress = cache(async (courseId: string, studentId: string): Promise<CourseDetailDTO | null> => {
     const repository = getCourseReader();
-    return repository.getCourseWithLessonsAndProgress(courseId, learnerId);
+    return repository.getCourseWithLessonsAndProgress(courseId, studentId);
 });
 
 /**
- * Fetch learner profile by ID.
+ * Fetch student profile by ID.
  */
-export const getLearnerById = cache(async (learnerId: string): Promise<Learner | null> => {
-    const repository = getLearnerRepository();
-    return repository.getLearnerById(learnerId);
+export const getStudentById = cache(async (studentId: string): Promise<Student | null> => {
+    const repository = getStudentRepository();
+    return repository.getStudentById(studentId);
 });
 
 /**
@@ -44,4 +43,3 @@ export const getNextLesson = cache(async (courseId: string, currentOrder: number
     const repository = getCourseReader();
     return repository.getNextLesson(courseId, currentOrder);
 });
-

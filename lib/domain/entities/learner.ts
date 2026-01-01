@@ -1,26 +1,26 @@
 import { Course } from './course';
 
 /**
- * Learner Entity - Rich Domain Model
+ * Student Entity - Rich Domain Model
  */
-export class Learner {
+export class Student {
     constructor(
         public readonly id: string,
-        public readonly parent_id: string,
+        public readonly teacher_id: string,
         public display_name: string,
         public level: number,
         public avatar_url?: string
     ) { }
 
     /**
-     * Business Rule: Check if the learner has enough level to access a course.
+     * Business Rule: Check if the student has enough level to access a course.
      */
     public canAccess(course: Course): boolean {
         return this.level >= course.level_required;
     }
 
     /**
-     * Business Rule: Upgrades learner level with validation.
+     * Business Rule: Upgrades student level with validation.
      */
     public upgradeLevel(newLevel: number): void {
         if (newLevel < 1 || newLevel > 10) {
@@ -41,7 +41,8 @@ export class Profile {
         public readonly id: string,
         public readonly email: string,
         public full_name: string | null,
-        public role: string
+        public role: 'admin' | 'instructor' | 'teacher',
+        public readonly created_at: string
     ) { }
 
     public isAdmin(): boolean {
@@ -49,10 +50,10 @@ export class Profile {
     }
 
     public isInstructor(): boolean {
-        return this.role === 'instructor' || this.role === 'admin';
+        return this.role === 'instructor' || this.role === 'teacher' || this.role === 'admin';
     }
 
-    public isFamily(): boolean {
-        return this.role === 'family';
+    public isTeacher(): boolean {
+        return this.role === 'teacher';
     }
 }

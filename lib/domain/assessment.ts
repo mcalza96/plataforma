@@ -65,7 +65,7 @@ export interface IAssessmentRepository {
 // --- Domain Schemas (Zod) ---
 
 export const DiagnosisSchema = z.object({
-    learner_profile: z.object({
+    student_profile: z.object({
         age: z.coerce.number().min(3).max(99),
         style: z.string().min(3, 'El estilo de aprendizaje es requerido'),
     }),

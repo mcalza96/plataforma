@@ -2,14 +2,29 @@ import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { ExportButton } from "@/components/admin/ExportButton";
 import Link from "next/link";
 import { ChevronRight, FileJson, Rocket } from "lucide-react";
+import { getStudentRepository } from "@/lib/infrastructure/di";
+import ExamAssignmentManager from "@/components/admin/ExamAssignmentManager";
 
 export default async function AdminExamsPage() {
     const supabase = await createClient();
 
     const { data: exams, error } = await supabase
         .from("exams")
-        .select("*")
+        .select(`
+            *,
+            exam_assignments (
+                student_id
+            )
+        `)
         .order("created_at", { ascending: false });
+
+    // Fetch students for the current teacher to enable assignments
+    const { data: { user } } = await supabase.auth.getUser();
+    let students: any[] = [];
+    if (user) {
+        const studentRepo = getStudentRepository();
+        students = await studentRepo.getStudentsByTeacherId(user.id);
+    }
 
     return (
         <div className="space-y-12 animate-in fade-in duration-700 pb-20">
@@ -59,6 +74,15 @@ export default async function AdminExamsPage() {
                         </div>
 
                         <div className="flex items-center gap-3 w-full md:w-auto">
+                            {/* Assignment Tool */}
+                            <ExamAssignmentManager
+                                examId={exam.id}
+                                students={students}
+                                initialAssignments={exam.exam_assignments?.map((a: any) => a.student_id) || []}
+                            />
+
+                            <div className="h-8 w-px bg-white/10 mx-2 hidden md:block" />
+
                             <ExportButton examId={exam.id} variant="outline" className="flex-1 md:flex-initial" />
                             <Link
                                 href={`/admin/submissions?examId=${exam.id}`}

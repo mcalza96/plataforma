@@ -1,7 +1,7 @@
 /**
  * Simple permission guard for Use Cases.
  */
-export type UserRole = 'admin' | 'instructor' | 'learner' | 'parent';
+export type UserRole = 'admin' | 'instructor' | 'student' | 'teacher';
 
 export class AuthGuard {
     /**

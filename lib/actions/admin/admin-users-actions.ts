@@ -1,46 +1,46 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { getFamilyService, getLearnerService, getAdminService } from '@/lib/infrastructure/di';
+import { getTeacherService, getStudentService, getAdminService } from '@/lib/infrastructure/di';
 import { getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
 
 /**
- * Obtiene todas las familias (profiles) con sus alumnos relacionados
+ * Obtiene todos los profesores (profiles) con sus estudiantes relacionados
  */
-export async function getFamilies() {
+export async function getTeachers() {
     try {
         const role = await getUserRole();
-        const service = getFamilyService();
-        return await service.getFamilies(role);
+        const service = getTeacherService();
+        return await service.getTeachers(role);
     } catch (error: any) {
-        console.error('Error fetching families:', error);
-        throw new Error(error.message || 'No se pudieron obtener las familias.');
+        console.error('Error fetching teachers:', error);
+        throw new Error(error.message || 'No se pudieron obtener los profesores.');
     }
 }
 
 /**
- * Obtiene una familia específica por ID con sus alumnos
+ * Obtiene un profesor específico por ID con sus estudiantes
  */
-export async function getFamilyById(id: string) {
+export async function getTeacherById(id: string) {
     try {
         const role = await getUserRole();
-        const service = getFamilyService();
-        return await service.getFamilyById(id, role);
+        const service = getTeacherService();
+        return await service.getTeacherById(id, role);
     } catch (error: any) {
-        console.error('Error fetching family:', error);
-        throw new Error(error.message || 'No se pudo encontrar la familia solicitada.');
+        console.error('Error fetching teacher:', error);
+        throw new Error(error.message || 'No se pudo encontrar el profesor solicitado.');
     }
 }
 
 /**
- * Actualiza el nivel de un alumno (artista)
+ * Actualiza el nivel de un estudiante
  */
-export async function updateLearnerLevel(learnerId: string, profileId: string, newLevel: number) {
+export async function updateStudentLevel(studentId: string, profileId: string, newLevel: number) {
     try {
         const role = await getUserRole();
-        const service = getLearnerService();
+        const service = getStudentService();
 
-        await service.updateLearnerLevel(learnerId, newLevel, role);
+        await service.updateStudentLevel(studentId, newLevel, role);
 
         revalidatePath(`/admin/users/${profileId}`);
         revalidatePath('/admin/users');
@@ -48,7 +48,7 @@ export async function updateLearnerLevel(learnerId: string, profileId: string, n
 
         return { success: true };
     } catch (error: any) {
-        console.error('Error in updateLearnerLevel:', error);
+        console.error('Error in updateStudentLevel:', error);
         return { success: false, error: error.message || 'Error al actualizar el nivel.' };
     }
 }
@@ -56,7 +56,7 @@ export async function updateLearnerLevel(learnerId: string, profileId: string, n
 /**
  * Actualiza el rol de un usuario
  */
-export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'instructor' | 'user') {
+export async function updateUserRole(targetUserId: string, newRole: 'admin' | 'instructor' | 'teacher') {
     try {
         const role = await getUserRole();
         const user = await getAuthUser();

@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { updateLearnerLevel } from '@/lib/admin-users-actions';
+import { updateStudentLevel } from '@/lib/actions/admin/admin-users-actions';
 
 interface LevelEditorProps {
-    learnerId: string;
+    studentId: string;
     profileId: string;
     initialLevel: number;
 }
 
-export default function LevelEditor({ learnerId, profileId, initialLevel }: LevelEditorProps) {
+export default function LevelEditor({ studentId, profileId, initialLevel }: LevelEditorProps) {
     const [level, setLevel] = useState(initialLevel);
     const [isUpdating, setIsUpdating] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -18,7 +18,7 @@ export default function LevelEditor({ learnerId, profileId, initialLevel }: Leve
         setIsUpdating(true);
         setMessage(null);
         try {
-            await updateLearnerLevel(learnerId, profileId, newLevel);
+            await updateStudentLevel(studentId, profileId, newLevel);
             setLevel(newLevel);
             setMessage({ type: 'success', text: 'Nivel actualizado' });
             setTimeout(() => setMessage(null), 3000);

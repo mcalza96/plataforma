@@ -1,121 +1,95 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getLearnerSubmissions } from '@/lib/actions/shared/storage-actions';
-import { getLearnerById } from '@/lib/data/courses';
-import Header from '@/components/layout/header';
+import { getStudentSubmissions } from '@/lib/actions/shared/storage-actions';
+import { getStudentById } from '@/lib/data/courses';
+import { Submission } from '@/lib/domain/course';
 import UploadZone from '@/components/gallery/UploadZone';
-import Image from 'next/image';
+import Link from 'next/link';
 import EmptyState from '@/components/ui/EmptyState';
+import OptimizedImage from '@/components/ui/OptimizedImage';
 
 export default async function GalleryPage() {
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
+    const studentId = cookieStore.get('learner_id')?.value;
 
-    if (!learnerId) {
+    if (!studentId) {
         return redirect('/select-profile');
     }
 
-    const learner = await getLearnerById(learnerId);
-    if (!learner) return redirect('/select-profile');
+    const student = await getStudentById(studentId);
+    if (!student) return redirect('/select-profile');
 
-    const submissions = await getLearnerSubmissions(learnerId);
+    const submissions = await getStudentSubmissions(studentId);
 
     return (
         <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
-
             <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
-                {/* Hero Section */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-full overflow-hidden bg-surface flex items-center justify-center">
-                                {learner.avatar_url ? (
-                                    <Image src={learner.avatar_url} alt={learner.display_name} width={48} height={48} className="object-cover" />
-                                ) : (
-                                    <span className="material-symbols-outlined text-gray-500">person</span>
-                                )}
-                            </div>
-                            <span className="text-sm font-bold bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-wider">
-                                Portfolio de Artista
-                            </span>
+                {/* Student Info Hero */}
+                <section className="mb-12 flex flex-col items-center text-center">
+                    <div className="size-24 rounded-[2.5rem] bg-gradient-to-br from-primary to-secondary p-1 mb-6 shadow-2xl avatar-glow">
+                        <div className="w-full h-full rounded-[2.2rem] bg-neutral-900 flex items-center justify-center overflow-hidden relative">
+                            <OptimizedImage
+                                src={student.avatar_url || ''}
+                                alt={student.display_name}
+                                fill
+                                className="object-cover"
+                                fallbackIcon="person"
+                            />
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black tracking-tighter">Mi Galería de Arte</h1>
-                        <p className="text-gray-400 mt-3 text-lg max-w-2xl">
-                            Aquí guardamos todos tus videos de Procreate. Cada trazo es un paso más hacia convertirte en un gran maestro digital.
-                        </p>
                     </div>
-                </div>
+                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2">
+                        Galería de <span className="text-primary">{student.display_name}</span>
+                    </h1>
+                    <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-xs">Exhibición de Portfolio • Nivel {student.level}</p>
+                    <p className="text-gray-400 mt-3 text-lg max-w-2xl">
+                        Aquí guardamos todas tus videos de Procreate. Cada trazo es un paso más hacia convertirte en un gran maestro digital.
+                    </p>
+                </section>
 
                 {/* Upload Section */}
                 <section className="mb-20">
-                    <UploadZone learnerId={learnerId} />
+                    <UploadZone studentId={studentId} />
                 </section>
 
                 {/* Grid Section */}
                 <section>
-                    <div className="flex items-center justify-between mb-8">
-                        <h2 className="text-2xl font-bold flex items-center gap-3">
-                            <span className="material-symbols-outlined text-primary">auto_awesome_motion</span>
-                            Mis Obras ({submissions.length})
-                        </h2>
+                    <div className="flex items-center gap-3 mb-8">
+                        <span className="material-symbols-outlined text-primary">collections</span>
+                        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Mis Obras Maestras</h2>
                     </div>
 
                     {submissions.length === 0 ? (
                         <EmptyState
-                            icon="folder_open"
-                            title="Aún no tienes obras en tu galería"
-                            description="Exporta tu primer time-lapse desde Procreate y súbelo para comenzar tu portfolio profesional."
-                            actionLabel="Subir mi primera obra"
-                            actionHref="#upload-zone" // Assuming ID for scroll
+                            icon="movie"
+                            title="Tu galería está vacía"
+                            description="Sube tu primer video de Procreate para empezar a construir tu portfolio profesional."
                         />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {submissions.map((submission) => (
-                                <div key={submission.id} className="group bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden hover:border-primary/30 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] transform hover:-translate-y-1">
+                            {submissions.map((submission: Submission) => (
+                                <Link
+                                    key={submission.id}
+                                    href={`/gallery/${submission.id}`}
+                                    className="group bg-white/[0.02] border border-white/5 rounded-3xl overflow-hidden hover:border-primary/30 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] transform hover:-translate-y-1"
+                                >
                                     <div className="relative aspect-video bg-black overflow-hidden">
-                                        {/* Video Preview or Thumbnail */}
-                                        <video
-                                            src={submission.file_url}
-                                            className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700"
-                                            muted
-                                            onMouseOver={(e) => (e.currentTarget as HTMLVideoElement).play()}
-                                            onMouseOut={(e) => {
-                                                const v = e.currentTarget as HTMLVideoElement;
-                                                v.pause();
-                                                v.currentTime = 0;
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                            <div className="bg-primary/90 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                                                <span className="material-symbols-outlined">play_arrow</span>
-                                            </div>
+                                        {/* Video Preview or Thumbnail Placeholder */}
+                                        <div className="absolute inset-0 bg-neutral-900 flex items-center justify-center">
+                                            <span className="material-symbols-outlined text-4xl text-white/10 group-hover:scale-125 transition-transform duration-500">movie</span>
                                         </div>
-                                        <div className="absolute top-4 left-4">
-                                            <span className="bg-black/50 backdrop-blur-md text-[10px] font-black text-white px-2 py-1 rounded uppercase tracking-widest border border-white/10">
-                                                {submission.category || 'Time-lapse'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="flex items-start justify-between gap-4 mb-2">
-                                            <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors line-clamp-1">
+
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+
+                                        <div className="absolute bottom-4 left-4 right-4 z-10 transition-transform duration-500 group-hover:translate-x-1">
+                                            <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">
+                                                {submission.category || 'Obra Libre'}
+                                            </p>
+                                            <h3 className="text-white font-black italic uppercase tracking-tighter line-clamp-1">
                                                 {submission.title}
                                             </h3>
-                                            <span className="material-symbols-outlined text-gray-600 hover:text-white cursor-pointer transition-colors">more_vert</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span className="material-symbols-outlined text-sm">calendar_today</span>
-                                            {new Date(submission.created_at).toLocaleDateString()}
-                                            {submission.lessons && (
-                                                <>
-                                                    <span className="w-1 h-1 rounded-full bg-gray-700 mx-1"></span>
-                                                    <span className="text-primary/70">{submission.lessons.title}</span>
-                                                </>
-                                            )}
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     )}

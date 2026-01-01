@@ -88,6 +88,8 @@ export type BehaviorProfile = z.infer<typeof BehaviorProfileSchema>;
 export const CalibrationMetricsSchema = z.object({
     certaintyAverage: z.number(), // 0-100
     accuracyAverage: z.number(),  // 0-100
+    eceScore: z.number(),         // Expected Calibration Error (0-100)
+    calibrationStatus: z.enum(['CALIBRATED', 'OVERCONFIDENT', 'UNDERCONFIDENT']),
     blindSpots: z.number(),       // Count of High Confidence + Incorrect
     fragileKnowledge: z.number(), // Count of Low/Medium Confidence + Correct
 });

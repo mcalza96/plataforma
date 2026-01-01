@@ -1,4 +1,4 @@
-import { CourseProgressInfo, LearnerProgress } from '../entities/course';
+import { CourseProgressInfo, StudentProgress } from '../entities/course';
 
 export type CourseDTO = {
     id: string;
@@ -52,7 +52,7 @@ export interface CourseDetailDTO {
     is_published: boolean;
     progress?: CourseProgressInfo;
     lessons: LessonDTO[];
-    learnerProgress: LearnerProgress[];
+    studentProgress: StudentProgress[];
 }
 
 export type UpsertCourseInput = Partial<CourseDTO>;
@@ -61,7 +61,7 @@ export type CreateCourseInput = Omit<CourseDTO, 'id' | 'teacher_id'>;
 
 export interface PathNode {
     id: string;
-    learner_id: string;
+    student_id: string;
     content_id: string;
     title_override?: string;
     description_override?: string;

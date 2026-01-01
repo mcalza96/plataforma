@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION public.is_staff()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN (
-    SELECT (role IN ('admin', 'instructor'))
+    SELECT (role IN ('admin', 'instructor', 'teacher'))
     FROM public.profiles
     WHERE id = auth.uid()
   );
@@ -19,6 +19,7 @@ ALTER TABLE public.exam_attempts ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Learners can view their own attempts" ON public.exam_attempts;
 DROP POLICY IF EXISTS "Staff can view attempts of their own exams" ON public.exam_attempts;
+DROP POLICY IF EXISTS "Combined access for exam_attempts" ON public.exam_attempts;
 
 CREATE POLICY "Combined access for exam_attempts"
 ON public.exam_attempts FOR SELECT
@@ -37,6 +38,7 @@ USING (
 ALTER TABLE public.telemetry_logs ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Learners can view telemetry_logs of their own attempts" ON public.telemetry_logs;
+DROP POLICY IF EXISTS "Combined access for telemetry_logs" ON public.telemetry_logs;
 
 CREATE POLICY "Combined access for telemetry_logs"
 ON public.telemetry_logs FOR SELECT

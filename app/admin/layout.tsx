@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { isAdmin, getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
-import { getLearnerById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/courses';
 import AdminShell from './AdminShell';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,12 +16,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }
 
     const cookieStore = await cookies();
-    const learnerId = cookieStore.get('learner_id')?.value;
-    const learner = learnerId ? await getLearnerById(learnerId) : null;
+    const studentId = cookieStore.get('learner_id')?.value;
+    const student = studentId ? await getStudentById(studentId) : null;
 
     return (
         <div className="h-screen bg-[#1A1A1A] text-white overflow-hidden">
-            <AdminShell user={user} role={role} learner={learner}>
+            <AdminShell user={user} role={role} student={student}>
                 {children}
             </AdminShell>
         </div>

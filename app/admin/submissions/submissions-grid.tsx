@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import OptimizedImage from '@/components/ui/OptimizedImage';
+import { Submission } from '@/lib/domain/dtos/learner';
 
-export default function SubmissionsGrid({ submissions, tab }: { submissions: any[], tab: string }) {
+export default function SubmissionsGrid({ submissions, tab }: { submissions: Submission[], tab: string }) {
     if (submissions.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center p-20 text-center space-y-6 bg-white/[0.02] border-2 border-dashed border-white/5 rounded-[3rem] animate-in fade-in zoom-in duration-700">
@@ -14,7 +15,7 @@ export default function SubmissionsGrid({ submissions, tab }: { submissions: any
                 </div>
                 <div className="space-y-2">
                     <h3 className="text-xl font-bold text-white">
-                        {tab === 'pending' ? '¡Todo al día, Profe!' : 'No hay historial de revisiones'}
+                        {tab === 'pending' ? '¡Todo al día, Profesor!' : 'No hay historial de revisiones'}
                     </h3>
                     <p className="text-gray-500 max-w-xs mx-auto text-sm">
                         {tab === 'pending'
@@ -53,25 +54,27 @@ export default function SubmissionsGrid({ submissions, tab }: { submissions: any
                 >
                     {/* Media Preview */}
                     <div className="aspect-video relative bg-black overflow-hidden">
-                        {sub.thumbnail_url ? (
-                            <OptimizedImage
-                                src={sub.thumbnail_url}
-                                alt={sub.title}
-                                fill
-                                className="object-cover group-hover:scale-110 transition-transform duration-1000 opacity-60 group-hover:opacity-100"
-                                containerClassName="w-full h-full"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-neutral-900">
-                                <span className="material-symbols-outlined text-4xl text-white/10 group-hover:scale-125 transition-transform duration-500">movie</span>
-                            </div>
-                        )}
+                        <div className="absolute inset-0 bg-neutral-900 group-hover:scale-110 transition-transform duration-1000">
+                            {/* Thumbnail Placeholder logic preserved, assuming sub.thumbnail_url exists in DB result */}
+                            {(sub as any).thumbnail_url ? (
+                                <OptimizedImage
+                                    src={(sub as any).thumbnail_url}
+                                    alt={sub.title}
+                                    fill
+                                    className="object-cover opacity-60 group-hover:opacity-100 transition-opacity"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center opacity-20">
+                                    <span className="material-symbols-outlined text-4xl">movie</span>
+                                </div>
+                            )}
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1F1F1F] via-transparent to-transparent opacity-60" />
 
                         <div className="absolute top-4 left-4 z-20">
                             <span className="px-3 py-1.5 bg-black/60 backdrop-blur-md rounded-full text-[9px] font-black text-white uppercase tracking-[0.1em] border border-white/10 flex items-center gap-1.5">
                                 <span className="material-symbols-outlined text-[12px] text-amber-500">history_edu</span>
-                                {sub.lessons?.title || 'Obra Personal'}
+                                {sub.lesson?.title || 'Estudio Independiente'}
                             </span>
                         </div>
                     </div>
@@ -81,8 +84,8 @@ export default function SubmissionsGrid({ submissions, tab }: { submissions: any
                         <div className="flex items-center gap-4 mb-4">
                             <div className="size-11 rounded-2xl border border-white/10 overflow-hidden relative shadow-lg avatar-glow bg-neutral-900">
                                 <OptimizedImage
-                                    src={sub.learners?.avatar_url || ''}
-                                    alt={sub.learners?.display_name || 'Estudiante'}
+                                    src={sub.student?.avatar_url || ''}
+                                    alt={sub.student?.display_name || 'Estudiante'}
                                     fill
                                     className="object-cover"
                                     fallbackIcon="person"
@@ -90,10 +93,10 @@ export default function SubmissionsGrid({ submissions, tab }: { submissions: any
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-black text-white truncate group-hover:text-amber-500 transition-colors uppercase italic">
-                                    {sub.learners?.display_name}
+                                    {sub.student?.display_name}
                                 </p>
                                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                                    Nivel {sub.learners?.level || 1}
+                                    Nivel {sub.student?.level || 1}
                                 </p>
                             </div>
                         </div>

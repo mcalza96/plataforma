@@ -1,4 +1,4 @@
-import { getSubmissionDetail, getAvailableBadges, getLearnerFeedback } from '@/lib/actions/shared/feedback-actions';
+import { getSubmissionDetail, getAvailableBadges, getStudentFeedback } from '@/lib/actions/shared/feedback-actions';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReviewPanel from './review-panel';
@@ -12,10 +12,10 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
 
     try {
         const submission = await getSubmissionDetail(id);
-        const badges = await getAvailableBadges();
-        const history = await getLearnerFeedback(submission.learner_id);
-
         if (!submission) return notFound();
+
+        const badges = await getAvailableBadges();
+        const history = await getStudentFeedback(submission.student_id);
 
         return (
             <div className="min-h-screen bg-[#0F0F0F] text-white overflow-hidden flex flex-col -m-8 relative">
@@ -26,7 +26,7 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
                     </Link>
                     <div className="px-4 py-2 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/5">
                         <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Misión</p>
-                        <h2 className="text-sm font-black tracking-tight">{submission.lessons?.title || 'Obra Personal'}</h2>
+                        <h2 className="text-sm font-black tracking-tight">{submission.lesson?.title || 'Obra Personal'}</h2>
                     </div>
                 </div>
 
@@ -49,7 +49,7 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
                                 <div>
                                     <h1 className="text-3xl font-black tracking-tighter italic uppercase">{submission.title}</h1>
                                     <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">
-                                        Por <span className="text-amber-500">{submission.learners?.display_name}</span> • Nivel {submission.learners?.level}
+                                        Por <span className="text-amber-500">{submission.student?.display_name}</span> • Nivel {submission.student?.level}
                                     </p>
                                 </div>
                             </div>
@@ -62,7 +62,7 @@ export default async function SubmissionDetailPage({ params }: PageProps) {
                     {/* Review Control Panel */}
                     <ReviewPanel
                         submissionId={submission.id}
-                        learnerId={submission.learner_id}
+                        studentId={submission.student_id}
                         badges={badges}
                         history={history}
                     />

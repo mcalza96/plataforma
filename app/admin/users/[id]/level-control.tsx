@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updateLearnerLevel } from '@/lib/admin-users-actions';
+import { updateStudentLevel } from '@/lib/actions/admin/admin-users-actions';
 import Image from 'next/image';
 
-interface LearnerLevelControlProps {
-    learner: any;
+interface StudentLevelControlProps {
+    student: any;
     profileId: string;
 }
 
-export default function LearnerLevelControl({ learner, profileId }: LearnerLevelControlProps) {
+export default function StudentLevelControl({ student, profileId }: StudentLevelControlProps) {
     const [isPending, startTransition] = useTransition();
-    const [level, setLevel] = useState(learner.level || 1);
+    const [level, setLevel] = useState(student.level || 1);
 
     const handleLevelChange = (adjustment: number) => {
         const nextLevel = level + adjustment;
@@ -20,7 +20,7 @@ export default function LearnerLevelControl({ learner, profileId }: LearnerLevel
         setLevel(nextLevel); // Optimistic update
 
         startTransition(async () => {
-            const result = await updateLearnerLevel(learner.id, profileId, nextLevel);
+            const result = await updateStudentLevel(student.id, profileId, nextLevel);
             if (!result.success) {
                 setLevel(level); // Revert on failure
                 alert(result.error);
@@ -32,8 +32,8 @@ export default function LearnerLevelControl({ learner, profileId }: LearnerLevel
         <div className="bg-[#252525] border border-white/5 p-6 rounded-[2rem] flex flex-col gap-6 hover:border-amber-500/30 transition-all duration-500 group">
             <div className="flex items-center gap-4">
                 <div className="size-16 rounded-3xl bg-neutral-900 border border-white/10 overflow-hidden relative shadow-2xl">
-                    {learner.avatar_url ? (
-                        <Image src={learner.avatar_url} alt={learner.display_name} fill className="object-cover" />
+                    {student.avatar_url ? (
+                        <Image src={student.avatar_url} alt={student.display_name} fill className="object-cover" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-primary/30">
                             <span className="material-symbols-outlined text-4xl">face</span>
@@ -42,9 +42,9 @@ export default function LearnerLevelControl({ learner, profileId }: LearnerLevel
                 </div>
                 <div>
                     <h4 className="text-xl font-black italic uppercase tracking-tighter text-white group-hover:text-amber-500 transition-colors">
-                        {learner.display_name}
+                        {student.display_name}
                     </h4>
-                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Artista Alpha</p>
+                    <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Estudiante</p>
                 </div>
             </div>
 

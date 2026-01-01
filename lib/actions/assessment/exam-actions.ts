@@ -48,6 +48,8 @@ export async function publishExam(
             competencyId: c.id
         }));
 
+    console.log(`[publishExam] Using ${config.questions?.length ? 'PROVIDED JSON' : 'FALLBACK PLACEHOLDERS'} for Item Bank. Count: ${finalQuestions.length}`);
+
     // 3. Immutable Insert (Standalone Aggregate Root)
     const { data, error } = await supabase
         .from("exams")
@@ -242,7 +244,12 @@ export async function toggleExamAssignment(examId: string, studentId: string, is
         // Assign logic
         const { error } = await supabase
             .from('exam_assignments')
-            .upsert({ exam_id: examId, student_id: studentId, status: 'ASSIGNED' });
+            .upsert({
+                exam_id: examId,
+                student_id: studentId,
+                status: 'ASSIGNED',
+                origin_context: 'standalone' // Explicit metadata for repository filtering
+            });
 
         if (error) throw new Error(error.message);
     } else {

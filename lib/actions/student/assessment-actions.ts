@@ -61,55 +61,7 @@ export async function getAssessment(id: string) {
     return exam;
 }
 
-/**
- * submitAssessment
- * Processes a student's answer within the context of an exam attempt.
- */
-export async function submitAssessment(attemptId: string, questionId: string, selectedOptionId: string, telemetry: any) {
-    const supabase = await createClient();
-    const cookieStore = await cookies();
-    const studentId = cookieStore.get('learner_id')?.value;
 
-    if (!studentId) {
-        throw new Error("No se encontró una sesión de estudiante activa.");
-    }
-
-    // 1. Log forensic evidence (telemetry_logs)
-    const { error: logError } = await supabase
-        .from('telemetry_logs')
-        .insert({
-            attempt_id: attemptId,
-            event_type: 'ANSWER_UPDATE',
-            payload: {
-                questionId,
-                selectedOptionId,
-                telemetry
-            }
-        });
-
-    if (logError) console.error("Failed to log telemetry:", logError);
-
-    // 2. Update current state of the attempt
-    const { data: attempt } = await supabase
-        .from('exam_attempts')
-        .select('current_state')
-        .eq('id', attemptId)
-        .single();
-
-    const newState = { ...(attempt?.current_state || {}), [questionId]: selectedOptionId };
-
-    const { error: updateError } = await supabase
-        .from('exam_attempts')
-        .update({
-            current_state: newState,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', attemptId);
-
-    if (updateError) throw new Error("Error al guardar la respuesta.");
-
-    return { success: true };
-}
 
 /**
  * getLatestDiagnosticResult

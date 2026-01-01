@@ -18,8 +18,8 @@ export async function ExecutiveIntelligenceSection() {
                         Para activar tu Espejo Metacognitivo, completa tu primera "Sonda de Calibración". El sistema necesita datos para entender tu arquetipo de aprendizaje.
                     </p>
                 </div>
-                <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-lg transition-colors">
-                    Iniciar Diagnóstico
+                <button className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-lg transition-colors cursor-not-allowed opacity-50" disabled>
+                    Esperando Asignación
                 </button>
             </div>
         );

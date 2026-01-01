@@ -49,7 +49,7 @@ export async function submitTelemetryBatch(batch: unknown) {
     // 3. Ownership Check (Is this attempt owned by the user?)
     const { data: attempt, error: attemptError } = await supabase
         .from("exam_attempts")
-        .select("learner_id, current_state")
+        .select("learner_id, current_state, metadata")
         .eq("id", validatedBatch.attemptId)
         .single();
 
@@ -59,6 +59,20 @@ export async function submitTelemetryBatch(batch: unknown) {
 
     if (attempt.learner_id !== user.id) {
         return { success: false, error: "Forbidden: Not your exam attempt" };
+    }
+
+    // 3.1 Device Detection
+    // We capture this once or update it. Useful for sala de maquinas.
+    const userAgent = headerList.get("user-agent") || "";
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const deviceType = isMobile ? 'mobile' : 'desktop';
+
+    // Update metadata if not set or changed
+    const currentMetadata = (attempt.metadata as Record<string, any>) || {};
+    if (currentMetadata.deviceType !== deviceType) {
+        await supabase.from("exam_attempts").update({
+            metadata: { ...currentMetadata, deviceType, lastUserAgent: userAgent }
+        }).eq("id", validatedBatch.attemptId);
     }
 
     const repository = new SupabaseTelemetryRepository(supabase);

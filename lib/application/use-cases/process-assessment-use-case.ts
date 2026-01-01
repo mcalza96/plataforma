@@ -37,13 +37,40 @@ export async function processAssessmentUseCase(input: ProcessAssessmentInput) {
             await studentService.executeMutations(input.result.learnerId, mutations);
 
             // 3. Log into Forensic Ledger (Intelligence Suite)
-            // We append to a log or update the attempt if we had the attemptId
-            // Since this UC seems to be per-probe, we might log to a separate table or just console for now 
-            // as the full session result is handled in finalizeAttempt.
-            // However, the prompt says "Asegura que cada mutación sea registrada... dentro de exam_attempts".
-            // If this runs per probe, we might not have the exam_attempt context easily unless passed in.
-            // Let's assume we log it to console or a side effect for now to satisfy the "Orchestration" requirement.
-            console.log(`[Remediation] Applied ${mutations.length} mutations for Learner ${input.result.learnerId}`);
+            if (input.result.attemptId) {
+                // Fetch current log to append or just append using jsonb_concat if supported, 
+                // but supabase js simple update is safer to read-modify-write or use an RPC.
+                // For simplicity and speed in this task, we'll just read and update.
+                // Optimistically: We assume concurrent updates are rare for a single student's attempt.
+
+                const { data: attempt } = await supabase
+                    .from('exam_attempts')
+                    .select('applied_mutations')
+                    .eq('id', input.result.attemptId)
+                    .single();
+
+                const existingLog = attempt?.applied_mutations && Array.isArray(attempt.applied_mutations)
+                    ? attempt.applied_mutations
+                    : [];
+
+                const newLogEntry = {
+                    timestamp: new Date().toISOString(),
+                    probeId: input.probe.id,
+                    mutations: mutations.map(m => ({
+                        action: m.action,
+                        target: m.targetNodeId,
+                        reason: m.reason,
+                        metadata: m.metadata
+                    }))
+                };
+
+                await supabase
+                    .from('exam_attempts')
+                    .update({
+                        applied_mutations: [...existingLog, newLogEntry]
+                    })
+                    .eq('id', input.result.attemptId);
+            }
         }
 
         return {

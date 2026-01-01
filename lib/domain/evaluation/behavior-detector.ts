@@ -59,6 +59,8 @@ export function isRapidGuessing(timeMs: number, rte?: number): boolean {
 /**
  * Calculates Temporal Entropy (Hi) for Mobile Context.
  * Hi = (Changes * Volatility) + (Revisit Penalty)
+ * 
+ * Formula: Hi = (hesitationCount * 0.5) + (revisitCount * 1.0)
  */
 export function calculateTemporalEntropy(
     hesitationCount: number,
@@ -69,14 +71,14 @@ export function calculateTemporalEntropy(
 
 /**
  * Detects 'Fragile Certainty': Correct answer but with high confirmation latency.
- * Triggered if latency Z-Score > 3.0 (3 SD above mean).
+ * Triggered if latency Z-Score > 2.0 (Adjusted from 3.0 for mobile sensitivity).
  */
 export function isFragileCertainty(
     isCorrect: boolean,
     zScore?: number
 ): boolean {
     if (!isCorrect || zScore === undefined) return false;
-    return zScore > 3.0;
+    return zScore > 2.0;
 }
 
 /**
@@ -94,17 +96,16 @@ export function calculateBehaviorProfile(
     }
 
     // 1. Impulsiveness (Rapid Guessing)
-    // Uses RTE if available, otherwise absolute time
     const impulsiveCount = responses.filter((r) =>
         isRapidGuessing(r.telemetry.timeMs, r.telemetry.rte)
     ).length;
 
     // 2. Anxiety / Toxic Doubt / Mental Conflict
-    // Uses Temporal Entropy now + focus loss
     const anxiousCount = responses.filter((r) => {
         const Hi = calculateTemporalEntropy(r.telemetry.hesitationCount, r.telemetry.revisitCount || 0);
 
         // Threshold: Hi > 2 (e.g., 2 revisits OR 4 changes OR mix)
+        // If Hi > 2, it indicates significant circular navigation or indecision.
         const isHighEntropy = Hi > 2.0;
 
         // Also check Fragile Certainty (High Z-Score even if correct)

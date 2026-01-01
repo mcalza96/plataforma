@@ -73,11 +73,15 @@ export function useTelemetry() {
         const now = Date.now();
         const timeMs = now - startTimeRef.current;
 
-        // TTFT: If never touched, it equals total time (passive abandonment) or 0? 
-        // Let's say if null, it's timeMs (never acted)
+        // TTFT: Time to First Touch
+        // If never touched, we can technically say TTFT is the entire duration (passive), 
+        // or 0 (no touch). For "Silencio", if they stared and left, it's informative.
+        // We'll standardise: if null, use timeMs (implies hesitation/abandonment).
         const ttft = firstTouchTimeRef.current ? (firstTouchTimeRef.current - startTimeRef.current) : timeMs;
 
-        // Confirmation Latency: Time since last meaningful interaction to now (submit)
+        // Confirmation Latency: The "Doubt" interval.
+        // Time from the LAST meaningful interaction (change/click) to the Confirm action (now).
+        // If no interaction happened, it equals the total time.
         const confirmationLatency = now - lastInteractionTimeRef.current;
 
         return {
@@ -87,7 +91,7 @@ export function useTelemetry() {
             confidence,
             ttft,
             confirmationLatency,
-            hoverTimeMs: 0 // Legacy support, default 0 for mobile
+            hoverTimeMs: 0 // Mobile has no hover, explicitly 0
         };
     }, [hesitationCount, focusLostCount, confidence]);
 

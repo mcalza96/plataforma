@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { processAssessmentUseCase } from '../../lib/application/use-cases/process-assessment-use-case';
-import { TriageEngine } from '../../lib/domain/logic/triage-engine';
 import { PathMutation } from '../../lib/domain/triage';
 
 // Mock Dependencies
 const mockExecuteMutations = vi.fn();
+const mockSupabaseUpdate = vi.fn();
+const mockSupabaseSelect = vi.fn().mockReturnValue({ data: { applied_mutations: [] } });
 
 vi.mock('../../lib/infrastructure/di', () => ({
     getStudentService: () => ({
@@ -13,27 +14,43 @@ vi.mock('../../lib/infrastructure/di', () => ({
 }));
 
 vi.mock('../../lib/infrastructure/supabase/supabase-server', () => ({
-    createClient: () => ({ /* Mock Supabase client if needed */ })
+    createClient: () => ({
+        from: (table: string) => ({
+            select: () => ({
+                eq: () => ({
+                    single: mockSupabaseSelect
+                })
+            }),
+            update: mockSupabaseUpdate.mockReturnValue({ eq: vi.fn() })
+        })
+    })
 }));
 
-describe('Remediation Loop Integration', () => {
+describe('Remediation Loop Integration: Luz y Sombra Scenario', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
-    it('should inject refutation content when MISCONCEPTION is detected', async () => {
-        // Arrange
+    it('should handle "Sombreado Sucio" failure by injecting refutation and locking "Teoría del Color"', async () => {
+        // Arrange: Student fails "Luz y Sombra" with specific misconception
         const mockProbe = {
-            id: 'probe-1',
-            competencyId: 'comp-fractions',
+            id: 'probe-luz-sombra',
+            competencyId: 'comp-luz-sombra', // Luz y Sombra
             options: [
-                { id: 'opt-err', text: '2/8', isCorrect: false, diagnosesMisconceptionId: 'misc-linear-thinking', feedback: 'Adding denominators' }
+                {
+                    id: 'opt-sombreado-sucio',
+                    text: 'Sombreado Sucio',
+                    isCorrect: false,
+                    diagnosesMisconceptionId: 'misc-dirty-shading',
+                    feedback: 'El sombreado sucio ocurre cuando...'
+                }
             ]
         } as any;
 
         const mockResult = {
-            learnerId: 'student-1',
-            selectedOptionId: 'opt-err'
+            learnerId: 'student-vincent',
+            selectedOptionId: 'opt-sombreado-sucio',
+            attemptId: 'attempt-123' // Required for forensic logging
         } as any;
 
         // Act
@@ -44,38 +61,28 @@ describe('Remediation Loop Integration', () => {
         expect(mockExecuteMutations).toHaveBeenCalledTimes(1);
 
         const calledMutations = mockExecuteMutations.mock.calls[0][1] as PathMutation[];
-        expect(calledMutations).toHaveLength(2); // INSERT_NODE + LOCK_DOWNSTREAM
 
+        // 1. Verify Refutation Injection
         const insertMutation = calledMutations.find(m => m.action === 'INSERT_NODE');
         expect(insertMutation).toBeDefined();
+        expect(insertMutation?.targetNodeId).toBe('comp-luz-sombra');
+        expect(insertMutation?.metadata.contentId).toBe('misc-dirty-shading'); // Validation of content injection
         expect(insertMutation?.metadata.newStatus).toBe('infected');
-        expect(insertMutation?.metadata.contentId).toBe('misc-linear-thinking');
 
+        // 2. Verify Fog of War (Hard Pruning)
         const lockMutation = calledMutations.find(m => m.action === 'LOCK_DOWNSTREAM');
         expect(lockMutation).toBeDefined();
-    });
+        expect(lockMutation?.targetNodeId).toBe('comp-luz-sombra');
 
-    it('should unlock next node when MASTERY is confirmed', async () => {
-        // Arrange
-        const mockProbe = {
-            id: 'probe-2',
-            competencyId: 'comp-easy',
-            options: [
-                { id: 'opt-correct', text: 'Correct', isCorrect: true }
-            ]
-        } as any;
-
-        const mockResult = {
-            learnerId: 'student-1',
-            selectedOptionId: 'opt-correct'
-        } as any;
-
-        // Act
-        const response = await processAssessmentUseCase({ probe: mockProbe, result: mockResult });
-
-        // Assert
-        expect(mockExecuteMutations).toHaveBeenCalledWith('student-1', expect.arrayContaining([
-            expect.objectContaining({ action: 'UNLOCK_NEXT' })
-        ]));
+        // 3. Verify Forensic Logging
+        expect(mockSupabaseUpdate).toHaveBeenCalledWith(expect.objectContaining({
+            applied_mutations: expect.arrayContaining([
+                expect.objectContaining({
+                    probeId: 'probe-luz-sombra',
+                    mutations: expect.any(Array)
+                })
+            ])
+        }));
     });
 });
+

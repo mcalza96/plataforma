@@ -9,6 +9,7 @@ export class AssessmentResult {
         public readonly learnerId: string,
         public readonly selectedOptionId: string,
         public readonly timeSpentSeconds: number,
+        public readonly attemptId?: string,
         public readonly createdAt?: Date
     ) { }
 }

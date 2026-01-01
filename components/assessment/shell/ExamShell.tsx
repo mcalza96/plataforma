@@ -126,7 +126,10 @@ export const ExamShell = memo(function ExamShell({
 
     const handleAnswer = (payload: AnswerPayload) => {
         // Inject Revisit Count into Telemetry
+        // We look up the current question's revisit count.
+        // Note: The count increments on MOUNT (useEffect), so it's already up to date for this session view.
         const currentRevisitCount = revisitCounts.get(payload.questionId) || 0;
+
         const enrichedTelemetry = {
             ...payload.telemetry,
             revisitCount: currentRevisitCount

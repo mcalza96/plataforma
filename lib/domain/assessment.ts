@@ -15,6 +15,7 @@ export class ProbeOption {
         public readonly isCorrect: boolean,
         public readonly feedback: string | null = null,
         public readonly diagnosesMisconceptionId: string | null = null,
+        public readonly isGap: boolean = false, // Added for explicit gap tracking in Domain Object
         public readonly id?: string
     ) {
         // Business Rule: If it's a distractor, it should ideally have a misconception link or generic feedback
@@ -129,6 +130,7 @@ export const StudentResponseSchema = z.object({
     selectedOptionId: z.string(),
     isCorrect: z.boolean(),
     confidence: ConfidenceLevelSchema,
+    isGap: z.boolean().optional(), // Added for explicit gap tracking
     telemetry: ResponseTelemetrySchema,
 });
 
@@ -148,7 +150,7 @@ export interface AnswerPayload {
 export const AnswerPayloadSchema = z.object({
     questionId: z.string(),
     value: z.any(),
-    isGap: z.boolean(),
+    isGap: z.boolean().optional(), // Added for explicit gap tracking
     telemetry: ResponseTelemetrySchema, // Use the SSOT schema
 });
 

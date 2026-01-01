@@ -202,7 +202,7 @@ export async function finalizeAttempt(attemptId: string) {
             competencyId: q.competencyId || 'generic',
             isTrap: !!misconception,
             trapOptionId: misconception?.trapOptionId || q.options?.find((o: any) => !o.isCorrect && !o.isGap)?.id,
-            idDontKnowOptionId: q.options?.find((o: any) => o.isGap)?.id
+            idDontKnowOptionId: q.options?.find((o: any) => o.isGap === true)?.id // Explicit check for isGap property
         };
     });
 

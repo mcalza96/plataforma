@@ -27,6 +27,14 @@ export default async function DashboardPage() {
     const uiMode = InterfaceAdaptationService.getInterfaceMode(student);
     const config = InterfaceAdaptationService.getConfig(uiMode);
 
+    // Fetch Standalone Diagnostics (Group A)
+    const { getStudentService } = await import('@/lib/infrastructure/di');
+    const studentService = getStudentService();
+    const standaloneAssignments = await studentService.getStandaloneAssignments(studentId);
+
+    // Lazy load the section component to avoid circular deps if any, though import is fine here
+    const { StandaloneDiagnosticsSection } = await import('@/components/dashboard/StandaloneDiagnosticsSection');
+
     return (
         <ModeContainer mode={uiMode}>
             {/* Header Section - Adaptive Copy */}
@@ -52,6 +60,16 @@ export default async function DashboardPage() {
                     </div>
                 )}
             </div>
+
+            {/* HIGH PRIORITY: Standalone Diagnostics Hero Section */}
+            {standaloneAssignments.length > 0 && (
+                <div className="col-span-full">
+                    <StandaloneDiagnosticsSection
+                        assignments={standaloneAssignments}
+                        mode={uiMode}
+                    />
+                </div>
+            )}
 
             {/* Knowledge Map - Central Hub */}
             {/* In Dashboard/Explorer it takes prominent space, in Mission it's the main focus */}

@@ -17,13 +17,44 @@ export function IntegrityAlertFeed({ teacherId }: { teacherId: string }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch alerts (simulated API call)
-        // In real app: createClientComponentClient().from('integrity_alerts')...
-        // For now, we mock or assume data passed from parent? 
-        // Prompt implies creating component. I will assume fetch via API route or passed prop,
-        // but to make it standalone I'll pseudo-fetch.
-        setLoading(false);
+        fetchAlerts();
     }, [teacherId]);
+
+    const fetchAlerts = async () => {
+        // Dynamic import to avoid build issues if client component constraint
+        const { createClient } = await import('@/lib/infrastructure/supabase/supabase-client');
+        const supabase = createClient();
+
+        const { data, error } = await supabase
+            .from('integrity_alerts')
+            .select('*')
+            .eq('teacher_id', teacherId)
+            .eq('is_resolved', false)
+            .order('created_at', { ascending: false });
+
+        if (!error && data) {
+            setAlerts(data as unknown as IntegrityAlert[]);
+        }
+        setLoading(false);
+    };
+
+    const handleAction = async (alertId: string, action: 'RECALIBRATE' | 'IGNORE') => {
+        const { createClient } = await import('@/lib/infrastructure/supabase/supabase-client');
+        const supabase = createClient();
+
+        // Mark as resolved for now
+        // Ideally 'Recalibrate' triggers a specific workflow, but for dashboard feedback loop,
+        // we archive it and optionally log the action. 
+        // We set is_resolved=true.
+        const { error } = await supabase
+            .from('integrity_alerts')
+            .update({ is_resolved: true }) // Simulating "Handled"
+            .eq('id', alertId);
+
+        if (!error) {
+            setAlerts(prev => prev.filter(a => a.id !== alertId));
+        }
+    };
 
     if (loading) return <div className="p-4 text-sm text-gray-500">Analizando integridad psicométrica...</div>;
 
@@ -66,10 +97,16 @@ export function IntegrityAlertFeed({ teacherId }: { teacherId: string }) {
                             <p className="text-sm text-gray-400 mt-1">{alert.message}</p>
 
                             <div className="mt-3 flex gap-2">
-                                <button className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-white">
+                                <button
+                                    onClick={() => handleAction(alert.id, 'RECALIBRATE')}
+                                    className="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded transition-colors text-white"
+                                >
                                     Recalibrar
                                 </button>
-                                <button className="text-xs text-gray-500 hover:text-white px-3 py-1.5 transition-colors">
+                                <button
+                                    onClick={() => handleAction(alert.id, 'IGNORE')}
+                                    className="text-xs text-gray-500 hover:text-white px-3 py-1.5 transition-colors"
+                                >
                                     Ignorar
                                 </button>
                             </div>

@@ -81,9 +81,11 @@ export function useArchitectActions({
                 title: examTitle,
                 matrix: state.context,
                 questions: state.context.prototypes as any[]
+            }, {
+                mode: 'auto_all' // Defaulting to Express Assignment for Standalone exams
             });
             if (result.success) {
-                alert(`¡Examen publicado con éxito!`);
+                alert(`Sonda de Calibración Desplegada. Topología Inmutable registrada.`);
                 return result;
             } else {
                 throw new Error(result.error || "Falla al publicar");

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
-import { DiagnosticResult } from "@/lib/domain/evaluation/types";
+import { DiagnosticResult } from "@/lib/domain/assessment";
 
 /**
  * Server Action to export exam results to CSV.

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 /**
  * Assessment types for Diagnostic Probes
  */
@@ -83,44 +84,180 @@ export const ProposalSchema = z.object({
     })),
 });
 
-// --- Forensic Assessment System (White Box Diagnostics) ---
+// ============================================================================
+// EVALUATION & INFERENCE TYPES (SSOT)
+// ============================================================================
 
 /**
- * Telemetry data captured during question interaction
- * Measures cognitive load and decision-making patterns
+ * Niveles de certeza reportados por el estudiante (CBM)
  */
-export interface TelemetryData {
-    /** Time spent on question in milliseconds */
-    timeMs: number;
-    /** Number of times the user changed their answer */
-    hesitationCount: number;
-    /** Number of times the window lost focus */
-    focusLostCount: number;
-    /** Confidence level (only for CBM questions) */
-    confidence?: 'LOW' | 'MEDIUM' | 'HIGH';
-    /** Time To First Touch (ms) */
-    ttft?: number;
-    /** Time from last selection to confirmation (ms) */
-    confirmationLatency?: number;
-    /** Number of times user returned to this question */
-    revisitCount?: number;
-    /** Legacy hover time (optional) */
-    hoverTimeMs?: number;
-}
+export const ConfidenceLevelSchema = z.enum(['NONE', 'LOW', 'MEDIUM', 'HIGH']);
+export type ConfidenceLevel = z.infer<typeof ConfidenceLevelSchema>;
+
+/**
+ * Telemetría detallada de una respuesta individual
+ * Consolidated schema for both raw capture and inference enrichment
+ */
+export const ResponseTelemetrySchema = z.object({
+    timeMs: z.number(),           // Tiempo total en la pregunta
+    hesitationCount: z.number(),  // Cantidad de veces que cambió de opción
+    focusLostCount: z.number().default(0), // Cambios de ventana/tab
+    hoverTimeMs: z.number().default(0),      // Tiempo de hover sobre la opción seleccionada
+
+    // Mobile / Decision Latency Metrics
+    ttft: z.number().optional(),             // Time To First Touch (ms)
+    confirmationLatency: z.number().optional(), // Time from last selection to confirm (ms)
+    revisitCount: z.number().default(0),    // Number of times returned to this question
+
+    // Inference / Derived Metrics
+    isRapidGuessing: z.boolean().optional(), // Detectado por el behavior-detector
+    rte: z.number().optional(),   // Response Time Effort (Time / Expected)
+    zScore: z.number().optional(), // Standard Score relative to cohort
+    expectedTime: z.number().optional(), // Snapshot baseline
+});
+
+export type ResponseTelemetry = z.infer<typeof ResponseTelemetrySchema>;
+
+// Alias for backwards compatibility with legacy code calling it "TelemetryData"
+export type TelemetryData = ResponseTelemetry;
+
+/**
+ * Respuesta del estudiante a un ítem
+ */
+export const StudentResponseSchema = z.object({
+    questionId: z.string(),
+    selectedOptionId: z.string(),
+    isCorrect: z.boolean(),
+    confidence: ConfidenceLevelSchema,
+    telemetry: ResponseTelemetrySchema,
+});
+
+export type StudentResponse = z.infer<typeof StudentResponseSchema>;
 
 /**
  * Answer payload sent when user completes a question
+ * (Legacy interface kept for action payloads, mapped to StudentResponse)
  */
 export interface AnswerPayload {
-    /** Unique identifier of the question */
     questionId: string;
-    /** Answer value (option ID, ordered array, segment ID, etc.) */
     value: any;
-    /** True if user pressed "No sé" (knowledge gap) */
     isGap: boolean;
-    /** Forensic telemetry data */
     telemetry: TelemetryData;
 }
+
+export const AnswerPayloadSchema = z.object({
+    questionId: z.string(),
+    value: z.any(),
+    isGap: z.boolean(),
+    telemetry: ResponseTelemetrySchema, // Use the SSOT schema
+});
+
+
+/**
+ * Mapeo de la Matriz Q para evaluación
+ */
+export const QMatrixMappingSchema = z.object({
+    questionId: z.string(),
+    competencyId: z.string(),
+    misconceptionId: z.string().optional(), // Si es una "pregunta trampa"
+    isTrap: z.boolean().default(false),
+    trapOptionId: z.string().optional(),     // ID de la opción que dispara el misconception
+    idDontKnowOptionId: z.string().optional(), // ID de la opción "No lo sé"
+});
+
+export type QMatrixMapping = z.infer<typeof QMatrixMappingSchema>;
+
+
+// ============================================================================
+// OUTPUT: RESULTADO DEL DIAGNÓSTICO (El Juez)
+// ============================================================================
+
+/**
+ * Estados posibles de una competencia según la inferencia
+ */
+export const CompetencyEvaluationStateSchema = z.enum([
+    'MASTERED',      // Domina el concepto
+    'GAP',           // Falta de conocimiento (Ignorancia)
+    'MISCONCEPTION', // Error conceptual (Bug)
+    'UNKNOWN',       // No hay evidencia suficiente
+]);
+
+export type CompetencyEvaluationState = z.infer<typeof CompetencyEvaluationStateSchema>;
+
+/**
+ * Perfil conductual detectado a través de la telemetría
+ */
+export const BehaviorProfileSchema = z.object({
+    isImpulsive: z.boolean(), // Tendencia a responder demasiado rápido
+    isAnxious: z.boolean(),   // Tendencia a dudar mucho (hesitation)
+    isConsistent: z.boolean(), // Congruencia entre confianza y acierto
+});
+
+export type BehaviorProfile = z.infer<typeof BehaviorProfileSchema>;
+
+/**
+ * Calibration metrics for metacognitive analysis
+ */
+export const CalibrationMetricsSchema = z.object({
+    certaintyAverage: z.number(), // 0-100
+    accuracyAverage: z.number(),  // 0-100
+    eceScore: z.number(),         // Expected Calibration Error (0-100)
+    calibrationStatus: z.enum(['CALIBRATED', 'OVERCONFIDENT', 'UNDERCONFIDENT']),
+    blindSpots: z.number(),       // Count of High Confidence + Incorrect
+    fragileKnowledge: z.number(), // Count of Low/Medium Confidence + Correct
+});
+
+export type CalibrationMetrics = z.infer<typeof CalibrationMetricsSchema>;
+
+/**
+ * Evidencia que respalda un juicio diagnóstico
+ */
+export const DiagnosisEvidenceSchema = z.object({
+    reason: z.string(),
+    confidenceScore: z.number(), // 0 a 1
+    sourceQuestionIds: z.array(z.string()),
+    misconceptionId: z.string().optional(), // ID del error específico detectado
+});
+
+/**
+ * Diagnóstico completo de una competencia
+ */
+export const CompetencyDiagnosisSchema = z.object({
+    competencyId: z.string(),
+    state: CompetencyEvaluationStateSchema,
+    evidence: DiagnosisEvidenceSchema,
+    remedialContentIds: z.array(z.string()), // IDs de lecciones/recursos para esta competencia
+});
+
+/**
+ * Resultado global de la sesión de evaluación
+ */
+export const DiagnosticResultSchema = z.object({
+    attemptId: z.string(),
+    studentId: z.string(),
+    overallScore: z.number(),
+    behaviorProfile: BehaviorProfileSchema,
+    calibration: CalibrationMetricsSchema, // Add calibration for the Cognitive Mirror
+    competencyDiagnoses: z.array(CompetencyDiagnosisSchema),
+    timestamp: z.date(),
+});
+
+export type DiagnosticResult = z.infer<typeof DiagnosticResultSchema>;
+export type CompetencyDiagnosis = z.infer<typeof CompetencyDiagnosisSchema>;
+
+/**
+ * Mapeo de prioridades para sobrescritura de estados
+ */
+export const EVALUATION_PRIORITY: Record<CompetencyEvaluationState, number> = {
+    MISCONCEPTION: 3, // Máxima prioridad diagnóstica
+    MASTERED: 2,
+    GAP: 1,
+    UNKNOWN: 0,
+};
+
+// ============================================================================
+// QUESTION & LEGO TYPES
+// ============================================================================
 
 /**
  * Question types supported by the Lego system
@@ -203,18 +340,3 @@ export interface QuestionMetadata {
     state: QuestionState;
     isFlagged: boolean;
 }
-
-/**
- * Zod schema for answer validation
- */
-export const AnswerPayloadSchema = z.object({
-    questionId: z.string(),
-    value: z.any(),
-    isGap: z.boolean(),
-    telemetry: z.object({
-        timeMs: z.number(),
-        hesitationCount: z.number(),
-        focusLostCount: z.number(),
-        confidence: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
-    }),
-});

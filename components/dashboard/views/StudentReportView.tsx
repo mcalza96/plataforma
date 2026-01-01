@@ -3,8 +3,9 @@
 import React from 'react';
 import { motion, Variants } from 'framer-motion';
 import { GraduationCap, Share2, Download, ChevronRight, User } from 'lucide-react';
-import { DiagnosticResult } from '../../../lib/domain/evaluation/types';
-import { generateNarrative } from '../../../lib/application/services/feedback-generator';
+import { DiagnosticResult } from '@/lib/domain/assessment';
+import { KnowledgeGraph, GraphNode, GraphEdge } from '@/lib/actions/student/curriculum-actions';
+import { FeedbackGenerator } from '../../../lib/application/services/feedback-generator';
 import { TrafficLightGraph } from '../insights/TrafficLightGraph';
 import { PrescriptionCard } from '../insights/PrescriptionCard';
 import { LandingProfile } from '../insights/LandingProfile';
@@ -39,7 +40,52 @@ export const StudentReportView: React.FC<StudentReportViewProps> = ({
     matrix,
     studentName = 'Estudiante'
 }) => {
-    const narrative = generateNarrative(result);
+    const narrative = FeedbackGenerator.generate(result);
+
+    const graph: KnowledgeGraph = React.useMemo(() => {
+        const nodes: GraphNode[] = (matrix?.keyConcepts || []).map((c: any) => ({
+            id: c.id,
+            label: c.name || c.title || c.id,
+            description: c.description,
+            status: 'LOCKED',
+            level: 1
+        }));
+
+        const edges: GraphEdge[] = (matrix?.prerequisites || []).map((p: any) => ({
+            from: p.sourceId,
+            to: p.targetId
+        }));
+
+        // Simple Level Calculation
+        const adj: Record<string, string[]> = {};
+        const revAdj: Record<string, string[]> = {};
+        edges.forEach(e => {
+            if (!adj[e.from]) adj[e.from] = [];
+            adj[e.from].push(e.to);
+            if (!revAdj[e.to]) revAdj[e.to] = [];
+            revAdj[e.to].push(e.from);
+        });
+
+        const getLevel = (id: string, visited = new Set<string>()): number => {
+            if (visited.has(id)) return 1;
+            visited.add(id);
+            const parents = revAdj[id] || [];
+            if (parents.length === 0) return 1;
+            return Math.max(...parents.map(pid => getLevel(pid, new Set(visited)))) + 1;
+        };
+
+        nodes.forEach(n => {
+            n.level = getLevel(n.id);
+            const d = result.competencyDiagnoses.find(x => x.competencyId === n.id);
+            if (d) {
+                if (d.state === 'MISCONCEPTION') n.status = 'INFECTED';
+                else if (d.state === 'MASTERED') n.status = 'MASTERED';
+                else if (d.state === 'GAP') n.status = 'AVAILABLE';
+            }
+        });
+
+        return { nodes, edges };
+    }, [matrix, result]);
 
     return (
         <div className="min-h-screen bg-[#0a0c10] text-slate-200 p-4 md:p-8 lg:p-12 selection:bg-indigo-500/30">
@@ -138,7 +184,7 @@ export const StudentReportView: React.FC<StudentReportViewProps> = ({
                     {/* Left Column: Visualization */}
                     <motion.div variants={itemVariants} className="lg:col-span-12 xl:col-span-7 space-y-8">
                         <CognitiveMirror calibration={result.calibration} />
-                        <KnowledgeMap result={result} matrix={matrix} />
+                        <KnowledgeMap graph={graph} />
                         <TrafficLightGraph diagnoses={result.competencyDiagnoses} />
                         <LandingProfile profile={result.behaviorProfile} />
                     </motion.div>

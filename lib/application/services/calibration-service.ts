@@ -57,27 +57,46 @@ export class CalibrationService {
             }
         });
 
+        attempts.forEach(a => {
+            if (a.current_state) {
+                Object.keys(a.current_state).forEach(q => questionIds.add(q));
+            }
+        });
+
         const results: CalibrationResult[] = [];
 
         for (const qId of questionIds) {
             let correctMasterCount = 0;
             let correctNoviceCount = 0;
             let totalCorrect = 0;
-            let responsesCount = 0;
 
-            attempts.forEach(a => {
+            // NT10: RTE Filtering (Rapid Guessing)
+            // We ignore responses with timeMs < 300ms (Atomic Check) or < 30% of avg item time (relative).
+            // For now, we use a 300ms hard floor + simplistic heuristic.
+            let validResponsesCount = 0;
+
+            const validAttempts = attempts.filter(a => {
+                // @ts-ignore
+                const response = a.current_state[qId];
+                if (!response) return false;
+
+                // Check RTE
+                const timeMs = response.timeMs || 0;
+                // Rule: If time < 300ms, it's a rapid guess (unless trivial).
+                // We exclude it from calibration to avoid noise.
+                if (timeMs < 300) return false;
+
+                return true;
+            });
+
+            validAttempts.forEach(a => {
                 // @ts-ignore
                 const answer = a.current_state[qId];
                 if (answer) {
-                    responsesCount++;
-                    const isCorrect = answer.isCorrect || answer.value === true || false; // Adapt to payload structure
-                    // Actually payload is complex object usually? 
-                    // Let's assume current_state stores { value: ..., isCorrect: ... } or just value.
-                    // Given previous context, current_state stores payload from answers.
+                    validResponsesCount++;
+                    // Assume payload structure { isCorrect: boolean }
+                    const isCorrect = answer.isCorrect === true;
 
-                    // Fallback to simpler check: we need to know if it's correct. 
-                    // Use 'isCorrect' if present, otherwise we can't calibrate without key.
-                    // Assuming answer object has isCorrect.
                     if (isCorrect) {
                         totalCorrect++;
                         if (masters.has(a.id)) correctMasterCount++;
@@ -86,27 +105,25 @@ export class CalibrationService {
                 }
             });
 
-            if (responsesCount === 0) continue;
+            if (validResponsesCount === 0) continue;
 
-            // Difficulty (p-value +)
-            const p = totalCorrect / responsesCount;
+            const p = totalCorrect / validResponsesCount;
 
             // Slip (s): Prob. Masters Fail = 1 - (Correct Masters / Total Masters)
-            const totalMasters = masters.size;
-            const slip = totalMasters > 0 ? 1 - (correctMasterCount / totalMasters) : 0;
+            // We only count masters who gave a VALID response (not rapid guessers) - simplistic:
+            const validMasters = validAttempts.filter(a => masters.has(a.id)).length;
+            const slip = validMasters > 0 ? 1 - (correctMasterCount / validMasters) : 0;
 
             // Guess (g): Prob. Novices Correct = (Correct Novices / Total Novices)
-            const totalNovices = novices.size;
-            const guess = totalNovices > 0 ? correctNoviceCount / totalNovices : 0;
+            const validNovices = validAttempts.filter(a => novices.has(a.id)).length;
+            const guess = validNovices > 0 ? correctNoviceCount / validNovices : 0;
 
-            // Discrimination (D): (Correct Masters - Correct Novices) / Group Size
-            // Point-biserial is better but D-Index is simpler: D = p_upper - p_lower
-            const p_upper = totalMasters > 0 ? correctMasterCount / totalMasters : 0;
-            const p_lower = totalNovices > 0 ? correctNoviceCount / totalNovices : 0;
+            // Discrimination (D) using valid attempts
+            const p_upper = validMasters > 0 ? correctMasterCount / validMasters : 0;
+            const p_lower = validNovices > 0 ? correctNoviceCount / validNovices : 0;
             const discrimination = p_upper - p_lower;
 
             // Persist History
-            // We do this individually or batch.
             await supabase.from('item_calibration_history').insert({
                 exam_id: examId,
                 question_id: qId,
@@ -118,35 +135,13 @@ export class CalibrationService {
             });
 
             // 6. Pathology Detection (Forensic Analysis)
-            const alerts: any[] = [];
 
             // A. High Slip Alert (Ambiguity / "Trick Question")
             // "Si más del 40% de los estudiantes 'expertos' fallan en una pregunta"
-            // slip = P(Fail | Expert)
             if (slip > 0.4) {
                 await this.createAlert(supabase, examId, qId, 'HIGH_SLIP',
-                    `Alerta de Ambigüedad (Criticidad Alta): El ${Math.round(slip * 100)}% de los mejores estudiantes (Top 25%) falló esta pregunta. Revise la redacción por posibles 'trampas' injustas o claves erróneas.`);
+                    `Alerta de Ambigüedad (Criticidad Alta): El ${Math.round(slip * 100)}% de los mejores estudiantes (Top 30%) falló esta pregunta. Revise la redacción por posibles 'trampas' injustas o claves erróneas.`);
             }
-
-            // B. Useless Distractor Pruning (Efficiency)
-            // "Detecta opciones de respuesta con tasa inferior al 5%"
-            // We need option IDs and their selection rates.
-            // Assuming we have access to specific distractor counts here from aggregated stats.
-            // NOTE: In this simplified "calculateItemParameters" loop, we might not have granular distractor counts unless we aggregated them earlier.
-            // But we can check if `guess` (Pass Rate of Novices) is super high? No, that's diff.
-            // We need to fetch/access the distractor breakdown. 
-            // For now, let's assume we implement a dedicated "auditDistractors" method or we have the counts.
-
-            // To properly do this, we should iterate counts like AdminService did. 
-            // Let's rely on AdminService's `runCalibrationCycle` which *does* have the breakdown, 
-            // OR enhance this service to calculate it.
-            // AdminService calls `calibration-service`? 
-            // actually AdminService `runCalibrationCycle` seems to duplicate some logic or implement the "Cycle".
-            // The directive says: "En el CalibrationService, implementa la lógica forense avanzada".
-            // So we should add `auditDistractors` here or enhance this method.
-            // Let's skip simplified "guess" check and rely on a distinct call or assume AdminService does the heavy lifting.
-            // Wait, requirements say "En el CalibrationService... implementa Poda de Distractores".
-            // So I should add a method here `detectPathologies`.
 
             results.push({
                 examId,
@@ -155,7 +150,7 @@ export class CalibrationService {
             });
         }
 
-        // After main loop, we might run specific sub-routines
+        // B. Useless Distractor Pruning (Efficiency)
         await this.detectDistractorPathologies(supabase, attempts, examId);
 
         return results;

@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, CircleDot, Info } from 'lucide-react';
-import { CompetencyDiagnosis, CompetencyEvaluationState } from '../../../lib/domain/evaluation/types';
+import { CompetencyDiagnosis, CompetencyEvaluationState } from '@/lib/domain/assessment';
 
 interface TrafficLightGraphProps {
     diagnoses: CompetencyDiagnosis[];

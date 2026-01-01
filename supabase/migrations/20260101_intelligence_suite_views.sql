@@ -4,6 +4,8 @@
 
 -- 1. VIEW: vw_pathology_ranking (Ranking de Patologías)
 -- Aggregates misconception triggers from the results_cache.
+DROP VIEW IF EXISTS vw_pathology_ranking CASCADE;
+
 CREATE OR REPLACE VIEW vw_pathology_ranking AS
 WITH expanded_diagnoses AS (
     SELECT 
@@ -12,7 +14,9 @@ WITH expanded_diagnoses AS (
         (diag->>'competencyId')::text as competency_id,
         (diag->>'state')::text as state,
         (diag->'evidence'->>'reason')::text as reason,
-        (diag->'evidence'->>'confidenceScore')::float as confidence_score
+        (diag->'evidence'->>'confidenceScore')::float as confidence_score,
+        (diag->'evidence'->>'hesitationCount')::int as hesitation_count, -- New: Forensic
+        (diag->'evidence'->>'timeMs')::int as time_ms -- New: Forensic
     FROM exam_attempts ea
     JOIN exams e ON ea.exam_config_id = e.id
     CROSS JOIN LATERAL jsonb_array_elements(ea.results_cache->'competencyDiagnoses') as diag
@@ -24,18 +28,17 @@ SELECT
     competency_id,
     state,
     COUNT(*) as total_occurrences,
-    AVG(confidence_score) as avg_confidence_score
+    AVG(confidence_score) as avg_confidence_score,
+    AVG(hesitation_count) as avg_hesitation_index, -- New
+    AVG(time_ms) as avg_response_time -- New
 FROM expanded_diagnoses
 WHERE state = 'MISCONCEPTION'
 GROUP BY teacher_id, exam_id, competency_id, state;
 
 
 -- 2. VIEW: vw_item_health (La Sala de Máquinas)
--- Analyzes item performance: Accuracy, RTE, Health Status.
--- NOTE: We need to traverse the telemetry which is inside the answers, OR rely on a cleaner structure.
--- Currently Inference Engine returns 'competencyDiagnoses' but doesn't explicitly list per-item stats in a flat array on root.
--- However, we can reconstruct it from the 'answers' column (raw inputs) + metadata which is safer.
--- Let's extract from the 'answers' JSONB in exam_attempts directly as it contains the raw truth.
+DROP VIEW IF EXISTS vw_item_health CASCADE;
+
 CREATE OR REPLACE VIEW vw_item_health AS
 WITH raw_answers AS (
     SELECT 
@@ -44,15 +47,10 @@ WITH raw_answers AS (
         key as question_id,
         (value->>'isCorrect')::boolean as is_correct,
         (value->>'timeMs')::int as time_ms,
-        -- We might need expected time from exam config to calc RTE here if not stored. 
-        -- But for now let's adhere to the plan: use results_cache if possible or raw data.
-        -- Let's assume results_cache has a way to map this. Use raw answers is easier for SQL.
         (value->>'confidence')::text as confidence
     FROM exam_attempts ea
     JOIN exams e ON ea.exam_config_id = e.id
-    CROSS JOIN LATERAL jsonb_each(ea.current_state) as answers(key, value) -- answers stored in current_state or separate column? 
-    -- Wait, exam-actions saves 'answers' from 'attempt.answers'.
-    -- In 'finalizeAttempt', we read 'attempt.answers'.
+    CROSS JOIN LATERAL jsonb_each(ea.current_state) as answers(key, value)
     WHERE ea.status = 'COMPLETED'
 ),
 item_stats AS (
@@ -82,7 +80,8 @@ FROM item_stats;
 
 
 -- 3. VIEW: vw_cohort_radar (Radar de Alumnos)
--- High-level student profiling using calculated metrics from results_cache.
+DROP VIEW IF EXISTS vw_cohort_radar CASCADE;
+
 CREATE OR REPLACE VIEW vw_cohort_radar AS
 SELECT 
     e.creator_id as teacher_id,
@@ -102,3 +101,23 @@ SELECT
 FROM exam_attempts ea
 JOIN exams e ON ea.exam_config_id = e.id
 WHERE ea.status = 'COMPLETED';
+
+
+-- 4. VIEW: vw_remediation_fairness (Auditoría de Equidad)
+DROP VIEW IF EXISTS vw_remediation_fairness CASCADE;
+
+CREATE OR REPLACE VIEW vw_remediation_fairness AS
+SELECT 
+    e.creator_id as teacher_id,
+    ea.exam_config_id as exam_id,
+    p.demographic_group,
+    COUNT(*) as total_attempts,
+    SUM(CASE WHEN (ea.results_cache->>'overallScore')::float < 60 THEN 1 ELSE 0 END) as failed_attempts,
+    AVG((ea.results_cache->>'overallScore')::float) as avg_score,
+    -- Calculate "Intervention Rate" (Failure Rate)
+    (SUM(CASE WHEN (ea.results_cache->>'overallScore')::float < 60 THEN 1 ELSE 0 END)::float / COUNT(*)) as intervention_rate
+FROM exam_attempts ea
+JOIN exams e ON ea.exam_config_id = e.id
+JOIN profiles p ON ea.learner_id = p.id
+WHERE ea.status = 'COMPLETED'
+GROUP BY e.creator_id, ea.exam_config_id, p.demographic_group;

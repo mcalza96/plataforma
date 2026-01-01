@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Pill, Activity, ArrowRight, ClipboardList, Lightbulb, ShieldAlert, Microscope, BookOpen } from 'lucide-react';
-import { CompetencyDiagnosis } from '../../../lib/domain/evaluation/types';
+import { CompetencyDiagnosis } from '@/lib/domain/assessment';
 
 interface PrescriptionCardProps {
     diagnoses: CompetencyDiagnosis[];

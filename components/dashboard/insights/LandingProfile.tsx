@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket, Zap, Clock, BrainCircuit, Target, ShieldCheck } from 'lucide-react';
-import { BehaviorProfile } from '../../../lib/domain/evaluation/types';
+import { BehaviorProfile } from '@/lib/domain/assessment';
 
 interface LandingProfileProps {
     profile: BehaviorProfile;

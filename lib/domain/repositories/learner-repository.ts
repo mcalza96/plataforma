@@ -22,4 +22,7 @@ export interface IStudentRepository {
 
     // Remediation Logic
     executeGraphMutations(studentId: string, mutations: PathMutation[]): Promise<boolean>;
+
+    // Standalone Diagnostics
+    getStandaloneAssignments(studentId: string): Promise<import('../dtos/learner').StandaloneExamAssignment[]>;
 }

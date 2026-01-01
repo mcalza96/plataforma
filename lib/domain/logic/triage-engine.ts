@@ -1,6 +1,6 @@
 import { DiagnosticProbe } from '../assessment';
 import { AssessmentResult, PathMutation, VerdictType } from '../triage';
-import { DiagnosticResult } from '../evaluation/types';
+import { DiagnosticResult } from '../assessment';
 
 /**
  * TriageEngine

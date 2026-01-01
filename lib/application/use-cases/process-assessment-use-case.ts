@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '../../infrastructure/supabase/supabase-server';
-import { DiagnosticResult } from '../../domain/evaluation/types';
+import { DiagnosticResult } from '../../domain/assessment';
 import { TriageEngine } from '../../domain/logic/triage-engine';
 import { PathMutation } from '../../domain/triage';
 

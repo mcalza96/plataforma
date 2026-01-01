@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CalibrationMetrics } from '../../../lib/domain/evaluation/types';
+import { CalibrationMetrics } from '@/lib/domain/assessment';
 import { AlertTriangle, ShieldCheck, Target, Zap } from 'lucide-react';
 
 interface CognitiveMirrorProps {

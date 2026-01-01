@@ -5,7 +5,10 @@ import { checkRateLimit } from "@/lib/infrastructure/rate-limit";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 
-export async function publishExam(config: { title: string; matrix: any; questions?: any[] }) {
+export async function publishExam(
+    config: { title: string; matrix: any; questions?: any[] },
+    assignmentConfig: { mode: 'auto_all' | 'segment'; segmentId?: string } = { mode: 'auto_all' }
+) {
     const supabase = await createClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -16,7 +19,7 @@ export async function publishExam(config: { title: string; matrix: any; question
     // 1. Readiness Validation (The Bridge Guard)
     const { calculateReadiness } = await import("@/lib/domain/architect");
 
-    // Ensure matrix has the shape of PartialKnowledgeMap, or at least sufficient for validation
+    // Ensure matrix has the shape of PartialKnowledgeMap
     const readiness = calculateReadiness(config.matrix);
 
     if (!readiness.isValid) {
@@ -36,18 +39,16 @@ export async function publishExam(config: { title: string; matrix: any; question
         : (config.matrix?.keyConcepts || []).map((c: any) => ({
             id: crypto.randomUUID(),
             type: 'CBM',
-            stem: `Diagnóstico sobre: ${c.name || c.title}`, // Robustness for concept naming
+            stem: `Diagnóstico sobre: ${c.name || c.title}`,
             options: [
                 { id: 'opt-a', text: 'Opción Correcta (Placeholder)', isCorrect: true },
                 { id: 'opt-b', text: 'Distractor Común (Placeholder)', isCorrect: false },
                 { id: 'opt-c', text: 'No lo sé / No estoy seguro', isCorrect: false, isGap: true }
-                // Ideally we would use the misconceptions here to generate the distractor, 
-                // but for auto-gen defaults this is acceptable validation padding.
             ],
             competencyId: c.id
         }));
 
-    // 3. Immutable Insert
+    // 3. Immutable Insert (Standalone Aggregate Root)
     const { data, error } = await supabase
         .from("exams")
         .insert({
@@ -65,36 +66,34 @@ export async function publishExam(config: { title: string; matrix: any; question
         return { success: false, error: error.message };
     }
 
-    // 4. Atomic-like Auto-Assignment
-    // We treat this as a critical side-effect. Best effort, but logged heavily.
+    // 4. Atomic Assignment Logic (Tenant Isolated)
     try {
-        const { getStudentRepository } = await import("@/lib/infrastructure/di");
-        const studentRepo = getStudentRepository();
-        const students = await studentRepo.getStudentsByTeacherId(user.id);
+        if (assignmentConfig.mode === 'auto_all') {
+            const { getStudentRepository } = await import("@/lib/infrastructure/di");
+            const studentRepo = getStudentRepository();
+            const students = await studentRepo.getStudentsByTeacherId(user.id);
 
-        if (students.length > 0) {
-            const assignments = students.map(student => ({
-                exam_id: data.id,
-                student_id: student.id,
-                status: 'ASSIGNED',       // Explicit status
-                assigned_at: new Date().toISOString()
-            }));
+            if (students.length > 0) {
+                const assignments = students.map(student => ({
+                    exam_id: data.id,
+                    student_id: student.id,
+                    status: 'ASSIGNED',
+                    assigned_at: new Date().toISOString(),
+                    origin_context: 'standalone' // Explicit Metadata
+                }));
 
-            const { error: assignError } = await supabase
-                .from("exam_assignments")
-                .insert(assignments);
+                const { error: assignError } = await supabase
+                    .from("exam_assignments")
+                    .insert(assignments);
 
-            if (assignError) {
-                console.error("CRITICAL: Failed to auto-assign exam to students:", assignError);
-                // In a stricter system, we might rollback the exam creation, 
-                // but for now we return success with a warning warning attached? 
-                // The requirements say "Asegura que la lógica... sea atómica", implies transaction.
-                // Supabase-js doesn't support multistatement transactions cleanly without RPC.
-                // We will rely on the "Bridge" concept: The exam is published, assignments can be retried if failed.
+                if (assignError) {
+                    console.error("CRITICAL: Failed to auto-assign exam:", assignError);
+                    // Non-blocking failure, but logged.
+                }
             }
         }
     } catch (repoError) {
-        console.error("Error during auto-assignment phase:", repoError);
+        console.error("Error during assignment phase:", repoError);
     }
 
     revalidatePath('/admin/exams');

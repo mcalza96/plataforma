@@ -1,9 +1,11 @@
-import { DiagnosticResult } from '@/lib/domain/evaluation/types';
+import { DiagnosticResult } from '@/lib/domain/assessment';
 
 interface FeedbackNarrative {
     glow: string[];
     grow: string[];
     meta: string;
+    executiveSummary: string;
+    behavioralNote: string;
 }
 
 /**
@@ -63,6 +65,12 @@ export class FeedbackGenerator {
             meta = "Tu calibración está dentro de rangos normales. Continúa monitoreando tu certeza antes de responder.";
         }
 
-        return { glow, grow, meta };
+        return {
+            glow,
+            grow,
+            meta,
+            executiveSummary: [...glow, ...grow].join(" "),
+            behavioralNote: meta
+        };
     }
 }

@@ -66,4 +66,8 @@ export class StudentService {
     async executeMutations(studentId: string, mutations: any[]): Promise<boolean> {
         return this.learnerRepository.executeGraphMutations(studentId, mutations);
     }
+
+    async getStandaloneAssignments(studentId: string): Promise<import('../../domain/dtos/learner').StandaloneExamAssignment[]> {
+        return this.learnerRepository.getStandaloneAssignments(studentId);
+    }
 }

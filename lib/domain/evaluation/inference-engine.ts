@@ -12,7 +12,7 @@ import {
     CompetencyDiagnosis,
     CompetencyEvaluationState,
     EVALUATION_PRIORITY,
-} from './types';
+} from '../assessment';
 import { calculateBehaviorProfile, isEvidenceQualitySufficient, calculateRTE } from './behavior-detector';
 
 // ============================================================================

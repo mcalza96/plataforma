@@ -262,4 +262,47 @@ export class SupabaseLearnerRepository implements IStudentRepository {
         }
         return true;
     }
+
+    async getStandaloneAssignments(studentId: string): Promise<import('../../domain/dtos/learner').StandaloneExamAssignment[]> {
+        const supabase = await createClient();
+
+        const { data, error } = await supabase
+            .from('exam_assignments')
+            .select(`
+                id,
+                status,
+                assigned_at,
+                origin_context,
+                exam:exams (
+                    id,
+                    title,
+                    config_json
+                )
+            `)
+            .eq('student_id', studentId)
+            .in('origin_context', ['standalone', 'manual_intervention'])
+            .order('assigned_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching standalone assignments:', error);
+            return [];
+        }
+
+        return (data || []).map((item: any) => {
+            const matrix = item.exam?.config_json || {};
+            const subject = matrix.subject || 'Competencias Generales';
+            const audience = matrix.targetAudience || 'General';
+
+            return {
+                assignmentId: item.id,
+                examId: item.exam?.id,
+                examTitle: item.exam?.title,
+                subject,
+                targetAudience: audience,
+                status: item.status,
+                assignedAt: item.assigned_at,
+                originContext: item.origin_context
+            };
+        });
+    }
 }

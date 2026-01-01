@@ -58,3 +58,13 @@ export interface LearningFrontier {
     mastery_score: number;
     recommended_content: string[];
 }
+export interface StandaloneExamAssignment {
+    assignmentId: string;
+    examId: string;
+    examTitle: string;
+    subject: string;
+    targetAudience: string;
+    status: 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED';
+    assignedAt: string;
+    originContext: 'standalone' | 'manual_intervention';
+}

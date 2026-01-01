@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
-import { DiagnosticResult, CompetencyDiagnosis } from "@/lib/domain/evaluation/types";
+import { DiagnosticResult, CompetencyDiagnosis } from "@/lib/domain/assessment";
 import { AtomicLearningObject } from "@/lib/domain/schemas/alo";
 
 interface InterventionItem {

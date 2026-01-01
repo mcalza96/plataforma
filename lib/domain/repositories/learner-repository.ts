@@ -1,5 +1,6 @@
 import { Student } from '../entities/learner';
 import { TeacherTenantDTO } from '../dtos/learner';
+import { PathMutation } from '../triage';
 
 export interface IStudentRepository {
     getStudentById(studentId: string): Promise<Student | null>;
@@ -18,4 +19,7 @@ export interface IStudentRepository {
         fullName: string;
     }): Promise<void>;
     getStudentsByTeacherId(teacherId: string): Promise<Student[]>;
+
+    // Remediation Logic
+    executeGraphMutations(studentId: string, mutations: PathMutation[]): Promise<boolean>;
 }

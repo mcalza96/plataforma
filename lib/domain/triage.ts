@@ -39,7 +39,7 @@ export class DiagnosticVerdict {
 /**
  * Path Mutation Actions
  */
-export type MutationAction = 'INSERT_NODE' | 'UPDATE_STATUS' | 'UNLOCK_NEXT';
+export type MutationAction = 'INSERT_NODE' | 'UPDATE_STATUS' | 'UNLOCK_NEXT' | 'LOCK_DOWNSTREAM';
 
 /**
  * Path Mutation Entity
@@ -54,6 +54,7 @@ export class PathMutation {
             position?: 'BEFORE' | 'AFTER';
             newStatus?: 'locked' | 'available' | 'completed' | 'infected' | 'mastered';
             contentId?: string; // Content to insert
+            title?: string; // Dynamic title for the new node
         } = {}
     ) { }
 }

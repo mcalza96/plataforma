@@ -9,4 +9,6 @@ export interface IStatsRepository {
         totalSubmissions: number;
         totalCourses: number;
     }>;
+
+    getCalibrationData(examId: string): Promise<any[]>; // Returns raw results_cache for processing
 }

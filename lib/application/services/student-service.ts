@@ -62,4 +62,8 @@ export class StudentService {
             current: s.percentage
         }));
     }
+
+    async executeMutations(studentId: string, mutations: any[]): Promise<boolean> {
+        return this.learnerRepository.executeGraphMutations(studentId, mutations);
+    }
 }

@@ -37,6 +37,17 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         .single();
 
     if (!attempt) {
+        // Time Identity Injection: Ensure questions have time metadata (Retrocompatibility)
+        // If question lacks metadata, we calculate it dynamically using the Domain logic.
+        const { calculateMinViableTime } = await import("@/lib/domain/assessment");
+
+        const enhancedQuestions = (exam.questions || []).map((q: any) => ({
+            ...q,
+            expected_time_seconds: q.expected_time_seconds || 60, // Default 60s
+            min_viable_time: q.min_viable_time || calculateMinViableTime(q.stem || ""),
+            difficulty_tier: q.difficulty_tier || 'medium' // Default to medium
+        }));
+
         const { data: newAttempt, error: createError } = await serviceSupabase
             .from("exam_attempts")
             .insert({
@@ -46,7 +57,7 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
                 current_state: {},
                 config_snapshot: {
                     matrix: exam.config_json,
-                    questions: exam.questions || []
+                    questions: enhancedQuestions
                 }
             })
             .select()

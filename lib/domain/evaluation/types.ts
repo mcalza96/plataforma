@@ -24,9 +24,21 @@ export type ConfidenceLevel = z.infer<typeof ConfidenceLevelSchema>;
 export const ResponseTelemetrySchema = z.object({
     timeMs: z.number(),           // Tiempo total en la pregunta
     hesitationCount: z.number(),  // Cantidad de veces que cambió de opción
+    focusLostCount: z.number().default(0), // Cambios de ventana/tab
     hoverTimeMs: z.number(),      // Tiempo de hover sobre la opción seleccionada
+
+    // Mobile / Decision Latency Metrics
+    ttft: z.number().optional(),             // Time To First Touch (ms)
+    confirmationLatency: z.number().optional(), // Time from last selection to confirm (ms)
+    revisitCount: z.number().default(0),    // Number of times returned to this question
+
     isRapidGuessing: z.boolean().optional(), // Detectado por el behavior-detector
+    rte: z.number().optional(),   // Response Time Effort (Time / Expected)
+    zScore: z.number().optional(), // Standard Score relative to cohort
+    expectedTime: z.number().optional(), // Snapshot baseline
 });
+
+export type ResponseTelemetry = z.infer<typeof ResponseTelemetrySchema>;
 
 /**
  * Respuesta del estudiante a un ítem
@@ -103,6 +115,7 @@ export const DiagnosisEvidenceSchema = z.object({
     reason: z.string(),
     confidenceScore: z.number(), // 0 a 1
     sourceQuestionIds: z.array(z.string()),
+    misconceptionId: z.string().optional(), // ID del error específico detectado
 });
 
 /**

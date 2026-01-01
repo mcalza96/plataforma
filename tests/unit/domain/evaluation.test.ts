@@ -11,6 +11,64 @@ import { QMatrixMapping, StudentResponse } from '../../../lib/domain/evaluation/
 
 describe('Inference Engine - Escenarios Clínicos', () => {
 
+    // ============================================================================
+    // PHASE 2: RELATIVE METRICS (RTE & Z-Score)
+    // ============================================================================
+
+    describe('Phase 2: Relative Metrics', () => {
+        const mockResponseBase = {
+            questionId: 'q1',
+            selectedOptionId: 'opt-correct',
+            isCorrect: true,
+            confidence: 'HIGH' as const,
+            telemetry: {
+                timeMs: 5000,
+                hesitationCount: 0,
+                hoverTimeMs: 0,
+                expectedTime: 10,
+                rte: 0.5,
+                zScore: 0
+            }
+        };
+        const p2Matrix = [{ questionId: 'q1', competencyId: 'comp-p2', isTrap: false, idDontKnowOptionId: 'opt-dont-know' }];
+
+        it('should classify RTE < 0.3 as Rapid Guessing and ignore evidence', () => {
+            const result = evaluateSession('att-p2-1', 'stu-p2', [
+                {
+                    ...mockResponseBase,
+                    isCorrect: false,
+                    telemetry: { ...mockResponseBase.telemetry, timeMs: 2000, expectedTime: 10, rte: 0.2 } // RTE = 0.2 < 0.3
+                }
+            ], p2Matrix);
+
+            // Should have no diagnoses because the only response was invalid
+            expect(result.competencyDiagnoses.length).toBe(0);
+            expect(result.behaviorProfile.isImpulsive).toBe(true);
+        });
+
+        it('should degrade Mastery to Gap if Z-Score > 2.0 (Toxic Doubt)', () => {
+            const cohortStats = new Map([
+                ['q1', { mean: 10000, stdDev: 4000 }] // Mean 10s, SD 4s. Time 20s -> Z = 2.5
+            ]);
+
+            const result = evaluateSession('att-p2-2', 'stu-p2', [
+                {
+                    ...mockResponseBase,
+                    telemetry: {
+                        ...mockResponseBase.telemetry,
+                        timeMs: 20000,
+                        expectedTime: 10,
+                        rte: 2.0,
+                    }
+                }
+            ], p2Matrix, cohortStats);
+
+            const diagnosis = result.competencyDiagnoses.find(d => d.competencyId === 'comp-p2');
+            expect(diagnosis?.state).toBe('GAP');
+            expect(diagnosis?.evidence.reason).toContain('Duda Tóxica');
+        });
+    });
+
     // Matriz Q de prueba
     const mockQMatrix: QMatrixMapping[] = [
         {

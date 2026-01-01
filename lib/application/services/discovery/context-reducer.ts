@@ -21,9 +21,43 @@ export const ContextReducer = {
         // 2. Arrays (Cumulative & Deduplicated)
 
         // keyConcepts (Deduplicate strings)
-        if (update.keyConcepts && update.keyConcepts.length > 0) {
+        // Helper to normalize input which might be string[] or {name: string, difficultyStr}[]
+        let newConcepts: string[] = [];
+        let newDifficulties: Record<string, 'easy' | 'medium' | 'hard'> = {};
+
+        if (update.keyConcepts && Array.isArray(update.keyConcepts)) {
+            // @ts-ignore - Runtime check for mixed types from AI tool
+            update.keyConcepts.forEach((c: any) => {
+                if (typeof c === 'string') {
+                    newConcepts.push(c);
+                } else if (typeof c === 'object' && c.name) {
+                    newConcepts.push(c.name);
+                    if (c.difficulty) {
+                        newDifficulties[c.name] = c.difficulty;
+                    }
+                }
+            });
+
             const existing = merged.keyConcepts || [];
-            merged.keyConcepts = [...new Set([...existing, ...update.keyConcepts])];
+            merged.keyConcepts = [...new Set([...existing, ...newConcepts])];
+        }
+
+        // Merge difficulties
+        // We cast 'update' to any to access conceptDifficulties if it was passed in the update object or extracted
+        // But since we are extracting it locally from keyConcepts, we merge it directly
+        if (Object.keys(newDifficulties).length > 0) {
+            merged.conceptDifficulties = {
+                ...(merged.conceptDifficulties || {}),
+                ...newDifficulties
+            };
+        }
+
+        // Also if update has conceptDifficulties directly (rare but possible)
+        if ((update as any).conceptDifficulties) {
+            merged.conceptDifficulties = {
+                ...(merged.conceptDifficulties || {}),
+                ...(update as any).conceptDifficulties
+            };
         }
 
         // identifiedMisconceptions (Deduplicate by error string)

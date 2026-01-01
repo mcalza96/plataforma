@@ -26,6 +26,7 @@ export const PartialKnowledgeMapSchema = z.object({
         questionCount: z.number().optional(),
         durationMinutes: z.number().optional()
     }).optional().describe('User preferences for the exam structure'),
+    conceptDifficulties: z.record(z.string(), z.enum(['easy', 'medium', 'hard'])).optional().describe('Map of concept names to difficulty tiers'),
     prototypes: z.array(z.object({
         id: z.string(),
         stem: z.string(),

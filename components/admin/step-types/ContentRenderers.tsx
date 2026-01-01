@@ -92,6 +92,62 @@ export function StepContentQuiz({ step, onUpdate, liveContext }: StepContentType
                 />
             </div>
 
+            {/* Time Identity Section */}
+            <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-xl space-y-3">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="material-symbols-outlined text-xs text-indigo-400">timer</span>
+                    <span className="text-[9px] font-black text-indigo-400/80 uppercase tracking-widest">Identidad Temporal</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                        <label className="text-[8px] text-gray-500 uppercase font-bold">Dificultad</label>
+                        <select
+                            value={quiz.difficulty_tier || 'medium'}
+                            onChange={(e) => updateQuiz({ difficulty_tier: e.target.value as 'easy' | 'medium' | 'hard' })}
+                            className="w-full bg-black/20 border border-white/5 rounded-lg px-2 py-1.5 text-[10px] text-white outline-none focus:ring-1 ring-indigo-500/50"
+                        >
+                            <option value="easy">Easy (45s)</option>
+                            <option value="medium">Medium (120s)</option>
+                            <option value="hard">Hard (300s)</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[8px] text-gray-500 uppercase font-bold">Tiempo Esperado (s)</label>
+                        <input
+                            type="number"
+                            value={quiz.expected_time_seconds || 60}
+                            onChange={(e) => updateQuiz({ expected_time_seconds: parseInt(e.target.value) || 0 })}
+                            className="w-full bg-black/20 border border-white/5 rounded-lg px-2 py-1.5 text-[10px] text-white outline-none focus:ring-1 ring-indigo-500/50"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[8px] text-gray-500 uppercase font-bold">Mínimo Viable (s)</label>
+                        <div className="flex gap-1">
+                            <input
+                                type="number"
+                                value={quiz.min_viable_time || 0}
+                                onChange={(e) => updateQuiz({ min_viable_time: parseInt(e.target.value) || 0 })}
+                                className="w-full bg-black/20 border border-white/5 rounded-lg px-2 py-1.5 text-[10px] text-amber-500/80 font-mono outline-none focus:ring-1 ring-indigo-500/50"
+                            />
+                            <button
+                                onClick={() => {
+                                    const words = (quiz.stem || '').split(/\s+/).length;
+                                    const calc = Math.ceil(5 + (words * 0.2));
+                                    updateQuiz({ min_viable_time: calc });
+                                }}
+                                title="Auto-calcular basado en NT10"
+                                className="px-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[10px] text-gray-400">calculate</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Options List */}
             <div className="space-y-3">
                 <label className="text-[9px] font-black text-white/30 uppercase tracking-widest ml-1">Opciones de Respuesta</label>

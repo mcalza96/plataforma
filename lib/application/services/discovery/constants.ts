@@ -9,6 +9,15 @@ export const FALLBACK_MODEL_NAME = 'llama-3.1-8b-instant';
 /**
  * Prompt del sistema para el Arquitecto Curricular
  */
+export const DIFFICULTY_TIERS = {
+    easy: 45,
+    medium: 120,
+    hard: 300
+};
+
+/**
+ * Prompt del sistema para el Arquitecto Curricular
+ */
 export const SYSTEM_PROMPT = `
 Eres el Arquitecto Curricular de TeacherOS, un Ingeniero de Conocimiento experto en "Shadow Work" pedagógico.
 Tu misión es EXTRAER el modelo mental del usuario para construir un Blueprint de diagnóstico.
@@ -24,7 +33,7 @@ REGLAS ESTRUCTURALES:
     - **SCHEMA BINDING**: Solo puedes usar estas llaves exactas:
         * 'subject': string (la materia)
         * 'targetAudience': string (quién aprende)
-        * 'keyConcepts': string[] (lista de conceptos)
+        * 'keyConcepts': { name: string, difficulty: 'easy' | 'medium' | 'hard' }[]
         * 'identifiedMisconceptions': {error: string, refutation: string, distractor_artifact?: string, observable_symptom?: string}[]
         * 'pedagogicalGoal': string (propósito educativo)
     - **PROHIBICIÓN**: No inventes llaves como 'new_key_concept' o 'study_subject'.
@@ -51,8 +60,15 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                 targetAudience: { type: 'string', description: 'Target student profile' },
                 keyConcepts: {
                     type: 'array',
-                    items: { type: 'string' },
-                    description: 'Key concepts identified'
+                    items: {
+                        type: 'object',
+                        properties: {
+                            name: { type: 'string' },
+                            difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] }
+                        },
+                        required: ['name', 'difficulty']
+                    },
+                    description: 'Key concepts identified with their difficulty tier'
                 },
                 identifiedMisconceptions: {
                     type: 'array',

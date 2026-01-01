@@ -13,7 +13,7 @@ import {
     CompetencyEvaluationState,
     EVALUATION_PRIORITY,
 } from './types';
-import { calculateBehaviorProfile, isEvidenceQualitySufficient } from './behavior-detector';
+import { calculateBehaviorProfile, isEvidenceQualitySufficient, calculateRTE } from './behavior-detector';
 
 // ============================================================================
 // CORE INFERENCE - El Algoritmo Juez
@@ -22,13 +22,41 @@ import { calculateBehaviorProfile, isEvidenceQualitySufficient } from './behavio
 /**
  * Evalúa una sesión completa de respuestas.
  */
+/**
+ * Evalúa una sesión completa de respuestas.
+ */
 export function evaluateSession(
     attemptId: string,
     studentId: string,
-    responses: StudentResponse[],
-    qMatrix: QMatrixMapping[]
+    rawResponses: StudentResponse[], // Input responses might lack RTE
+    qMatrix: QMatrixMapping[],
+    cohortStats?: Map<string, { mean: number; stdDev: number }> // Optional cohort data
 ): DiagnosticResult {
     const diagnosesMap = new Map<string, CompetencyDiagnosis>();
+
+    // 0. Pre-processing: Calculate Relative Metrics (RTE, Z-Score)
+    // calculateRTE is now imported statically
+
+    const responses = rawResponses.map(r => {
+        const rte = calculateRTE(r.telemetry.timeMs, r.telemetry.expectedTime);
+        let zScore = 0;
+
+        if (cohortStats && cohortStats.has(r.questionId)) {
+            const stats = cohortStats.get(r.questionId)!;
+            if (stats.stdDev > 0) {
+                zScore = (r.telemetry.timeMs - stats.mean) / stats.stdDev;
+            }
+        }
+
+        return {
+            ...r,
+            telemetry: {
+                ...r.telemetry,
+                rte,
+                zScore
+            }
+        };
+    });
 
     // 1. Calcular métricas de calibración primero (Espejo Metacognitivo)
     const calibration = calculateCalibration(responses);
@@ -128,13 +156,25 @@ function calculateCalibration(responses: StudentResponse[]) {
         calibrationStatus = 'UNDERCONFIDENT';
     }
 
+    // Blind Spots: High Confidence but Incorrect.
+    // Critical: If RTE < 0.5 (Fast) and Incorrect + High Confidence -> Impulsive Delusion
+    const blindSpots = valid.filter(r =>
+        !r.isCorrect && r.confidence === 'HIGH'
+    ).length;
+
+    // Fragile Knowledge: Correct but Low Confidence OR Correct but Extreme Effort (Toxic Doubt)
+    const fragileKnowledge = valid.filter(r =>
+        (r.isCorrect && (r.confidence === 'LOW' || r.confidence === 'MEDIUM')) ||
+        (r.isCorrect && r.telemetry.zScore && r.telemetry.zScore > 2.0)
+    ).length;
+
     return {
         certaintyAverage: Math.round(avgCertainty),
         accuracyAverage: Math.round(avgAccuracy),
         eceScore: Math.round(totalWeightedError),
         calibrationStatus,
-        blindSpots: valid.filter(r => !r.isCorrect && r.confidence === 'HIGH').length,
-        fragileKnowledge: valid.filter(r => r.isCorrect && (r.confidence === 'LOW' || r.confidence === 'MEDIUM')).length
+        blindSpots,
+        fragileKnowledge
     };
 }
 
@@ -193,9 +233,17 @@ function processResponseEvidence(
     }
     // Caso C: MASTERY - Correcto con seguridad aceptable
     else if (response.isCorrect && (response.confidence === 'HIGH' || response.confidence === 'MEDIUM')) {
-        state = 'MASTERED';
-        reason = 'Respuesta correcta con nivel de seguridad consistente';
-        confidenceScore = 0.85;
+        // DETECCIÓN DE DUDA TÓXICA / LUCHA IMPRODUCTIVA (Z-Score > 2.0)
+        // Si el estudiante acierta pero tardó 2 desviaciones estándar más que la media, no es maestría fluida.
+        if (response.telemetry.zScore && response.telemetry.zScore > 2.0) {
+            state = 'GAP'; // Se degrada a GAP (Fragile Knowledge) para forzar refuerzo
+            reason = 'Acierto con costo cognitivo excesivo (Duda Tóxica: Z > 2.0). Requiere fluidez.';
+            confidenceScore = 0.6; // Confianza baja por falta de automaticidad
+        } else {
+            state = 'MASTERED';
+            reason = 'Respuesta correcta con nivel de seguridad consistente';
+            confidenceScore = 0.85;
+        }
     }
     // Caso D: GAP - Incorrecto o Correcto por azar (Baja seguridad)
     else if (!response.isCorrect || response.confidence === 'LOW') {

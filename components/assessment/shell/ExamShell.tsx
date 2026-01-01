@@ -47,6 +47,7 @@ export const ExamShell = memo(function ExamShell({
             }))
     );
     const [answers, setAnswers] = useState<Map<string, AnswerPayload>>(new Map());
+    const [revisitCounts, setRevisitCounts] = useState<Map<string, number>>(new Map());
     const [isOffline, setIsOffline] = useState(false);
 
     // Hydration Sync: Match metadata with hydrated answers
@@ -66,7 +67,13 @@ export const ExamShell = memo(function ExamShell({
                             questionId: qId,
                             value,
                             isGap: false,
-                            telemetry: { timeMs: 0, hesitationCount: 0, focusLostCount: 0 }
+                            telemetry: {
+                                timeMs: 0,
+                                hesitationCount: 0,
+                                focusLostCount: 0,
+                                hoverTimeMs: 0,
+                                revisitCount: 0
+                            }
                         });
                     }
                 });
@@ -103,11 +110,30 @@ export const ExamShell = memo(function ExamShell({
                     : meta
             )
         );
-    }, [currentQuestionIndex]);
+
+        // Revisit Tracking: If we navigate to a question that is already SEEN or ANSWERED, increment count
+        const currentMeta = questionMetadata[currentQuestionIndex];
+        if (currentMeta && (currentMeta.state === 'SEEN' || currentMeta.state === 'ANSWERED')) {
+            setRevisitCounts(prev => {
+                const newMap = new Map(prev);
+                const currentCount = newMap.get(currentQuestion.id) || 0;
+                newMap.set(currentQuestion.id, currentCount + 1);
+                return newMap;
+            });
+            console.log(`[Telemetry] Revisit logged for ${currentQuestion.id}. Count: ${(revisitCounts.get(currentQuestion.id) || 0) + 1}`);
+        }
+    }, [currentQuestionIndex]); // Dependency on index implies navigation
 
     const handleAnswer = (payload: AnswerPayload) => {
+        // Inject Revisit Count into Telemetry
+        const currentRevisitCount = revisitCounts.get(payload.questionId) || 0;
+        const enrichedTelemetry = {
+            ...payload.telemetry,
+            revisitCount: currentRevisitCount
+        };
+
         // Telemetry: Log the answer update with rich forensic data
-        trackAnswer(payload.questionId, payload.value, payload.telemetry);
+        trackAnswer(payload.questionId, payload.value, enrichedTelemetry);
 
         // Save local state for UI indicators
         setAnswers((prev) => new Map(prev).set(payload.questionId, payload));

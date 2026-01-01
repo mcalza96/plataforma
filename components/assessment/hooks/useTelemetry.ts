@@ -11,6 +11,9 @@ type InteractionType = 'HOVER' | 'CHANGE' | 'CLICK';
  */
 export function useTelemetry() {
     const startTimeRef = useRef<number>(0);
+    const firstTouchTimeRef = useRef<number | null>(null);
+    const lastInteractionTimeRef = useRef<number>(0);
+
     const [hesitationCount, setHesitationCount] = useState(0);
     const [focusLostCount, setFocusLostCount] = useState(0);
     const [confidence, setConfidence] = useState<'LOW' | 'MEDIUM' | 'HIGH' | undefined>(undefined);
@@ -19,7 +22,11 @@ export function useTelemetry() {
      * Start tracking telemetry (call when question mounts)
      */
     const start = useCallback(() => {
-        startTimeRef.current = Date.now();
+        const now = Date.now();
+        startTimeRef.current = now;
+        firstTouchTimeRef.current = null;
+        lastInteractionTimeRef.current = now; // Initialize to start time
+
         setHesitationCount(0);
         setFocusLostCount(0);
         setConfidence(undefined);
@@ -29,17 +36,33 @@ export function useTelemetry() {
      * Log an interaction event
      */
     const logInteraction = useCallback((type: InteractionType) => {
+        const now = Date.now();
+
+        // Capture TTFT
+        if (firstTouchTimeRef.current === null) {
+            firstTouchTimeRef.current = now;
+        }
+
+        // Update last interaction time for confirmation latency
+        if (type === 'CHANGE' || type === 'CLICK') {
+            lastInteractionTimeRef.current = now;
+        }
+
         if (type === 'CHANGE') {
             setHesitationCount((prev) => prev + 1);
         }
-        // HOVER and CLICK are logged but don't increment counters
-        // They could be used for advanced analytics
     }, []);
 
     /**
      * Set confidence level (for CBM questions)
      */
     const setConfidenceLevel = useCallback((level: 'LOW' | 'MEDIUM' | 'HIGH') => {
+        // Interacting with confidence selector counts as interaction
+        if (firstTouchTimeRef.current === null) {
+            firstTouchTimeRef.current = Date.now();
+        }
+        lastInteractionTimeRef.current = Date.now();
+
         setConfidence(level);
     }, []);
 
@@ -47,12 +70,24 @@ export function useTelemetry() {
      * Capture final telemetry snapshot
      */
     const captureSnapshot = useCallback((): TelemetryData => {
-        const timeMs = Date.now() - startTimeRef.current;
+        const now = Date.now();
+        const timeMs = now - startTimeRef.current;
+
+        // TTFT: If never touched, it equals total time (passive abandonment) or 0? 
+        // Let's say if null, it's timeMs (never acted)
+        const ttft = firstTouchTimeRef.current ? (firstTouchTimeRef.current - startTimeRef.current) : timeMs;
+
+        // Confirmation Latency: Time since last meaningful interaction to now (submit)
+        const confirmationLatency = now - lastInteractionTimeRef.current;
+
         return {
             timeMs,
             hesitationCount,
             focusLostCount,
             confidence,
+            ttft,
+            confirmationLatency,
+            hoverTimeMs: 0 // Legacy support, default 0 for mobile
         };
     }, [hesitationCount, focusLostCount, confidence]);
 

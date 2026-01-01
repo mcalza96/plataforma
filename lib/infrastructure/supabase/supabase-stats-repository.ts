@@ -145,4 +145,20 @@ category,
             totalCourses: totalCourses || 0
         };
     }
+    async getCalibrationData(examId: string): Promise<any[]> {
+        const supabase = await createClient();
+
+        const { data, error } = await supabase
+            .from('exam_attempts')
+            .select('learner_id, results_cache')
+            .eq('exam_id', examId)
+            .eq('status', 'evaluated');
+
+        if (error) {
+            console.error('Error fetching calibration data:', error);
+            return [];
+        }
+
+        return data || [];
+    }
 }

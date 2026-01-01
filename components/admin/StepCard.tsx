@@ -33,6 +33,9 @@ export interface StepData {
     };
     quizData?: {
         stem: string;
+        expected_time_seconds?: number;
+        min_viable_time?: number;
+        difficulty_tier?: 'easy' | 'medium' | 'hard';
         options: {
             id: string;
             content: string;

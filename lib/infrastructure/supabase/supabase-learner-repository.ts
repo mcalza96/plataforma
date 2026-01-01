@@ -2,6 +2,7 @@ import { IStudentRepository } from '../../domain/repositories/learner-repository
 import { Student } from '../../domain/entities/learner';
 import { TeacherTenantDTO } from '../../domain/dtos/learner';
 import { createClient } from './supabase-server';
+import { PathMutation } from '../../domain/triage';
 
 export class SupabaseLearnerRepository implements IStudentRepository {
     async getStudentById(studentId: string): Promise<Student | null> {
@@ -140,5 +141,57 @@ export class SupabaseLearnerRepository implements IStudentRepository {
         }
 
         return data || [];
+    }
+
+    async executeGraphMutations(studentId: string, mutations: PathMutation[]): Promise<boolean> {
+        const supabase = await createClient();
+
+        for (const mutation of mutations) {
+            try {
+                // 1. FOG OF WAR: Hard Pruning (Recursive Lock)
+                if (mutation.action === 'LOCK_DOWNSTREAM') {
+                    // In a real implementation: call rpc('lock_downstream_nodes', { start_node_id: mutation.targetNodeId })
+                    // For now, we simulate a "Kill Switch" for the specific competency
+                    await supabase.from('path_nodes')
+                        .update({ status: 'locked' })
+                        .eq('learner_id', studentId)
+                        .eq('content_id', mutation.targetNodeId);
+                }
+
+                // 2. INJECTION: Refutation or Scaffolding
+                else if (mutation.action === 'INSERT_NODE' && mutation.metadata.contentId) {
+                    const { data: targetNode } = await supabase
+                        .from('path_nodes')
+                        .select('id, position_order')
+                        .eq('learner_id', studentId)
+                        .eq('content_id', mutation.targetNodeId)
+                        .single();
+
+                    if (targetNode) {
+                        const newOrder = (targetNode.position_order || 0) - 0.5;
+
+                        await supabase.from('path_nodes').insert({
+                            learner_id: studentId,
+                            content_id: mutation.metadata.contentId,
+                            status: mutation.metadata.newStatus || 'available',
+                            position_order: newOrder,
+                            title: mutation.metadata.title || `Refuerzo: ${mutation.reason}`,
+                            type: 'remediation'
+                        });
+                    }
+                }
+
+                // 3. MASTERY: Unlock Next
+                else if (mutation.action === 'UNLOCK_NEXT') {
+                    await supabase.from('path_nodes')
+                        .update({ status: 'mastered', is_completed: true })
+                        .match({ learner_id: studentId, content_id: mutation.targetNodeId });
+                }
+            } catch (err) {
+                console.error(`Failed to execute mutation ${mutation.action}:`, err);
+                return false;
+            }
+        }
+        return true;
     }
 }

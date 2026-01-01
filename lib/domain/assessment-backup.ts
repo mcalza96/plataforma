@@ -98,14 +98,6 @@ export interface TelemetryData {
     focusLostCount: number;
     /** Confidence level (only for CBM questions) */
     confidence?: 'LOW' | 'MEDIUM' | 'HIGH';
-    /** Time To First Touch (ms) */
-    ttft?: number;
-    /** Time from last selection to confirmation (ms) */
-    confirmationLatency?: number;
-    /** Number of times user returned to this question */
-    revisitCount?: number;
-    /** Legacy hover time (optional) */
-    hoverTimeMs?: number;
 }
 
 /**

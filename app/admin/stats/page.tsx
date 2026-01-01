@@ -2,6 +2,7 @@ import { getAdminService } from '@/lib/infrastructure/di';
 import StatCard from '@/components/ui/StatCard';
 import TenantSelector from '@/components/admin/TenantSelector';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
+import { IntegrityAlertFeed } from '@/components/admin/dashboard/IntegrityAlertFeed';
 import { redirect } from 'next/navigation';
 
 interface AdminStatsPageProps {
@@ -63,26 +64,8 @@ export default async function AdminStatsPage({ searchParams }: AdminStatsPagePro
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard
-                    label="Total Alumnos"
-                    value={totalStudents || 0}
-                    icon="groups"
-                    variant="default"
-                />
-                <StatCard
-                    label="Entregas Totales"
-                    value={totalSubmissions || 0}
-                    icon="brush"
-                    variant="default"
-                />
-                <StatCard
-                    label="Misiones Activas"
-                    value={totalCourses || 0}
-                    icon="rocket_launch"
-                    variant="amber"
-                />
-            </div>
+            {/* Integrity Feed */}
+            <IntegrityAlertFeed teacherId={teacherId} />
 
             {/* Quick Actions / Insights placeholder */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

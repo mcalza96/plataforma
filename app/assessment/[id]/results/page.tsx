@@ -50,13 +50,17 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
         notFound();
     }
 
-    if (!attempt.results_cache) {
+    // Hardened Cache Validation: Ensure the black box has the critical diamonds
+    if (!attempt.results_cache || !(attempt.results_cache as any).competencyDiagnoses) {
         return (
             <div className="h-screen flex items-center justify-center bg-[#0A0A0A] text-white">
                 <div className="text-center space-y-4">
+                    <div className="animate-spin size-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto" />
                     <p className="text-sm font-mono uppercase tracking-widest text-zinc-500">
-                        El diagnóstico está siendo procesado. Por favor, refresca en unos segundos.
+                        El Juez está deliberando... (Procesando Telemetría Temporal)
                     </p>
+                    <p className="text-[10px] text-zinc-700">Refrescando automáticamente en 3s</p>
+                    <meta httpEquiv="refresh" content="3" />
                 </div>
             </div>
         );

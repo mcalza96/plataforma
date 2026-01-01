@@ -11,37 +11,72 @@ import { ResponseTelemetry, BehaviorProfile, StudentResponse } from './types';
 // CONFIGURACIÓN DE UMBRALES (Thresholds)
 // ============================================================================
 
-const RAPID_GUESSING_THRESHOLD_MS = 2000; // Menos de 2 segundos es adivinación
-const HESITATION_THRESHOLD_CHANGES = 2;   // Más de 2 cambios es duda significativa
-const HOVER_TIME_THRESHOLD_MS = 1500;     // Mucho tiempo de hover indica duda o reflexión profunda
+// ============================================================================
+// CONFIGURACIÓN DE UMBRALES (Thresholds)
+// ============================================================================
+
+// ============================================================================
+// CONFIGURACIÓN DE UMBRALES (Thresholds)
+// ============================================================================
+
+const RAPID_GUESSING_THRESHOLD_MS = 2000; // Legacy absolute fallback
+const RAPID_GUESSING_RTE_THRESHOLD = 0.3; // NT10 Rule (30% of expected time)
+const HESITATION_THRESHOLD_CHANGES = 2;
+const HOVER_TIME_THRESHOLD_MS = 1500;
+
+// Mobile / Latency Factors
+const VOLATILITY_FACTOR = 0.5; // Multiplier for option changes
+const REVISIT_PENALTY = 1.0;   // Penalty for every revisit
 
 // ============================================================================
 // DETECTORES
 // ============================================================================
 
 /**
+ * Calculates Response Time Effort (RTE).
+ * RTE = Observed Time / Expected Time
+ * Returns undefined if expectedTime is missing (Legacy Mode).
+ */
+export function calculateRTE(timeMs: number, expectedTimeSeconds?: number): number | undefined {
+    if (!expectedTimeSeconds || expectedTimeSeconds <= 0) return undefined;
+    const observedSeconds = timeMs / 1000;
+    return parseFloat((observedSeconds / expectedTimeSeconds).toFixed(2));
+}
+
+/**
  * Detecta si una respuesta fue emitida demasiado rápido.
  * 
- * Se basa en el tiempo total que el estudiante pasó en la pregunta.
- * Si es menor al umbral, se considera falta de compromiso (invalidando diagnóstico conceptual).
+ * Si se proporciona RTE, usa la regla NT10 (RTE < 0.3).
+ * Si no, usa el umbral absoluto (Legacy < 2s).
  */
-export function isRapidGuessing(timeMs: number): boolean {
+export function isRapidGuessing(timeMs: number, rte?: number): boolean {
+    if (rte !== undefined) {
+        return rte < RAPID_GUESSING_RTE_THRESHOLD;
+    }
     return timeMs < RAPID_GUESSING_THRESHOLD_MS;
 }
 
 /**
- * Detecta si hubo duda significativa (Hesitation).
- * 
- * Se basa en la cantidad de cambios de opción y el tiempo de hover sobre la opción final.
+ * Calculates Temporal Entropy (Hi) for Mobile Context.
+ * Hi = (Changes * Volatility) + (Revisit Penalty)
  */
-export function hasHesitation(telemetry: {
-    hesitationCount: number;
-    hoverTimeMs: number;
-}): boolean {
-    return (
-        telemetry.hesitationCount >= HESITATION_THRESHOLD_CHANGES ||
-        telemetry.hoverTimeMs >= HOVER_TIME_THRESHOLD_MS
-    );
+export function calculateTemporalEntropy(
+    hesitationCount: number,
+    revisitCount: number
+): number {
+    return (hesitationCount * VOLATILITY_FACTOR) + (revisitCount * REVISIT_PENALTY);
+}
+
+/**
+ * Detects 'Fragile Certainty': Correct answer but with high confirmation latency.
+ * Triggered if latency Z-Score > 3.0 (3 SD above mean).
+ */
+export function isFragileCertainty(
+    isCorrect: boolean,
+    zScore?: number
+): boolean {
+    if (!isCorrect || zScore === undefined) return false;
+    return zScore > 3.0;
 }
 
 /**
@@ -58,16 +93,27 @@ export function calculateBehaviorProfile(
         };
     }
 
-    const impulsiveCount = responses.filter((r) => isRapidGuessing(r.telemetry.timeMs)).length;
-    const anxiousCount = responses.filter((r) =>
-        hasHesitation({
-            hesitationCount: r.telemetry.hesitationCount,
-            hoverTimeMs: r.telemetry.hoverTimeMs,
-        })
+    // 1. Impulsiveness (Rapid Guessing)
+    // Uses RTE if available, otherwise absolute time
+    const impulsiveCount = responses.filter((r) =>
+        isRapidGuessing(r.telemetry.timeMs, r.telemetry.rte)
     ).length;
 
-    // Consistencia: ¿Sus aciertos coinciden con su confianza?
-    // Se considera inconsistente si tiene alta confianza y falla, o baja confianza y acierta (adivinó)
+    // 2. Anxiety / Toxic Doubt / Mental Conflict
+    // Uses Temporal Entropy now + focus loss
+    const anxiousCount = responses.filter((r) => {
+        const Hi = calculateTemporalEntropy(r.telemetry.hesitationCount, r.telemetry.revisitCount || 0);
+
+        // Threshold: Hi > 2 (e.g., 2 revisits OR 4 changes OR mix)
+        const isHighEntropy = Hi > 2.0;
+
+        // Also check Fragile Certainty (High Z-Score even if correct)
+        const isFragile = isFragileCertainty(r.isCorrect, r.telemetry.zScore);
+
+        return isHighEntropy || isFragile;
+    }).length;
+
+    // 3. Consistency (Metacognitive Coherence)
     const inconsistentCount = responses.filter((r) => {
         const isHighConfidenceError = r.confidence === 'HIGH' && !r.isCorrect;
         const isLowConfidenceSuccess = r.confidence === 'LOW' && r.isCorrect;
@@ -75,9 +121,9 @@ export function calculateBehaviorProfile(
     }).length;
 
     return {
-        isImpulsive: impulsiveCount > responses.length * 0.3, // Más del 30% son rápidas
-        isAnxious: anxiousCount > responses.length * 0.4,     // Más del 40% tienen duda
-        isConsistent: inconsistentCount < responses.length * 0.2, // Menos del 20% son inconsistentes
+        isImpulsive: impulsiveCount > responses.length * 0.3, // > 30% are rapid guesses
+        isAnxious: anxiousCount > responses.length * 0.4,     // > 40% are anxious/doubtful
+        isConsistent: inconsistentCount < responses.length * 0.2, // < 20% inconsistency allowed
     };
 }
 
@@ -87,5 +133,5 @@ export function calculateBehaviorProfile(
  * Una respuesta NO es válida si es Rapid Guessing (adivinación mecánica).
  */
 export function isEvidenceQualitySufficient(response: StudentResponse): boolean {
-    return !isRapidGuessing(response.telemetry.timeMs);
+    return !isRapidGuessing(response.telemetry.timeMs, response.telemetry.rte);
 }

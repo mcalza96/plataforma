@@ -43,13 +43,16 @@ export const StudentReportView: React.FC<StudentReportViewProps> = ({
     const narrative = FeedbackGenerator.generate(result);
 
     const graph: KnowledgeGraph = React.useMemo(() => {
-        const nodes: GraphNode[] = (matrix?.keyConcepts || []).map((c: any) => ({
-            id: c.id,
-            label: c.name || c.title || c.id,
-            description: c.description,
-            status: 'LOCKED',
-            level: 1
-        }));
+        const nodes: GraphNode[] = (matrix?.keyConcepts || []).map((c: any) => {
+            const isString = typeof c === 'string';
+            return {
+                id: isString ? c : (c.id || c.name || c.title),
+                label: isString ? c : (c.name || c.title || c.id),
+                description: isString ? '' : c.description,
+                status: 'LOCKED',
+                level: 1
+            };
+        });
 
         const edges: GraphEdge[] = (matrix?.prerequisites || []).map((p: any) => ({
             from: p.sourceId,

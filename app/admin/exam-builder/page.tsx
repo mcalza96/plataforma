@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArchitectLayout } from '@/components/admin/architect/ArchitectLayout';
 import { DiagnosticBlueprint } from '@/components/admin/architect/DiagnosticBlueprint';
 import { useArchitect } from '@/hooks/admin/architect/use-architect';
@@ -40,6 +41,17 @@ export default function ExamBuilderPage() {
     } = useArchitect({
         selectedBlockId: React.useMemo(() => selectedBlockId, [selectedBlockId])
     });
+
+    const searchParams = useSearchParams();
+    const resetRequested = searchParams.get('reset') === 'true';
+
+    useEffect(() => {
+        if (resetRequested) {
+            handleReset();
+            // Limpiar la URL para evitar re-resets al recargar
+            window.history.replaceState({}, '', '/admin/exam-builder');
+        }
+    }, [resetRequested, handleReset]);
 
     // Sync mode with isCanvasReady and Architect Stage
     useEffect(() => {

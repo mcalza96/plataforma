@@ -2,6 +2,7 @@
 
 import { type ArchitectState, INITIAL_ARCHITECT_STATE } from '@/lib/domain/architect';
 import { compileDiagnosticProbe } from '@/lib/actions/admin/architect-actions';
+import { useRouter } from 'next/navigation';
 
 interface UseArchitectActionsProps {
     state: ArchitectState;
@@ -22,6 +23,7 @@ export function useArchitectActions({
     setIsLoading,
     onProbeGenerated
 }: UseArchitectActionsProps) {
+    const router = useRouter();
 
     const handleGeneratePrototypes = async () => {
         setState(prev => ({ ...prev, isGenerating: true }));
@@ -83,7 +85,10 @@ export function useArchitectActions({
                     ...prev,
                     context: {
                         ...prev.context,
-                        prototypes: [generatedQuestion] as any[] // Start with clean slate for the snapshot
+                        prototypes: [
+                            ...(prev.context.prototypes || []),
+                            generatedQuestion
+                        ] as any[]
                     }
                 }));
             } else {
@@ -98,6 +103,13 @@ export function useArchitectActions({
 
     const handlePublish = async () => {
         if (!state.readiness.isValid) return;
+
+        // Safety Valve: Check if we have real questions or if we are falling back to placeholders
+        if (!state.context.prototypes || state.context.prototypes.length === 0) {
+            const proceed = confirm("⚠️ No has generado preguntas con la IA aún.\n\nEl examen se creará con marcadores de posición (Placeholders). ¿Deseas continuar?");
+            if (!proceed) return;
+        }
+
         setState(prev => ({ ...prev, isGenerating: true }));
         try {
             const { publishExam } = await import("@/lib/actions/assessment/exam-actions");
@@ -108,8 +120,9 @@ export function useArchitectActions({
             }, {
                 mode: 'auto_all' // Defaulting to Express Assignment for Standalone exams
             });
-            if (result.success) {
-                alert(`Sonda de Calibración Desplegada. Topología Inmutable registrada.`);
+            if (result.success && result.url) {
+                // alert(`Sonda de Calibración Desplegada. Topología Inmutable registrada.`);
+                router.push(result.url);
                 return result;
             } else {
                 throw new Error(result.error || "Falla al publicar");

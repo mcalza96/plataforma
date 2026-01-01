@@ -26,17 +26,37 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         notFound();
     }
 
-    // 3. Identify/Create Attempt (Securely using Service Role for Snapshot Access)
-    const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
-    const serviceSupabase = await createServiceRoleClient();
+    // 3. Identify/Create Attempt (Securely using RPC Pipeline)
+    // We utilize SECURITY DEFINER functions to access the protected config_snapshot
+    // without requiring dangerous Service Role Keys in the environment.
+    const { createClient } = await import("@/lib/infrastructure/supabase/supabase-server");
+    const supabase = await createClient();
 
-    let { data: attempt, error: attemptError } = await serviceSupabase
-        .from("exam_attempts")
-        .select("*")
-        .eq("exam_config_id", id)
-        .eq("learner_id", studentId)
-        .eq("status", "IN_PROGRESS")
-        .single();
+    let attempt: any = null;
+
+    // A. Check for existing active attempt
+    const { data: existingAttempts, error: fetchError } = await supabase.rpc(
+        'get_active_attempt_secure',
+        {
+            p_exam_config_id: id,
+            p_learner_id: studentId
+        }
+    );
+
+    if (fetchError) {
+        console.error("[Assessment] Secure Fetch Error:", fetchError);
+        // Fallback: If RPC fails (e.g., migration pending), try standard query 
+        // (will likely fail on snapshot if policy is active, but robust fallback)
+        const { data } = await supabase.from("exam_attempts")
+            .select("*")
+            .eq("exam_config_id", id)
+            .eq("learner_id", studentId)
+            .eq("status", "IN_PROGRESS")
+            .single();
+        attempt = data;
+    } else if (existingAttempts && existingAttempts.length > 0) {
+        attempt = existingAttempts[0];
+    }
 
     if (!attempt) {
         // Time Identity Injection & Readiness Double-Check
@@ -49,26 +69,28 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
             difficulty_tier: q.difficulty_tier || 'medium'
         }));
 
-        const { data: newAttempt, error: createError } = await serviceSupabase
-            .from("exam_attempts")
-            .insert({
-                exam_config_id: id,
-                learner_id: studentId,
-                status: "IN_PROGRESS",
-                current_state: {},
-                config_snapshot: {
-                    matrix: exam.config_json, // Immutable snapshot of topology
-                    questions: enhancedQuestions // Immutable snapshot of items
-                }
-            })
-            .select()
-            .single();
+        const snapshot = {
+            matrix: exam.config_json,
+            questions: enhancedQuestions
+        };
+
+        const { data: newAttempts, error: createError } = await supabase.rpc(
+            'create_exam_attempt_secure',
+            {
+                p_exam_config_id: id,
+                p_learner_id: studentId,
+                p_config_snapshot: snapshot
+            }
+        );
 
         if (createError) {
-            console.error("[Assessment] Failed to create exam attempt snapshot:", createError);
-            throw new Error("Failed to initialize diagnostic session.");
+            console.error("[Assessment] Failed to create secure attempt:", createError);
+            throw new Error("Failed to initialize diagnostic session via Secure Pipeline.");
         }
-        attempt = newAttempt;
+
+        attempt = newAttempts && newAttempts.length > 0 ? newAttempts[0] : null;
+
+        if (!attempt) throw new Error("Secure Pipeline returned no session.");
     }
 
     // 4. Payload Sanitization (The Firewall)
@@ -114,7 +136,7 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
         <div className="h-screen bg-[#0A0A0A]">
             <ExamShell
                 questions={questions}
-                attemptId={attempt!.id}
+                attemptId={attempt?.id || ''}
                 examId={id}
             />
         </div>

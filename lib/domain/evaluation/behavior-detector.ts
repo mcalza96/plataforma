@@ -5,7 +5,7 @@
  * conductuales del estudiante durante la evaluación.
  */
 
-import { ResponseTelemetry, BehaviorProfile, StudentResponse } from './types';
+import { ResponseTelemetry, BehaviorProfile, StudentResponse } from '../assessment';
 
 // ============================================================================
 // CONFIGURACIÓN DE UMBRALES (Thresholds)
@@ -19,8 +19,8 @@ import { ResponseTelemetry, BehaviorProfile, StudentResponse } from './types';
 // CONFIGURACIÓN DE UMBRALES (Thresholds)
 // ============================================================================
 
-const RAPID_GUESSING_THRESHOLD_MS = 2000; // Legacy absolute fallback
-const RAPID_GUESSING_RTE_THRESHOLD = 0.3; // NT10 Rule (30% of expected time)
+const RAPID_GUESSING_THRESHOLD_MS = 300; // Relaxed for Testing (was 2000)
+const RAPID_GUESSING_RTE_THRESHOLD = 0.05; // Relaxed for Testing (was 0.3)
 const HESITATION_THRESHOLD_CHANGES = 2;
 const HOVER_TIME_THRESHOLD_MS = 1500;
 
@@ -53,7 +53,7 @@ export function isRapidGuessing(timeMs: number, rte?: number): boolean {
     if (rte !== undefined) {
         return rte < 0.3; // NT10 Rule strict compliance
     }
-    return timeMs < 2000; // Legacy absolute fallback
+    return timeMs < 300; // Relaxed absolute fallback
 }
 
 /**

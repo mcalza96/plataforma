@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronRight, FileJson, Rocket } from "lucide-react";
 import { getStudentRepository } from "@/lib/infrastructure/di";
 import ExamAssignmentManager from "@/components/admin/ExamAssignmentManager";
+import { ExamActionsMenu } from "@/components/admin/ExamActionsMenu";
 
 export default async function AdminExamsPage() {
     const supabase = await createClient();
@@ -40,7 +41,7 @@ export default async function AdminExamsPage() {
                 </div>
 
                 <Link
-                    href="/admin/exam-builder"
+                    href="/admin/exam-builder?reset=true"
                     className="flex items-center gap-2 bg-amber-500 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95"
                 >
                     <Rocket size={16} />
@@ -87,9 +88,12 @@ export default async function AdminExamsPage() {
                             <Link
                                 href={`/admin/submissions?examId=${exam.id}`}
                                 className="size-11 flex items-center justify-center border border-white/5 bg-white/5 rounded-xl text-zinc-500 hover:text-white hover:bg-white/10 transition-all"
+                                title="Ver Entregas"
                             >
                                 <ChevronRight size={18} />
                             </Link>
+
+                            <ExamActionsMenu examId={exam.id} title={exam.title} />
                         </div>
                     </div>
                 ))}

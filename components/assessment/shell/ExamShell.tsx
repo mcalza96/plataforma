@@ -139,7 +139,7 @@ export const ExamShell = memo(function ExamShell({
         trackAnswer(payload.questionId, payload.value, enrichedTelemetry);
 
         // Save local state for UI indicators
-        setAnswers((prev) => new Map(prev).set(payload.questionId, payload));
+        setAnswers((prev) => new Map(prev).set(payload.questionId, payload.value));
 
         // Update metadata
         setQuestionMetadata((prev) =>
@@ -219,7 +219,12 @@ export const ExamShell = memo(function ExamShell({
 
             // 2. Call server action to finalize and evaluate
             const { finalizeAttempt } = await import('@/lib/actions/assessment/exam-actions');
-            const result = await finalizeAttempt(attemptId);
+
+            // ROBUSTNESS: We pass the local answers as a "Certified Snapshot" to the server
+            // This prevents race conditions where telemetry sync might lag behind.
+            // We convert Map to Record for serialization.
+            const finalSnapshot = Object.fromEntries(answers);
+            const result = await finalizeAttempt(attemptId, finalSnapshot);
 
             if (result.success) {
                 // 3. Redirect to results
@@ -229,7 +234,7 @@ export const ExamShell = memo(function ExamShell({
             }
         } catch (error) {
             console.error("Finish error:", error);
-            alert("Ocurrió un error crítico al finalizar el examen.");
+            alert(`Ocurrió un error crítico al finalizar el examen: ${(error as Error).message}`);
         }
     };
 

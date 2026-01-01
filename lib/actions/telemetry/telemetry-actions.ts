@@ -8,7 +8,7 @@ import {
 } from "@/lib/domain/pipeline/types";
 import { SupabaseTelemetryRepository } from "@/lib/infrastructure/repositories/telemetry-repository";
 import { checkRateLimit } from "@/lib/infrastructure/rate-limit";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 /**
  * Server Action to submit a batch of telemetry events.
@@ -39,6 +39,8 @@ export async function submitTelemetryBatch(batch: unknown) {
     }
 
     const supabase = await createClient();
+    const cookieStore = await cookies();
+    const studentId = cookieStore.get('learner_id')?.value;
 
     // 2. Security Check (Session)
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -46,8 +48,12 @@ export async function submitTelemetryBatch(batch: unknown) {
         return { success: false, error: "Unauthorized" };
     }
 
-    // 3. Ownership Check (Is this attempt owned by the user?)
-    const { data: attempt, error: attemptError } = await supabase
+    // 3. Ownership Check (Trust but Verify Identity Flow)
+    // We use serviceSupabase to bypass RLS for the lookup, and then verify ownership manually.
+    const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
+    const serviceSupabase = await createServiceRoleClient();
+
+    const { data: attempt, error: attemptError } = await serviceSupabase
         .from("exam_attempts")
         .select("learner_id, current_state, metadata")
         .eq("id", validatedBatch.attemptId)
@@ -57,7 +63,16 @@ export async function submitTelemetryBatch(batch: unknown) {
         return { success: false, error: "Exam attempt not found" };
     }
 
-    if (attempt.learner_id !== user.id) {
+    // Check Admin Role
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const isAdmin = profile?.role === 'admin';
+
+    // Allow if user is the direct owner OR if the current student session matches the owner OR is Admin
+    const isOwner = attempt.learner_id === user.id;
+    const isCurrentStudent = studentId && attempt.learner_id === studentId;
+
+    if (!isOwner && !isCurrentStudent && !isAdmin) {
+        console.warn(`[Telemetry] Forbidden sync attempt. AuthUser: ${user.id}, CookieStudent: ${studentId}, AttemptOwner: ${attempt.learner_id}`);
         return { success: false, error: "Forbidden: Not your exam attempt" };
     }
 
@@ -67,15 +82,18 @@ export async function submitTelemetryBatch(batch: unknown) {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
     const deviceType = isMobile ? 'mobile' : 'desktop';
 
+    // 3.2 Secure Repository Initialization
+    // We already have serviceSupabase from above.
+
     // Update metadata if not set or changed
     const currentMetadata = (attempt.metadata as Record<string, any>) || {};
     if (currentMetadata.deviceType !== deviceType) {
-        await supabase.from("exam_attempts").update({
+        await serviceSupabase.from("exam_attempts").update({
             metadata: { ...currentMetadata, deviceType, lastUserAgent: userAgent }
         }).eq("id", validatedBatch.attemptId);
     }
 
-    const repository = new SupabaseTelemetryRepository(supabase);
+    const repository = new SupabaseTelemetryRepository(serviceSupabase);
 
     try {
         // 4. Double Writing (Divorce Pattern)

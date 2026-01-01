@@ -68,36 +68,25 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                         },
                         required: ['name', 'difficulty']
                     },
-                    description: 'Key concepts identified with their difficulty tier'
+                    description: 'Key concepts identified'
                 },
                 identifiedMisconceptions: {
                     type: 'array',
                     items: {
                         type: 'object',
                         properties: {
-                            error: {
-                                type: 'string',
-                                description: 'Conceptual error with student reasoning. Format: "[Wrong belief] because [reasoning]"'
-                            },
-                            distractor_artifact: {
-                                type: 'string',
-                                description: 'CRITICAL: Exact wrong answer student would write (e.g., "2/8" for adding fractions incorrectly)'
-                            },
-                            observable_symptom: {
-                                type: 'string',
-                                description: 'Behavioral cue (e.g., "hesitates >5s", "uses fingers")'
-                            },
-                            refutation: {
-                                type: 'string',
-                                description: 'Counter-example proving error wrong (self-evident, no teacher explanation needed)'
-                            }
-                        }
+                            error: { type: 'string', description: 'Conceptual error' },
+                            refutation: { type: 'string', description: 'Counter-example' },
+                            distractor_artifact: { type: 'string', description: 'Wrong answer example' },
+                            observable_symptom: { type: 'string', description: 'Behavioral cue' }
+                        },
+                        required: ['error', 'refutation']
                     },
-                    description: 'Deep conceptual errors with internal logic'
+                    description: 'Deep conceptual errors'
                 },
-                pedagogicalGoal: { type: 'string', description: 'Main pedagogical objective' },
-                studentProfile: { type: 'string', description: 'Detailed learner profile (e.g. engineering students, context, age)' },
-                contentPreference: { type: 'string', enum: ['user_provided', 'ai_suggested', 'mixed'], description: 'How the syllabus is defined' },
+                pedagogicalGoal: { type: 'string' },
+                studentProfile: { type: 'string' },
+                contentPreference: { type: 'string', enum: ['user_provided', 'ai_suggested', 'mixed'] },
                 examConfig: {
                     type: 'object',
                     properties: {
@@ -105,7 +94,8 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
                         durationMinutes: { type: 'number' }
                     }
                 }
-            }
+            },
+            required: [] // Allow partial updates
         }
     }
 };

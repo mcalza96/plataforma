@@ -85,10 +85,10 @@ export async function getLatestDiagnosticResult() {
                 type
             )
         `)
-        .eq('student_id', studentId)
+        .eq('learner_id', studentId)
         .eq('status', 'COMPLETED')
         .not('results_cache', 'is', null) // Must have processed results
-        .order('ended_at', { ascending: false })
+        .order('finished_at', { ascending: false })
         .limit(1)
         .single();
 

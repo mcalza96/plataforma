@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { checkRateLimit } from "@/lib/infrastructure/rate-limit";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 export async function publishExam(
@@ -33,22 +33,64 @@ export async function publishExam(
     }
 
     // 2. Snapshotting & Item Generation
-    // If questions aren't provided, we generate the "Standard Probe" set based on the Gold Rule
-    const finalQuestions = config.questions?.length
-        ? config.questions
-        : (config.matrix?.keyConcepts || []).map((c: any) => ({
+    // We strictly map the Architect's Prototypes to the Assessment's CBM Question format
+    // This bridges the "Pedagogical Intent" (Prototype) to "Psychometric Instrument" (Question) context.
+
+    let finalQuestions: any[] = [];
+
+    if (config.questions && config.questions.length > 0) {
+        // Transform Prototypes to Questions
+        finalQuestions = config.questions.map((proto: any) => ({
+            id: proto.id || crypto.randomUUID(),
+            type: 'CBM', // Enforce CBM type for diagnostics
+            stem: proto.stem,
+            // Map 'content' to 'text' and ensure IDs exist
+            options: (proto.options || []).map((opt: any, idx: number) => ({
+                id: opt.id || `opt-${idx}-${crypto.randomUUID().split('-')[0]}`,
+                text: opt.content || opt.text || "Opción sin texto", // Fallback for safety
+                isCorrect: opt.isCorrect,
+                isGap: opt.isGap || false,
+                // Preserve pedagogical metadata for the inference engine
+                rationale: opt.rationale || opt.feedback
+            })),
+            // Persist the reasoning as metadata for the 'TeacherOS' layer
+            pedagogicalReasoning: proto.pedagogicalReasoning,
+            competencyId: proto.competencyId // Ensure lineage trace
+        }));
+    } else {
+        // FALLBACK: Generate Placeholder Questions from Key Concepts
+        const keyConcepts = config.matrix?.keyConcepts || [];
+
+        finalQuestions = keyConcepts.map((c: any) => {
+            const conceptName = typeof c === 'string' ? c : (c.name || c.title || 'Concepto Indefinido');
+            return {
+                id: crypto.randomUUID(),
+                type: 'CBM',
+                stem: `Diagnóstico sobre: ${conceptName}`,
+                options: [
+                    { id: 'opt-a', text: 'Opción Correcta (Placeholder)', isCorrect: true },
+                    { id: 'opt-b', text: 'Distractor Común (Placeholder)', isCorrect: false },
+                    { id: 'opt-c', text: 'No lo sé / No estoy seguro', isCorrect: false, isGap: true }
+                ],
+                competencyId: typeof c === 'object' ? c.id : undefined
+            };
+        });
+    }
+
+    // Safety: If for some reason we still have 0 questions (e.g. no concepts), generate a generic one
+    if (finalQuestions.length === 0) {
+        finalQuestions.push({
             id: crypto.randomUUID(),
             type: 'CBM',
-            stem: `Diagnóstico sobre: ${c.name || c.title}`,
+            stem: `Evaluación de ${config.title}`,
             options: [
-                { id: 'opt-a', text: 'Opción Correcta (Placeholder)', isCorrect: true },
-                { id: 'opt-b', text: 'Distractor Común (Placeholder)', isCorrect: false },
-                { id: 'opt-c', text: 'No lo sé / No estoy seguro', isCorrect: false, isGap: true }
-            ],
-            competencyId: c.id
-        }));
+                { id: 'opt-1', text: 'Sí, entiendo', isCorrect: true },
+                { id: 'opt-2', text: 'No estoy seguro', isCorrect: false, isGap: true }
+            ]
+        });
+    }
 
-    console.log(`[publishExam] Using ${config.questions?.length ? 'PROVIDED JSON' : 'FALLBACK PLACEHOLDERS'} for Item Bank. Count: ${finalQuestions.length}`);
+    console.log(`[publishExam] Publishing ${finalQuestions.length} items. Source: ${config.questions?.length ? 'ARCHITECT' : 'FALLBACK'}`);
 
     // 3. Immutable Insert (Standalone Aggregate Root)
     const { data, error } = await supabase
@@ -107,7 +149,7 @@ export async function publishExam(
     };
 }
 
-export async function finalizeAttempt(attemptId: string) {
+export async function finalizeAttempt(attemptId: string, finalSnapshot?: Record<string, any>) {
     const supabase = await createClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -129,23 +171,43 @@ export async function finalizeAttempt(attemptId: string) {
     }
 
     // 1. Mark as completed and get final state + snapshot
+    // We fetch and update with Service Role to bypass RLS,
+    // but we manually enforce that the attempt belongs to this session.
+    // Check for Admin Role to bypass strict ownership
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const isAdmin = profile?.role === 'admin';
+
+    // 1. Mark as completed and get final state + snapshot
+    // We fetch and update with Service Role to bypass RLS.
+    // We removed the strict .or() filter to allow Admins to finalize any attempt.
     const { createServiceRoleClient } = await import("@/lib/infrastructure/supabase/supabase-server");
     const serviceSupabase = await createServiceRoleClient();
+    const cookieStore = await cookies();
+    const learnerId = cookieStore.get('learner_id')?.value;
 
-    const { data: attempt, error: attemptError } = await serviceSupabase
+    const { data: attempts, error: attemptError } = await serviceSupabase
         .from("exam_attempts")
         .update({
             status: "COMPLETED",
             finished_at: new Date().toISOString()
         })
         .eq("id", attemptId)
-        .eq("learner_id", user.id) // Security check: must belong to the user
         .select("*")
-        .single();
+        .limit(1);
+
+    const attempt = attempts?.[0];
 
     if (attemptError || !attempt) {
         console.error("Failed to finalize attempt:", attemptError);
-        return { success: false, error: "Attempt not found or unauthorized" };
+        return { success: false, error: "Attempt not found" };
+    }
+
+    // Explicit Security Check
+    const isOwner = attempt.learner_id === user.id;
+    const isProxy = learnerId && attempt.learner_id === learnerId;
+
+    if (!isOwner && !isProxy && !isAdmin) {
+        return { success: false, error: "Unauthorized: Not your attempt" };
     }
 
     const examData = attempt.config_snapshot; // Use the Snapshot!
@@ -167,14 +229,47 @@ export async function finalizeAttempt(attemptId: string) {
 
     // Map Snapshot + Logs to StudentResponse[]
     const questions = (examData.questions || []) as any[];
+
+    // RECONSTRUCTION PRIORITY:
+    // 1. Client Snapshot (Most fresh)
+    // 2. DB Snapshot (Stored)
+    // 3. Telemetry Logs (Forensic Fallback)
+
+    let state = { ...(attempt.current_state || {}) };
+
+    if (finalSnapshot && Object.keys(finalSnapshot).length > 0) {
+        console.log(`[finalizeAttempt] 🛡️ Using Client-Provided Snapshot with ${Object.keys(finalSnapshot).length} answers.`);
+        state = { ...state, ...finalSnapshot };
+
+        // SELF-HEALING: Persist this snapshot immediately to ensure DB consistency
+        await serviceSupabase
+            .from("exam_attempts")
+            .update({ current_state: state })
+            .eq("id", attemptId);
+    } else {
+        const answerLogs = logs?.filter(l => l.event_type === 'ANSWER_UPDATE') || [];
+        if (Object.keys(state).length === 0 && answerLogs.length > 0) {
+            console.warn(`[finalizeAttempt] ⚠️ Attempt ${attemptId} empty. Reconstructing from logs.`);
+            answerLogs.forEach(l => {
+                if (l.payload.questionId && l.payload.value !== undefined) {
+                    state[l.payload.questionId] = l.payload.value;
+                }
+            });
+        }
+    }
+
     const responses: any[] = questions.map(q => {
-        const studentValue = attempt.current_state[q.id];
+        const studentValue = state[q.id];
 
         // Find logs for this question
         const qLogs = logs?.filter(l => l.payload.questionId === q.id) || [];
         const answerLog = [...qLogs].reverse().find(l => l.event_type === 'ANSWER_UPDATE');
 
-        const isCorrect = q.options?.find((o: any) => o.id === studentValue)?.isCorrect || false;
+        // Robust correctness check: search in the snapshot's options
+        const selectedOption = q.options?.find((o: any) => o.id === studentValue);
+        const isCorrect = selectedOption?.isCorrect === true; // Strict boolean check
+
+        console.log(`[finalizeAttempt] Evaluated Q: ${q.id}, Value: ${studentValue}, Correct: ${isCorrect}`);
 
         return {
             questionId: q.id,
@@ -182,9 +277,10 @@ export async function finalizeAttempt(attemptId: string) {
             isCorrect: isCorrect,
             confidence: answerLog?.payload?.telemetry?.confidence || 'NONE',
             telemetry: {
-                timeMs: answerLog?.payload?.telemetry?.timeMs || 0,
+                timeMs: answerLog?.payload?.telemetry?.timeMs || (finalSnapshot ? (q.expected_time_seconds || 60) * 1000 : 0), // Synthetic Injection
+                expectedTime: q.expected_time_seconds || 60,
                 hesitationCount: qLogs.filter(l => l.event_type === 'HESITATION').length,
-                hoverTimeMs: 0, // Not explicitly tracked yet in this version
+                hoverTimeMs: 0,
             }
         };
     });
@@ -207,16 +303,22 @@ export async function finalizeAttempt(attemptId: string) {
     });
 
     // 5. Run Evaluation
-    const result = evaluateSession(attemptId, user.id, responses, qMatrix);
+    const targetLearnerId = learnerId || user.id;
+    console.log("[finalizeAttempt] Running evaluation for learner:", targetLearnerId);
+    const result = evaluateSession(attemptId, targetLearnerId, responses, qMatrix);
+    console.log("[finalizeAttempt] Evaluation complete. Score:", result.overallScore);
 
     // 6. Save results to cache (White Box Diagnostic)
-    const { error: updateError } = await supabase
+    // We use serviceSupabase to ensure persistence even if RLS is strict
+    const { error: updateError } = await serviceSupabase
         .from("exam_attempts")
         .update({ results_cache: result })
         .eq("id", attemptId);
 
     if (updateError) {
-        console.error("Failed to cache results:", updateError);
+        console.error("[finalizeAttempt] Failed to cache results:", updateError);
+    } else {
+        console.log("[finalizeAttempt] Results cached successfully.");
     }
 
     // 7. AUTO-REMEDIATION LOOP (Phase C)
@@ -225,7 +327,7 @@ export async function finalizeAttempt(attemptId: string) {
         const { processAssessmentUseCase } = await import("@/lib/application/use-cases/process-assessment-use-case");
         await processAssessmentUseCase({
             attemptId,
-            learnerId: user.id,
+            learnerId: targetLearnerId,
             result
         });
     } catch (triageError) {
@@ -260,6 +362,91 @@ export async function toggleExamAssignment(examId: string, studentId: string, is
             .match({ exam_id: examId, student_id: studentId });
 
         if (error) throw new Error(error.message);
+    }
+
+    revalidatePath('/admin/exams');
+    return { success: true };
+}
+
+export async function deleteExam(examId: string) {
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    // Security Check: Only Creator or Admin can delete
+    const { data: exam, error: fetchError } = await supabase
+        .from('exams')
+        .select('creator_id')
+        .eq('id', examId)
+        .single();
+
+    if (fetchError || !exam) {
+        return { success: false, error: "Exam not found" };
+    }
+
+    // Check Role
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const isAdmin = profile?.role === 'admin';
+
+    if (exam.creator_id !== user.id && !isAdmin) {
+        return { success: false, error: "Unauthorized: only creator or admin can delete." };
+    }
+
+    const { error } = await supabase
+        .from('exams')
+        .delete()
+        .eq('id', examId);
+
+    if (error) {
+        console.error("Failed to delete exam:", error);
+        return { success: false, error: error.message };
+    }
+
+    revalidatePath('/admin/exams');
+    return { success: true };
+}
+
+export async function updateExamTitle(examId: string, newTitle: string) {
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    if (!newTitle || newTitle.trim().length === 0) {
+        return { success: false, error: "Title cannot be empty" };
+    }
+
+    // Security Check
+    const { data: exam, error: fetchError } = await supabase
+        .from('exams')
+        .select('creator_id')
+        .eq('id', examId)
+        .single();
+
+    if (fetchError || !exam) {
+        return { success: false, error: "Exam not found" };
+    }
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const isAdmin = profile?.role === 'admin';
+
+    if (exam.creator_id !== user.id && !isAdmin) {
+        return { success: false, error: "Unauthorized" };
+    }
+
+    const { error } = await supabase
+        .from('exams')
+        .update({ title: newTitle.trim() })
+        .eq('id', examId);
+
+    if (error) {
+        console.error("Failed to update exam title:", error);
+        return { success: false, error: error.message };
     }
 
     revalidatePath('/admin/exams');

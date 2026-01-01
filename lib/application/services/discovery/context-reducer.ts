@@ -10,7 +10,17 @@ export const ContextReducer = {
     merge(current: PartialKnowledgeMap, update: Partial<PartialKnowledgeMap>): PartialKnowledgeMap {
         const merged = { ...current };
 
-        // 1. Scalar Fields
+        // 1. Subject-Based Invalidation (Pivot Protection)
+        // If the subject changes significantly, we flush the collections to avoid "ghost memory"
+        if (update.subject && current.subject && update.subject.toLowerCase() !== current.subject.toLowerCase()) {
+            console.log(`[ContextReducer] Subject switch detected: "${current.subject}" -> "${update.subject}". Flushing context items.`);
+            merged.keyConcepts = [];
+            merged.identifiedMisconceptions = [];
+            merged.conceptDifficulties = {};
+            // We keep targetAudience and other session-level metadata, but clear pedagogical content
+        }
+
+        // 2. Scalar Fields
         if (update.subject) merged.subject = update.subject;
         if (update.targetAudience) merged.targetAudience = update.targetAudience;
         if (update.pedagogicalGoal) merged.pedagogicalGoal = update.pedagogicalGoal;

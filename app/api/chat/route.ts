@@ -34,19 +34,11 @@ export async function POST(req: Request) {
         // 3. Route to appropriate handler
         switch (intent) {
             case 'CANVAS_ACTION':
-                return new Response(
-                    JSON.stringify({
-                        error: 'Canvas actions not yet implemented. Use the UI directly for now.'
-                    }),
-                    {
-                        status: 501,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-ai-intent': intent,
-                            'x-ai-reasoning': reasoning
-                        }
-                    }
-                );
+                // For this MVP, we treat Canvas Actions (like "Create Diagnostic") 
+                // as Pedagogical Queries to trigger the Architect Flow.
+                // Fallthrough intended to reuse the Architect logic.
+                console.log(`[Chat API] Routing CANVAS_ACTION to Pedagogical Architect`);
+
 
 
             case 'PEDAGOGICAL_QUERY':

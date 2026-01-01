@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { notFound, redirect } from "next/navigation";
 import { StudentReportView } from "@/components/dashboard/views/StudentReportView";
-import { DiagnosticResult } from "@/lib/domain/evaluation/types";
+import { DiagnosticResult } from "@/lib/domain/assessment";
+import { cookies } from "next/headers";
 
 interface ResultsPageProps {
     params: Promise<{ id: string }>;
@@ -9,31 +10,79 @@ interface ResultsPageProps {
 
 export default async function ResultsPage({ params }: ResultsPageProps) {
     const { id } = await params;
+    const cookieStore = await cookies();
+    const studentId = cookieStore.get('learner_id')?.value;
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect('/login');
+    if (!user && !studentId) {
+        console.log("[ResultsPage] No user and no studentId, redirecting to login");
+        redirect('/login');
+    }
 
-    // 1. Fetch the latest completed attempt for this exam
-    const { data: attempt, error } = await supabase
+    // Deterministic Identity: prioritize cookie for diagnostic flow
+    const targetLearnerId = studentId || user?.id;
+
+    console.log("[ResultsPage] Debug Info:", {
+        examId: id,
+        studentId,
+        userId: user?.id,
+        targetLearnerId
+    });
+
+    if (!targetLearnerId) {
+        console.log("[ResultsPage] No targetLearnerId found, returning notFound");
+        notFound();
+    }
+
+    // 1. Fetch the latest completed attempt for this exam + target learner
+    // We avoid '*' and joins to prevent permission errors (config_snapshot) or missing FK issues
+    const { data: attempts, error } = await supabase
         .from("exam_attempts")
-        .select("*, exams(title, config_json)")
+        .select("id, status, results_cache, exam_config_id, finished_at, learner_id")
         .eq("exam_config_id", id)
-        .eq("learner_id", user.id)
+        .eq("learner_id", targetLearnerId)
         .eq("status", "COMPLETED")
         .order("finished_at", { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
+
+    let attempt = attempts?.[0];
+
+    // 1b. Admin/Teacher Fallback: If no results found for self, let staff see ANY results for this exam
+    if (!attempt && user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        const isAdmin = profile?.role === 'admin' || profile?.role === 'teacher';
+
+        if (isAdmin) {
+            console.log("[ResultsPage] Staff detected, searching for any completed attempts for this exam...");
+            const { data: fallbackAttempts } = await supabase
+                .from("exam_attempts")
+                .select("id, status, results_cache, exam_config_id, finished_at, learner_id")
+                .eq("exam_config_id", id)
+                .eq("status", "COMPLETED")
+                .order("finished_at", { ascending: false })
+                .limit(1);
+
+            attempt = fallbackAttempts?.[0];
+            if (attempt) {
+                console.log("[ResultsPage] Found fallback attempt for admin:", attempt.id);
+            }
+        }
+    }
 
     if (error || !attempt) {
+        if (error) console.error("[ResultsPage] Query error:", error);
+
         // If not completed, check if in progress
-        const { data: inProgress } = await supabase
+        const { data: inProgressAttempts } = await supabase
             .from("exam_attempts")
             .select("id")
             .eq("exam_config_id", id)
-            .eq("learner_id", user.id)
+            .eq("learner_id", targetLearnerId)
             .eq("status", "IN_PROGRESS")
-            .single();
+            .limit(1);
+
+        const inProgress = inProgressAttempts?.[0];
 
         if (inProgress) {
             return (
@@ -47,8 +96,16 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
                 </div>
             );
         }
+        console.log("[ResultsPage] No attempt found for ID:", id);
         notFound();
     }
+
+    // 2. Fetch Exam Data separately (More robust than join)
+    const { data: exam } = await supabase
+        .from("exams")
+        .select("title, config_json")
+        .eq("id", attempt.exam_config_id)
+        .single();
 
     // Hardened Cache Validation: Ensure the black box has the critical diamonds
     if (!attempt.results_cache || !(attempt.results_cache as any).competencyDiagnoses) {
@@ -74,7 +131,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
                 <header className="flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-black text-white tracking-tight">Resultado del Diagnóstico</h1>
-                        <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">{attempt.exams?.title}</p>
+                        <p className="text-zinc-500 font-mono text-xs uppercase tracking-widest">{exam?.title}</p>
                     </div>
                     <div className="text-right">
                         <p className="text-[10px] text-zinc-600 font-mono uppercase">ID de Sesión: {attempt.id}</p>
@@ -84,7 +141,7 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
 
                 <StudentReportView
                     result={result}
-                    matrix={(attempt.exams as any)?.config_json || { keyConcepts: [] }}
+                    matrix={(exam as any)?.config_json || { keyConcepts: [] }}
                 />
             </div>
         </div>

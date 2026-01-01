@@ -30,20 +30,29 @@ export function useTelemetrySync({
             events: eventsToSync,
         };
 
-        startTransition(async () => {
-            try {
-                const result = await submitTelemetryBatch(batch);
-                if (result.success) {
-                    queue.current = queue.current.filter(e => !eventsToSync.includes(e));
-                    onSyncSuccess();
-                } else if (result.retryAfter) {
-                    console.warn(`Rate limited. Retrying after ${result.retryAfter}ms`);
-                    if (retryTimeout.current) clearTimeout(retryTimeout.current);
-                    retryTimeout.current = setTimeout(sync, result.retryAfter + 100);
+        // We wrap the async call in a promise to make it awaitable by handleFinish
+        return new Promise<void>((resolve, reject) => {
+            startTransition(async () => {
+                try {
+                    const result = await submitTelemetryBatch(batch);
+                    if (result.success) {
+                        queue.current = queue.current.filter(e => !eventsToSync.includes(e));
+                        onSyncSuccess();
+                        resolve();
+                    } else if (result.retryAfter) {
+                        console.warn(`Rate limited. Retrying after ${result.retryAfter}ms`);
+                        if (retryTimeout.current) clearTimeout(retryTimeout.current);
+                        retryTimeout.current = setTimeout(sync, result.retryAfter + 100);
+                        resolve(); // We resolve even if ratelimited? Or maybe wait?
+                    } else {
+                        console.error("Sync failed:", result.error);
+                        reject(new Error(result.error));
+                    }
+                } catch (error) {
+                    console.error("Critical sync error:", error);
+                    reject(error);
                 }
-            } catch (error) {
-                console.error("Critical sync error:", error);
-            }
+            });
         });
     }, [attemptId, isPending, queue, startTransition, onSyncSuccess]);
 

@@ -185,6 +185,8 @@ export const ExamShell = memo(function ExamShell({
                 timeMs: 0,
                 hesitationCount: 0,
                 focusLostCount: 0,
+                hoverTimeMs: 0,
+                revisitCount: 0
             },
         };
 
@@ -254,7 +256,12 @@ export const ExamShell = memo(function ExamShell({
                     />
                 );
             default:
-                return null;
+                // Fallback for AI-generated questions missing 'type'
+                // Most are Multiple Choice (CBM)
+                // Cast to any to bypass TS 'never' check (runtime fallback)
+                const fallbackQ = currentQuestion as any;
+                console.warn(`[ExamShell] Unknown question type: ${fallbackQ.type}. Falling back to CBM.`);
+                return <LegoCBM {...commonProps} options={fallbackQ.options || []} />;
         }
     };
 

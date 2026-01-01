@@ -25,6 +25,7 @@ export type ProbeGenerationResult = z.infer<typeof ProbeGenerationSchema>;
 export const PrototypeSchema = z.object({
     prototypes: z.array(z.object({
         id: z.string().describe("UUID o ID corto único para el prototipo"),
+        type: z.enum(['CBM', 'RANKING', 'SPOTTING']).describe("El tipo técnico de la pregunta. Por defecto usa 'CBM' para preguntas de selección múltiple."),
         stem: z.string().describe("El enunciado de la pregunta"),
         options: z.array(z.object({
             content: z.string(),

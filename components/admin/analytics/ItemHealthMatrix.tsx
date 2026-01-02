@@ -14,9 +14,11 @@ import {
     Trash2,
     Activity,
     Clock,
-    Users
+    Users,
+    Layers
 } from 'lucide-react';
 import { GlobalItemHealth } from '@/lib/actions/admin/admin-analytics-actions';
+import ItemArchitectureAudit from './ItemArchitectureAudit';
 
 interface ItemHealthMatrixProps {
     data: GlobalItemHealth[];
@@ -27,6 +29,7 @@ export default function ItemHealthMatrix({ data }: ItemHealthMatrixProps) {
     const [filter, setFilter] = useState<'ALL' | 'BROKEN' | 'TRIVIAL' | 'USELESS'>('ALL');
     const [reviewedItems, setReviewedItems] = useState<Set<string>>(new Set());
     const [deprecatedItems, setDeprecatedItems] = useState<Set<string>>(new Set());
+    const [selectedProbeId, setSelectedProbeId] = useState<string | null>(null);
 
     const filteredData = data.filter(item => {
         const matchesSearch = item.exam_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,6 +126,8 @@ export default function ItemHealthMatrix({ data }: ItemHealthMatrixProps) {
                             <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Popularidad</th>
                             <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Precisión</th>
                             <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Latencia</th>
+                            <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Slip ($s_j$)</th>
+                            <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Guess ($g_j$)</th>
                             <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold">Estado</th>
                             <th className="px-4 py-3 text-[10px] uppercase tracking-wider text-slate-500 font-bold text-right">Acciones</th>
                         </tr>
@@ -175,13 +180,30 @@ export default function ItemHealthMatrix({ data }: ItemHealthMatrixProps) {
                                         </div>
                                     </td>
                                     <td className="px-4 py-4">
-                                        <div className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-bold ${getStatusStyles(item.health_status, item.accuracy_rate)}`}>
-                                            {getStatusIcon(item.health_status, item.accuracy_rate)}
-                                            {item.accuracy_rate > 95 ? 'USELESS' : item.health_status}
+                                        <span className={`text-xs font-mono ${(item.slip_param || 0) > 0.4 ? 'text-rose-400 font-bold' : 'text-slate-300'}`}>
+                                            {item.slip_param !== undefined ? (item.slip_param * 100).toFixed(1) + '%' : 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <span className="text-xs font-mono text-slate-300">
+                                            {item.guess_param !== undefined ? (item.guess_param * 100).toFixed(1) + '%' : 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-bold ${item.slip_param && item.slip_param > 0.4 ? getStatusStyles('BROKEN', 0) : getStatusStyles(item.health_status, item.accuracy_rate)}`}>
+                                            {item.slip_param && item.slip_param > 0.4 ? getStatusIcon('BROKEN', 0) : getStatusIcon(item.health_status, item.accuracy_rate)}
+                                            {item.slip_param && item.slip_param > 0.4 ? 'BROKEN' : item.accuracy_rate > 95 ? 'USELESS' : item.health_status}
                                         </div>
                                     </td>
                                     <td className="px-4 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
+                                        <div className="flex items-center justify-end gap-2 text-right">
+                                            <button
+                                                onClick={() => setSelectedProbeId(item.question_id)}
+                                                className="p-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/20 transition-all"
+                                                title="Auditar Arquitectura"
+                                            >
+                                                <Layers className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 onClick={() => toggleReview(item.question_id)}
                                                 className={`p-2 rounded-lg border transition-all ${reviewedItems.has(item.question_id) ? 'bg-blue-500/20 border-blue-500/40 text-blue-400' : 'bg-white/5 border-white/5 text-slate-500 hover:text-slate-300'}`}
@@ -215,6 +237,15 @@ export default function ItemHealthMatrix({ data }: ItemHealthMatrixProps) {
             <div className="text-[11px] text-slate-500 italic p-2 bg-blue-500/5 rounded-lg border border-blue-500/10">
                 <strong>Nota Forense:</strong> Los ítems marcados como <strong>USELESS</strong> tienen una precisión {'>'} 95%, lo que sugiere que sus distractores no están capturando errores conceptuales y el ítem podría ser trivial o el grupo de alumnos está sobre-entrenado.
             </div>
+
+            <AnimatePresence>
+                {selectedProbeId && (
+                    <ItemArchitectureAudit
+                        probeId={selectedProbeId}
+                        onClose={() => setSelectedProbeId(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -37,3 +37,45 @@ CREATE TABLE integrity_alerts (
 
 CREATE INDEX idx_alerts_teacher ON integrity_alerts(teacher_id);
 CREATE INDEX idx_alerts_exam ON integrity_alerts(exam_id);
+
+-- RPC to fetch combined health and calibration data
+CREATE OR REPLACE FUNCTION get_item_calibration_snapshot()
+RETURNS TABLE (
+    question_id UUID,
+    exam_id UUID,
+    teacher_id UUID,
+    exam_title TEXT,
+    total_responses BIGINT,
+    accuracy_rate FLOAT,
+    median_time_ms FLOAT,
+    health_status TEXT,
+    slip_param NUMERIC(4,3),
+    guess_param NUMERIC(4,3)
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH latest_calibration AS (
+        SELECT DISTINCT ON (ich.question_id)
+            ich.question_id,
+            ich.slip_param,
+            ich.guess_param
+        FROM item_calibration_history ich
+        ORDER BY ich.question_id, ich.calibration_date DESC
+    )
+    SELECT 
+        vh.question_id::UUID,
+        vh.exam_id,
+        vh.teacher_id,
+        e.title as exam_title,
+        vh.total_responses,
+        vh.accuracy_rate,
+        vh.median_time_ms,
+        vh.health_status,
+        lc.slip_param,
+        lc.guess_param
+    FROM vw_item_health vh
+    JOIN exams e ON vh.exam_id = e.id
+    LEFT JOIN latest_calibration lc ON vh.question_id::UUID = lc.question_id
+    ORDER BY vh.accuracy_rate ASC;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

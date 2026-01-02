@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import OptimizedImage from '@/components/ui/OptimizedImage';
 import { CohortRadar } from '@/components/teacher/analytics/CohortRadar';
 import { ShadowBoard } from '@/components/teacher/analytics/ShadowBoard';
 import { TeacherAnalyticsResult } from '@/lib/actions/teacher/teacher-analytics-actions';
+import { SessionForensicView } from './forensic/SessionForensicView';
+import { getLatestCompletedAttempt } from '@/lib/actions/teacher/forensic-actions';
+import { MetacognitiveMirror } from './analytics/metacognition/MetacognitiveMirror';
 
 interface TeacherDashboardViewProps {
     student: {
@@ -28,6 +32,22 @@ export default function TeacherDashboardView({
     stats,
     analytics
 }: TeacherDashboardViewProps) {
+    const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(null);
+    const [isForensicOpen, setIsForensicOpen] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleOpenForensic = async () => {
+        setIsSearching(true);
+        const attemptId = await getLatestCompletedAttempt(student.id);
+        if (attemptId) {
+            setSelectedAttemptId(attemptId);
+            setIsForensicOpen(true);
+        } else {
+            alert("No se encontraron sesiones completadas para este alumno.");
+        }
+        setIsSearching(false);
+    };
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -50,6 +70,18 @@ export default function TeacherDashboardView({
             animate="visible"
             className="flex-1 max-w-7xl mx-auto w-full px-6 py-12"
         >
+            {/* Modal de Auditoría Forense */}
+            {isForensicOpen && selectedAttemptId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="w-full max-w-6xl animate-in zoom-in-95 duration-200">
+                        <SessionForensicView
+                            attemptId={selectedAttemptId}
+                            onClose={() => setIsForensicOpen(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Header / Hero */}
             <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
                 <div className="flex items-center gap-8">
@@ -121,6 +153,11 @@ export default function TeacherDashboardView({
                 )}
             </motion.div>
 
+            {/* Metacognitive Intelligence Suite */}
+            <motion.div variants={itemVariants} className="mb-24">
+                <MetacognitiveMirror />
+            </motion.div>
+
             {/* Auditoría Forense por Alumno */}
             <motion.div variants={itemVariants} className="space-y-8">
                 <div className="flex items-center justify-between px-2">
@@ -139,8 +176,12 @@ export default function TeacherDashboardView({
                         >
                             <div className="aspect-video bg-neutral-900 overflow-hidden relative rounded-[2.2rem]">
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                                    <button className="px-6 py-3 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-full hover:scale-105 transition-transform flex items-center gap-2">
-                                        Revisar Auditoría Cognitiva Completa
+                                    <button
+                                        onClick={handleOpenForensic}
+                                        disabled={isSearching}
+                                        className="px-6 py-3 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-full hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {isSearching ? 'Buscando...' : 'Revisar Auditoría Cognitiva Completa'}
                                         <span className="material-symbols-outlined text-sm">open_in_full</span>
                                     </button>
                                 </div>

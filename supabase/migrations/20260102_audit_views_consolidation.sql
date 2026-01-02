@@ -34,29 +34,54 @@ GROUP BY
     e.creator_id, p.demographic_group, p.access_type;
 
 -- 2. Diferencial Item Functioning (DIF) View
--- Detecta si un ítem tiene tasas de éxito disparmente diferentes entre grupos
+-- Detecta si un ítem tiene tasas de éxito disparmente diferentes entre grupos o dispositivos
+DROP VIEW IF EXISTS vw_item_dif CASCADE;
+
 CREATE OR REPLACE VIEW vw_item_dif AS
 WITH item_performance AS (
+    -- Performance por Grupo Demográfico
     SELECT 
         e.creator_id as teacher_id,
         key as question_id,
-        p.demographic_group,
-        AVG(CASE WHEN (value->>'isCorrect')::boolean THEN 1 ELSE 0 END) as success_rate
+        'demographic' as dimension,
+        p.demographic_group as sub_group,
+        AVG(CASE WHEN (value->>'isCorrect')::boolean THEN 1 ELSE 0 END) as success_rate,
+        COUNT(*) as total_responses
     FROM exam_attempts ea
     JOIN exams e ON ea.exam_config_id = e.id
     JOIN profiles p ON ea.learner_id = p.id
     CROSS JOIN LATERAL jsonb_each(ea.current_state) as answers(key, value)
     WHERE ea.status = 'COMPLETED'
     GROUP BY e.creator_id, key, p.demographic_group
+    
+    UNION ALL
+    
+    -- Performance por Tipo de Acceso (Device Neutrality)
+    SELECT 
+        e.creator_id as teacher_id,
+        key as question_id,
+        'access_type' as dimension,
+        p.access_type as sub_group,
+        AVG(CASE WHEN (value->>'isCorrect')::boolean THEN 1 ELSE 0 END) as success_rate,
+        COUNT(*) as total_responses
+    FROM exam_attempts ea
+    JOIN exams e ON ea.exam_config_id = e.id
+    JOIN profiles p ON ea.learner_id = p.id
+    CROSS JOIN LATERAL jsonb_each(ea.current_state) as answers(key, value)
+    WHERE ea.status = 'COMPLETED'
+    GROUP BY e.creator_id, key, p.access_type
 )
 SELECT 
     question_id,
+    dimension,
     MAX(success_rate) - MIN(success_rate) as gap,
+    COUNT(DISTINCT sub_group) as compared_groups,
+    SUM(total_responses) as total_responses,
     CASE 
         WHEN MAX(success_rate) - MIN(success_rate) > 0.2 THEN 'CRITICAL'
         WHEN MAX(success_rate) - MIN(success_rate) > 0.1 THEN 'WARNING'
         ELSE 'OPTIMAL'
     END as status
 FROM item_performance
-GROUP BY question_id
-HAVING MAX(success_rate) - MIN(success_rate) > 0.1;
+GROUP BY question_id, dimension
+HAVING MAX(success_rate) - MIN(success_rate) > 0.1 AND SUM(total_responses) >= 5;

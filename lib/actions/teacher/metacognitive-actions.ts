@@ -34,8 +34,7 @@ export async function getMetacognitiveAnalytics(examId?: string): Promise<Metaco
         .select(`
             id,
             learner_id,
-            results_cache,
-            learner:profiles!learner_id(id)
+            results_cache
         `)
         .eq('status', 'COMPLETED');
 

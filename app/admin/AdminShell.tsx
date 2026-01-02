@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { StudentDTO } from '@/lib/domain/dtos/learner';
+import { AppRole } from '@/lib/infrastructure/auth-utils';
 import AdminSidebar from './AdminSidebar';
 import AdminTopBar from './AdminTopBar';
 
 interface AdminShellProps {
     children: React.ReactNode;
     user: User;
-    role: 'admin' | 'instructor' | 'teacher';
+    role: AppRole;
     student?: StudentDTO | null;
 }
 

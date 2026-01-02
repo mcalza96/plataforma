@@ -8,10 +8,12 @@ import OptimizedImage from '@/components/ui/OptimizedImage';
 
 import { StudentDTO } from '@/lib/domain/dtos/learner';
 
+import { AppRole } from '@/lib/infrastructure/auth-utils';
+
 interface UserMenuProps {
     user: User;
     student?: StudentDTO | null;
-    role: 'admin' | 'instructor' | 'teacher' | 'user';
+    role: AppRole;
 }
 
 export default function UserMenu({ user, student, role }: UserMenuProps) {

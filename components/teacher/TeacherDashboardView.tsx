@@ -6,21 +6,38 @@ import { TeacherAnalyticsResult } from '@/lib/domain/analytics-types';
 import { SessionForensicView } from './forensic/SessionForensicView';
 import { MetacognitiveMirror } from './analytics/metacognition/MetacognitiveMirror';
 import { useTeacherDashboard } from './hooks/use-teacher-dashboard';
-import { DashboardHeader } from './dashboard/DashboardHeader';
+import FacultyHeader from './dashboard/FacultyHeader';
 import { CognitiveHealthSection } from './dashboard/CognitiveHealthSection';
 import { ForensicAuditSection } from './dashboard/ForensicAuditSection';
+import TeacherIntegrityAlertFeed from './analytics/TeacherIntegrityAlertFeed';
+import QuickActionsCTA from './dashboard/QuickActionsCTA';
+import EngineeringLabWidget from './dashboard/EngineeringLabWidget';
+import TacticalStudentBridge from './TacticalStudentBridge';
+import StudentSelector from './dashboard/StudentSelector';
+
+import { TeacherIntegrityAlert } from '@/lib/actions/teacher/analytics/integrity-actions';
 
 interface TeacherDashboardViewProps {
-    student: {
+    teacherName: string;
+    cohortSize: number;
+    analytics: TeacherAnalyticsResult | null;
+    integrityAlerts: TeacherIntegrityAlert[];
+    draftExams: Array<{
+        id: string;
+        title: string;
+        updated_at: string;
+    }>;
+    selectedStudent: {
         id: string;
         display_name: string;
         level: number;
         avatar_url?: string;
-    };
-    stats: {
-        totalProjects: number;
-    };
-    analytics: TeacherAnalyticsResult | null;
+    } | null;
+    cohortList: Array<{
+        id: string;
+        display_name: string;
+        level: number;
+    }>;
 }
 
 /**
@@ -28,22 +45,35 @@ interface TeacherDashboardViewProps {
  * Refactored to use useTeacherDashboard hook and specialized sub-components.
  */
 export default function TeacherDashboardView({
-    student,
-    stats,
-    analytics
+    teacherName,
+    cohortSize,
+    analytics,
+    integrityAlerts,
+    draftExams,
+    selectedStudent,
+    cohortList
 }: TeacherDashboardViewProps) {
-    const {
-        selectedAttemptId,
-        isForensicOpen,
-        isSearching,
-        handleOpenForensic,
-        closeForensic
-    } = useTeacherDashboard(student.id);
+    // Note: useTeacherDashboard hook removed - no longer needed for student-specific context
+    const [isForensicOpen, setIsForensicOpen] = React.useState(false);
+    const [selectedAttemptId, setSelectedAttemptId] = React.useState<string | null>(null);
+
+    const handleOpenForensic = (attemptId: string) => {
+        setSelectedAttemptId(attemptId);
+        setIsForensicOpen(true);
+    };
+
+    const closeForensic = () => {
+        setIsForensicOpen(false);
+        setSelectedAttemptId(null);
+    };
 
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
     };
+
+    // Empty state for analytics
+    const hasAnalyticsData = analytics && Object.keys(analytics).length > 0;
 
     return (
         <motion.main
@@ -64,19 +94,45 @@ export default function TeacherDashboardView({
                 </div>
             )}
 
-            <DashboardHeader student={student} />
+            <FacultyHeader teacherName={teacherName} cohortSize={cohortSize} />
 
-            <CognitiveHealthSection analytics={analytics} />
+            {/* Student Selector in header area */}
+            <div className="mb-6 flex justify-end">
+                <StudentSelector students={cohortList} selectedStudentId={selectedStudent?.id} />
+            </div>
 
-            <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="mb-24">
-                <MetacognitiveMirror />
-            </motion.div>
+            {/* Conditional: Show TacticalStudentBridge OR Cohort Dashboard */}
+            {selectedStudent ? (
+                <TacticalStudentBridge
+                    student={selectedStudent}
+                    onClose={() => {/* Will be handled by router */ }}
+                />
+            ) : (
+                <>
+                    {/* Quick Actions - Proactive CTAs */}
+                    <QuickActionsCTA />
 
-            <ForensicAuditSection
-                totalProjects={stats.totalProjects}
-                isSearching={isSearching}
-                onOpenForensic={handleOpenForensic}
-            />
+                    {/* Engineering Lab - Draft Exams Status */}
+                    <EngineeringLabWidget draftExams={draftExams} />
+
+                    {/* Hero Section: Integrity Alert Feed */}
+                    <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="mb-12">
+                        <TeacherIntegrityAlertFeed alerts={integrityAlerts} />
+                    </motion.div>
+
+                    <CognitiveHealthSection analytics={analytics} />
+
+                    <motion.div variants={{ hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } }} className="mb-24">
+                        <MetacognitiveMirror />
+                    </motion.div>
+
+                    <ForensicAuditSection
+                        totalProjects={0}
+                        isSearching={false}
+                        onOpenForensic={handleOpenForensic}
+                    />
+                </>
+            )}
         </motion.main>
     );
 }

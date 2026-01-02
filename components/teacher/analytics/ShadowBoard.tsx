@@ -11,24 +11,35 @@ interface ShadowBoardProps {
 }
 
 /**
- * Pizarra de Sombras: Visualiza el ranking de patologías cognitivas
+ * Pizarra de Sombras: Visualiza el ranking de patologías cognitivas (Top 3)
  */
 export const ShadowBoard: React.FC<ShadowBoardProps> = ({ pathologies, className }) => {
-    // Calcular el máximo de ocurrencias para normalizar la opacidad
-    const maxOccurrences = Math.max(...pathologies.map(p => p.totalOccurrences), 1);
+    // Limit to top 3 for tactical focus
+    const top3Pathologies = pathologies.slice(0, 3);
+    const maxOccurrences = Math.max(...top3Pathologies.map(p => p.totalOccurrences), 1);
 
     return (
         <div className={cn("bg-[#1A1A1A] p-6 rounded-xl border border-white/5", className)}>
             <div className="flex items-center gap-2 mb-6">
                 <span className="material-symbols-outlined text-rose-500">psychology_alt</span>
-                <h2 className="text-xl font-semibold text-white tracking-tight">Pizarra de Sombras</h2>
+                <h2 className="text-xl font-semibold text-white tracking-tight">Nodos Sombra (Top 3)</h2>
             </div>
 
             <div className="space-y-3">
-                {pathologies.length === 0 ? (
-                    <p className="text-zinc-500 italic text-center py-8">No se han detectado patologías críticas.</p>
+                {top3Pathologies.length === 0 ? (
+                    <div className="text-center py-12 px-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl">
+                        <span className="material-symbols-outlined text-4xl text-emerald-500 mb-3 opacity-60">
+                            check_circle
+                        </span>
+                        <p className="text-emerald-400 font-bold text-sm mb-1">
+                            No se detectaron misconceptions críticos
+                        </p>
+                        <p className="text-emerald-500/60 text-xs italic">
+                            La cohorte está operando sin errores conceptuales arraigados.
+                        </p>
+                    </div>
                 ) : (
-                    pathologies.map((pathology, index) => (
+                    top3Pathologies.map((pathology, index) => (
                         <PathologyCard
                             key={`${pathology.competencyId}-${index}`}
                             pathology={pathology}

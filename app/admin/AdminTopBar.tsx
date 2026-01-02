@@ -6,9 +6,11 @@ import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
 import { StudentDTO } from '@/lib/domain/dtos/learner';
 
+import { AppRole } from '@/lib/infrastructure/auth-utils';
+
 interface AdminTopBarProps {
     user: User;
-    role: 'admin' | 'instructor' | 'teacher';
+    role: AppRole;
     student?: StudentDTO | null;
     onMenuClick?: () => void;
 }

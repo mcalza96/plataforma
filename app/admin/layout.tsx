@@ -10,8 +10,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         getUserRole()
     ]);
 
-    if (!user || role !== 'admin') {
-        console.warn(`Intento de acceso no autorizado a /admin`);
+    const allowedRoles = ['admin', 'instructor', 'teacher'];
+    if (!user || !allowedRoles.includes(role || '')) {
+        console.warn(`Intento de acceso no autorizado a /admin por rol: ${role}`);
         return redirect('/dashboard');
     }
 

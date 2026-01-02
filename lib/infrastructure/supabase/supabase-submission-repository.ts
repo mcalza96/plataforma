@@ -37,7 +37,7 @@ export class SupabaseSubmissionRepository implements ISubmissionRepository {
         const supabase = await createClient();
         let query = supabase
             .from('submissions')
-            .select('*, student:profiles(display_name, level, avatar_url)')
+            .select('*')
             .order('created_at', { ascending: false });
 
         if (filter === 'pending') {

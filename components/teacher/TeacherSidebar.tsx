@@ -4,9 +4,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { AppRole } from '@/lib/infrastructure/auth-utils';
-
-interface AdminSidebarProps {
+interface TeacherSidebarProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
 }
@@ -15,36 +13,26 @@ interface NavItem {
     href: string;
     label: string;
     icon: string;
-    isAdminOnly?: boolean;
 }
 
 interface NavGroup {
     title: string;
     items: NavItem[];
-    isAdminOnly?: boolean;
-    isTeacherOnly?: boolean;
 }
 
-const MENU_GROUPS: NavGroup[] = [
+// Pure Teacher Menu - No role logic needed
+const TEACHER_MENU_GROUPS: NavGroup[] = [
     {
-        title: 'GESTIÓN DE FLOTA',
+        title: 'LABORATORIO DE INGENIERÍA',
         items: [
-            { href: '/admin/stats', label: 'Monitor de Cohorte', icon: 'monitoring' },
-            { href: '/admin/submissions', label: 'Sala de Corrección', icon: 'assignment_turned_in' },
-            { href: '/admin/users', label: 'Directorio de Artistas', icon: 'group' },
+            { href: '/teacher/exam-builder', label: 'Constructor IA', icon: 'architecture' },
+            { href: '/teacher/exams', label: 'Biblioteca de Ladrillos', icon: 'vitals' },
         ]
     },
-    {
-        title: 'AUDITORÍA DE SISTEMAS',
-        items: [
-            { href: '/admin/audit/items', label: 'Salud de Ítems', icon: 'health_metrics' },
-            { href: '/admin/audit/graph', label: 'Mapa KST', icon: 'query_stats' },
-            { href: '/admin/audit/fairness', label: 'Torre de Equidad', icon: 'balance' },
-        ]
-    }
+    // We can add more teacher-specific groups here
 ];
 
-export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps) {
+export default function TeacherSidebar({ isOpen, onOpenChange }: TeacherSidebarProps) {
     const pathname = usePathname();
 
     // Prevent body scroll when mobile menu is open
@@ -79,17 +67,17 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
                 {/* Branding / Space */}
                 <div className="h-20 flex items-center px-8 border-b border-white/5 bg-[#1A1A1A]">
                     <div className="size-10 bg-amber-500 rounded-xl flex items-center justify-center avatar-glow">
-                        <span className="material-symbols-outlined text-black text-2xl font-bold">terminal</span>
+                        <span className="material-symbols-outlined text-black text-2xl font-bold">school</span>
                     </div>
                     <div className="ml-4 flex flex-col">
                         <span className="font-black text-[10px] uppercase tracking-[0.3em] text-amber-500">TeacherOS</span>
-                        <span className="font-bold text-xs text-white">HUB TÁCTICO</span>
+                        <span className="font-bold text-xs text-white">HUB DOCENTE</span>
                     </div>
                 </div>
 
                 {/* Navigation Groups */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-6 space-y-8">
-                    {MENU_GROUPS.map((group) => (
+                    {TEACHER_MENU_GROUPS.map((group) => (
                         <div key={group.title} className="space-y-3">
                             <h3 className="px-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
                                 {group.title}

@@ -104,25 +104,44 @@ export function useArchitectActions({
     const handlePublish = async () => {
         if (!state.readiness.isValid) return;
 
-        // Safety Valve: Check if we have real questions or if we are falling back to placeholders
+        // Safety Valve: Check if we have real questions
         if (!state.context.prototypes || state.context.prototypes.length === 0) {
-            const proceed = confirm("⚠️ No has generado preguntas con la IA aún.\n\nEl examen se creará con marcadores de posición (Placeholders). ¿Deseas continuar?");
-            if (!proceed) return;
+            alert("⚠️ No has generado preguntas con la IA. Debes completar el proceso de prototipado primero.");
+            return;
         }
+
+        const confirmPublish = confirm(
+            "⚠️ PUBLICACIÓN INMUTABLE\n\n" +
+            "Una vez publicado, este examen quedará BLOQUEADO para garantizar la integridad forense.\n" +
+            "No podrás modificar las preguntas después de que estudiantes hayan respondido.\n\n" +
+            "¿Deseas continuar?"
+        );
+
+
+        if (!confirmPublish) return;
 
         setState(prev => ({ ...prev, isGenerating: true }));
         try {
-            const { publishExam } = await import("@/lib/actions/assessment/exam-actions");
-            const result = await publishExam({
-                title: examTitle,
-                matrix: state.context,
-                questions: state.context.prototypes as any[]
-            }, {
-                mode: 'auto_all' // Defaulting to Express Assignment for Standalone exams
-            });
-            if (result.success && result.url) {
-                // alert(`Sonda de Calibración Desplegada. Topología Inmutable registrada.`);
-                router.push(result.url);
+            const { publishExamWithSnapshot } = await import("@/lib/actions/admin/exam-publishing-actions");
+
+            // Prepare Q-Matrix
+            const qMatrix = {
+                concepts: state.context.identifiedConcepts,
+                misconceptions: state.context.identifiedMisconceptions,
+                targetAudience: state.context.targetAudience,
+                subject: state.context.subject
+            };
+
+            const result = await publishExamWithSnapshot(
+                examTitle,
+                qMatrix,
+                state.context.prototypes as any[],
+                state.context
+            );
+
+            if (result.success && result.examId) {
+                alert(`✅ Examen publicado con éxito.\n\nID: ${result.examId}\n\nEl instrumento ahora está protegido con inmutabilidad forense.`);
+                router.push(`/admin/exams`);
                 return result;
             } else {
                 throw new Error(result.error || "Falla al publicar");

@@ -16,6 +16,13 @@ export const studentNav: NavItem[] = [
     { label: 'Recursos', href: '/resources', icon: 'folder_open' },
 ];
 
+export const teacherNav: NavItem[] = [
+    { label: 'Panel de Control', href: '/teacher-dashboard', icon: 'dashboard' },
+    { label: 'Constructor IA', href: '/teacher/exam-builder', icon: 'auto_awesome' },
+    { label: 'Gestión de Evaluaciones', href: '/teacher/exams', icon: 'description' },
+    { label: 'Auditoría Forense', href: '/admin/students', icon: 'biotech' },
+];
+
 export const adminNav: NavItem[] = [
     { label: 'Estadísticas', href: '/admin/stats', icon: 'leaderboard' },
     { label: 'Cursos', href: '/admin/courses', icon: 'brush' },

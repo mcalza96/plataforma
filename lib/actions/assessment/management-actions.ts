@@ -31,16 +31,17 @@ export async function toggleExamAssignment(examId: string, studentId: string, is
 }
 
 export async function deleteExam(examId: string) {
+    const { validateStaff, validateOwnership } = await import("@/lib/infrastructure/auth-utils");
+
+    // Step 1: Validate user is staff
+    await validateStaff();
+
     const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-        return { success: false, error: "Unauthorized" };
-    }
-
+    // Step 2: Fetch exam to check ownership and status
     const { data: exam, error: fetchError } = await supabase
         .from('exams')
-        .select('creator_id')
+        .select('creator_id, status')
         .eq('id', examId)
         .single();
 
@@ -48,13 +49,19 @@ export async function deleteExam(examId: string) {
         return { success: false, error: "Exam not found" };
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    const isAdmin = profile?.role === 'admin';
-
-    if (exam.creator_id !== user.id && !isAdmin) {
-        return { success: false, error: "Unauthorized: only creator or admin can delete." };
+    // Step 3: Validate ownership (admin bypass handled in helper)
+    try {
+        await validateOwnership(exam.creator_id);
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 
+    // Step 4: Business rule - cannot delete PUBLISHED exams
+    if (exam.status === 'PUBLISHED') {
+        return { success: false, error: "Cannot delete a PUBLISHED exam. Forensic immutability protection." };
+    }
+
+    // Step 5: Proceed with delete
     const { error } = await supabase
         .from('exams')
         .delete()
@@ -70,20 +77,22 @@ export async function deleteExam(examId: string) {
 }
 
 export async function updateExamTitle(examId: string, newTitle: string) {
-    const supabase = await createClient();
+    const { validateStaff, validateOwnership } = await import("@/lib/infrastructure/auth-utils");
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-        return { success: false, error: "Unauthorized" };
-    }
+    // Step 1: Validate user is staff
+    await validateStaff();
 
+    // Step 2: Validate title
     if (!newTitle || newTitle.trim().length === 0) {
         return { success: false, error: "Title cannot be empty" };
     }
 
+    const supabase = await createClient();
+
+    // Step 3: Fetch exam to check ownership and status
     const { data: exam, error: fetchError } = await supabase
         .from('exams')
-        .select('creator_id')
+        .select('creator_id, status')
         .eq('id', examId)
         .single();
 
@@ -91,13 +100,19 @@ export async function updateExamTitle(examId: string, newTitle: string) {
         return { success: false, error: "Exam not found" };
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    const isAdmin = profile?.role === 'admin';
-
-    if (exam.creator_id !== user.id && !isAdmin) {
-        return { success: false, error: "Unauthorized" };
+    // Step 4: Validate ownership (admin bypass handled in helper)
+    try {
+        await validateOwnership(exam.creator_id);
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 
+    // Step 5: Business rule - cannot update PUBLISHED exams (RLS will also block)
+    if (exam.status === 'PUBLISHED') {
+        return { success: false, error: "Cannot update a PUBLISHED exam. Forensic immutability protection." };
+    }
+
+    // Step 6: Proceed with update
     const { error } = await supabase
         .from('exams')
         .update({ title: newTitle.trim() })

@@ -79,18 +79,10 @@ export default function UserMenu({ user, student, role }: UserMenuProps) {
 
                     {/* Navigation */}
                     <div className="p-3">
-                        <Link
-                            href="/select-profile"
-                            onClick={() => setIsOpen(false)}
-                            className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
-                        >
-                            <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">swap_horiz</span>
-                            <span className="text-xs font-black uppercase tracking-widest">Cambiar de Estudiante</span>
-                        </Link>
 
                         {(isTeacher || isAdmin) && (
                             <Link
-                                href="/teacher-dashboard"
+                                href="/teacher"
                                 onClick={() => setIsOpen(false)}
                                 className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
                             >
@@ -100,14 +92,24 @@ export default function UserMenu({ user, student, role }: UserMenuProps) {
                         )}
 
                         {isAdmin && (
-                            <Link
-                                href="/admin/stats"
-                                onClick={() => setIsOpen(false)}
-                                className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
-                            >
-                                <span className="material-symbols-outlined text-[20px] text-amber-500 group-hover:scale-110 transition-transform">admin_panel_settings</span>
-                                <span className="text-xs font-black uppercase tracking-widest">Panel de Control</span>
-                            </Link>
+                            <>
+                                <Link
+                                    href="/admin/stats"
+                                    onClick={() => setIsOpen(false)}
+                                    className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
+                                >
+                                    <span className="material-symbols-outlined text-[20px] text-amber-500 group-hover:scale-110 transition-transform">admin_panel_settings</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Panel de Control</span>
+                                </Link>
+                                <Link
+                                    href="/student"
+                                    onClick={() => setIsOpen(false)}
+                                    className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
+                                >
+                                    <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">palette</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Vista Estudiante</span>
+                                </Link>
+                            </>
                         )}
                     </div>
 

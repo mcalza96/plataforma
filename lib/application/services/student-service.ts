@@ -46,6 +46,11 @@ export class StudentService {
         return this.learnerRepository.getStudentsByTeacherId(teacherId);
     }
 
+    async getAllStudents(userRole: string): Promise<Student[]> {
+        AuthGuard.check(userRole, ['admin']);
+        return this.learnerRepository.getAllStudents();
+    }
+
     async getStudentFrontier(studentId: string): Promise<LearningFrontier[]> {
         return this.statsRepository.getStudentFrontier(studentId);
     }

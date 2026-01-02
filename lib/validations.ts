@@ -1,18 +1,23 @@
-/**
- * Application Validations.
- * This file acts as a bridge to domain schemas to maintain backward compatibility,
- * but business rules are centralized in lib/domain.
- */
+import { z } from 'zod';
 
-export { AuthSchema } from './domain/auth';
-export {
-    CourseSchema,
-    LessonSchema,
-    FeedbackSchema
-} from './domain/schemas/course';
-export { ALOSchema } from './domain/schemas/alo';
+export const TeacherCreationSchema = z.object({
+    full_name: z.string().min(3, 'El nombre debe tener al menos 3 caracteres.'),
+    email: z.string().email('Formato de correo electrónico inválido.'),
+    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+});
 
-export {
-    DiagnosisSchema,
-    ProposalSchema
-} from './domain/assessment';
+export const StudentCreationSchema = z.object({
+    display_name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres.'),
+    email: z.string().email('Formato de correo electrónico inválido.').optional().or(z.literal('')),
+    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.').optional().or(z.literal('')),
+    teacher_ids: z.array(z.string().uuid()).optional().default([]),
+});
+
+export const AuthSchema = z.object({
+    email: z.string().email('Formato de correo electrónico inválido.'),
+    password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
+});
+
+export type TeacherCreationInput = z.infer<typeof TeacherCreationSchema>;
+export type StudentCreationInput = z.infer<typeof StudentCreationSchema>;
+export type AuthInput = z.infer<typeof AuthSchema>;

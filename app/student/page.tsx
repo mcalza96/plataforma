@@ -11,13 +11,15 @@ export default async function DashboardPage() {
     const cookieStore = await cookies();
     const studentId = cookieStore.get('learner_id')?.value;
 
+    // If no student ID, we simply return error or redirect to login (if needed)
     if (!studentId) {
-        return redirect('/select-profile');
+        return <div>No se ha identificado al estudiante. (Cookie missing)</div>;
     }
 
     const student = await getStudentById(studentId);
+
     if (!student) {
-        return redirect('/select-profile');
+        return <div>Perfil de estudiante no encontrado.</div>;
     }
 
     // Infer UI Mode

@@ -6,7 +6,7 @@ import { Course } from '../schemas/course';
 export class Student {
     constructor(
         public readonly id: string,
-        public readonly teacher_id: string,
+        // teacher_id removido: Relación M:N manejada externamente
         public display_name: string,
         public level: number,
         public avatar_url?: string,

@@ -70,22 +70,42 @@ export async function middleware(request: NextRequest) {
         return redirectWithCookies('/login');
     }
 
-    // 3. Protección de Admin (Blindaje nivel middleware)
+    // 3. Protección de Rutas por Rol (Blindaje Completo)
+
+    // A. Rutas Admin
     if (user && isAdminRoute) {
-        // Consultar el perfil del usuario para verificar el rol
+        // Consultar rol
         const { data: profile } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
 
-        // Fallback de "Super Admin" por email (Blindaje mientras se estabiliza la DB)
+        // Fallback Super Admin
         const adminEmails = ['marcelo.calzadilla@jitdata.cl', 'admin@procreatealpha.studio'];
         const isSuperAdmin = user.email && adminEmails.includes(user.email);
 
         if (profile?.role !== 'admin' && !isSuperAdmin) {
-            console.warn(`Intento de acceso no autorizado a ruta admin por: ${user.email} (Rol: ${profile?.role})`);
-            return redirectWithCookies('/dashboard');
+            console.warn(`ACCESO DENEGADO (ADMIN): ${user.email} intentó acceder a ${url.pathname}`);
+            return redirectWithCookies('/student');
+        }
+    }
+
+    // B. Rutas Teacher (Nueva Regla)
+    const isTeacherRoute = url.pathname.startsWith('/teacher');
+    if (user && isTeacherRoute) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        const allowedRoles = ['admin', 'instructor', 'teacher'];
+
+        if (!profile || !allowedRoles.includes(profile.role)) {
+            console.warn(`ACCESO DENEGADO (TEACHER): ${user.email} (Rol: ${profile?.role}) intentó acceder a ${url.pathname}`);
+            // Redirigir a dashboard de estudiante si no tiene permiso docente
+            return redirectWithCookies('/student');
         }
     }
 

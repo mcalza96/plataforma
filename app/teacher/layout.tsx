@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getUserId, validateStaff, getUserRole } from '@/lib/infrastructure/auth-utils';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
-import TeacherShell from './TeacherShell';
+import TeacherShell from '@/components/teacher/TeacherShell';
 
 /**
  * TeacherLayout: Wraps all teacher routes with professional shell

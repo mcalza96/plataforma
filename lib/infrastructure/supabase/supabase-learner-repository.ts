@@ -27,8 +27,11 @@ export class SupabaseLearnerRepository implements IStudentRepository {
             .from('profiles')
             .select(`
                 *,
-                students:learners (*)
+                mappings:teacher_student_mapping (
+                    student:learners (*)
+                )
             `)
+            .eq('role', 'teacher') // Filter by teacher role to be explicit
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -36,7 +39,11 @@ export class SupabaseLearnerRepository implements IStudentRepository {
             throw new Error('No se pudieron obtener los profesores.');
         }
 
-        return data || [];
+        // Flatten structure: mapping -> student
+        return (data || []).map((teacher: any) => ({
+            ...teacher,
+            students: teacher.mappings?.map((m: any) => m.student).filter(Boolean) || []
+        }));
     }
 
     async getTeacherById(id: string): Promise<TeacherTenantDTO | null> {
@@ -45,7 +52,9 @@ export class SupabaseLearnerRepository implements IStudentRepository {
             .from('profiles')
             .select(`
                 *,
-                students:learners (*)
+                mappings:teacher_student_mapping (
+                    student:learners (*)
+                )
             `)
             .eq('id', id)
             .single();
@@ -55,7 +64,10 @@ export class SupabaseLearnerRepository implements IStudentRepository {
             throw new Error('No se pudo encontrar el profesor solicitado.');
         }
 
-        return data;
+        return {
+            ...data,
+            students: data.mappings?.map((m: any) => m.student).filter(Boolean) || []
+        };
     }
 
     async updateStudentLevel(studentId: string, newLevel: number): Promise<void> {
@@ -93,7 +105,7 @@ export class SupabaseLearnerRepository implements IStudentRepository {
         const { data: dbData, error } = await supabase
             .from('learners')
             .insert({
-                teacher_id: data.teacherId,
+                // teacher_id removido de la tabla learners
                 display_name: data.displayName,
                 avatar_url: data.avatarUrl,
                 level: 1
@@ -129,9 +141,14 @@ export class SupabaseLearnerRepository implements IStudentRepository {
 
     async getStudentsByTeacherId(teacherId: string): Promise<Student[]> {
         const supabase = await createClient();
+        // JOIN con teacher_student_mapping para obtener los estudiantes del profesor
         const { data, error } = await supabase
-            .from('learners')
-            .select('*')
+            .from('teacher_student_mapping')
+            .select(`
+                student:learners (
+                    *
+                )
+            `)
             .eq('teacher_id', teacherId)
             .order('created_at', { ascending: true });
 
@@ -140,7 +157,37 @@ export class SupabaseLearnerRepository implements IStudentRepository {
             throw new Error('Error al obtener los estudiantes.');
         }
 
-        return data || [];
+        // Mapear resultado para devolver array de Student
+        return (data || []).map((item: any) => item.student).filter(Boolean);
+    }
+
+    async getAllStudents(): Promise<Student[]> {
+        const supabase = await createClient();
+
+        // Obtenemos todos los estudiantes y sus profesores asignados
+        const { data, error } = await supabase
+            .from('learners')
+            .select(`
+                *,
+                mappings:teacher_student_mapping (
+                    teacher:profiles (
+                        id,
+                        full_name,
+                        email
+                    )
+                )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching all students:', error);
+            throw new Error('Error al obtener el directorio de estudiantes.');
+        }
+
+        return (data || []).map((item: any) => ({
+            ...item,
+            teachers: item.mappings?.map((m: any) => m.teacher) || []
+        }));
     }
 
     async executeGraphMutations(studentId: string, mutations: PathMutation[]): Promise<boolean> {

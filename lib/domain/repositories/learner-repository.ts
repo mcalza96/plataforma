@@ -19,6 +19,8 @@ export interface IStudentRepository {
         fullName: string;
     }): Promise<void>;
     getStudentsByTeacherId(teacherId: string): Promise<Student[]>;
+    getAllStudents(): Promise<Student[]>; // Admin usage
+
 
     // Remediation Logic
     executeGraphMutations(studentId: string, mutations: PathMutation[]): Promise<boolean>;

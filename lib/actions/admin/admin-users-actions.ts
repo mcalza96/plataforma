@@ -19,6 +19,20 @@ export async function getTeachers() {
 }
 
 /**
+ * Obtiene el directorio completo de estudiantes (Solo Admin)
+ */
+export async function getStudents() {
+    try {
+        const role = await getUserRole();
+        const service = getStudentService();
+        return await service.getAllStudents(role);
+    } catch (error: any) {
+        console.error('Error fetching students:', error);
+        return [];
+    }
+}
+
+/**
  * Obtiene un profesor específico por ID con sus estudiantes
  */
 export async function getTeacherById(id: string) {

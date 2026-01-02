@@ -9,16 +9,17 @@ import { redirect } from 'next/navigation';
 export default async function LandingPage() {
   const user = await getAuthUser();
 
-  if (user) {
-    const cookieStore = await cookies();
-    const studentId = cookieStore.get('learner_id')?.value;
+  const cookieStore = await cookies();
+  const studentId = cookieStore.get('learner_id')?.value;
 
-    if (studentId) {
-      return redirect('/dashboard');
-    }
-    else {
-      redirect('/select-profile');
-    }
+  if (studentId) {
+    return redirect('/student');
+  }
+  else {
+    // If no student ID in cookie, strictly we might want to set one or go to a setup page.
+    // But per request "remove select profile", we send to /student and let it handle empty state
+    // or maybe /student handles auto-onboarding.
+    return redirect('/student');
   }
 
   return (
@@ -47,7 +48,7 @@ export default async function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
               <Link
-                href={user ? "/dashboard" : "/login"}
+                href={user ? "/student" : "/login"}
                 className="w-full sm:w-auto px-10 py-5 bg-primary hover:bg-primary-hover text-white font-black text-lg rounded-2xl transition-all shadow-[0_10px_30px_rgba(13,147,242,0.3)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3 touch-target"
               >
                 {user ? 'Volver a Misión Control' : 'Empezar Misión'}
@@ -173,7 +174,7 @@ export default async function LandingPage() {
 
           <div className="pt-12">
             <Link
-              href={user ? "/dashboard" : "/login"}
+              href={user ? "/student" : "/login"}
               className="bg-white text-black px-12 py-6 rounded-2xl font-black text-xl hover:bg-primary hover:text-white transition-all shadow-2xl active:scale-95 inline-flex touch-target"
             >
               ¡Quiero Unirme a la Academia!

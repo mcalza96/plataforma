@@ -24,6 +24,20 @@ export async function createStudent(displayName: string) {
         avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName}`
     });
 
+    // Nuevo: Vincular estudiante con el profesor creador en la tabla M:N
+    const { error: mapError } = await supabase
+        .from('teacher_student_mapping')
+        .insert({
+            teacher_id: user.id,
+            student_id: data.id
+        });
+
+    if (mapError) {
+        console.error('Error linking student to teacher:', mapError);
+        // Nota: Podríamos revertir la creación del estudiante aquí si es crítico
+        throw new Error('Estudiante creado pero error al asignar al profesor.');
+    }
+
     revalidatePath('/select-profile');
     return { success: true, student: data };
 }

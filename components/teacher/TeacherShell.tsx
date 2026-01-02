@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { AppRole } from '@/lib/infrastructure/auth-utils';
 import TeacherSidebar from '@/components/teacher/TeacherSidebar';
-import { teacherNav } from '@/config/navigation';
+import UserMenu from '@/components/layout/UserMenu';
 
 interface TeacherShellProps {
     children: React.ReactNode;
@@ -44,12 +44,12 @@ export default function TeacherShell({ children, user, role }: TeacherShellProps
                         <span className="material-symbols-outlined text-white text-2xl">menu</span>
                     </button>
 
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 ml-auto">
-                        <div className="text-right">
+                    {/* User Info & Controls */}
+                    <div className="flex items-center gap-4 ml-auto">
+                        <div className="text-right hidden sm:block">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Personal Autorizado</p>
-                            <p className="text-sm text-white font-mono">{user.email}</p>
                         </div>
+                        <UserMenu user={user} role={role} />
                     </div>
                 </header>
 

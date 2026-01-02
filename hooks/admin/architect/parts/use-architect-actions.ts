@@ -51,7 +51,7 @@ export function useArchitectActions({
         setState(prev => ({ ...prev, isGenerating: true }));
         try {
             const result = await compileDiagnosticProbe(state);
-            if (result.success && result.probeId) {
+            if (result.success && 'probeId' in result && result.probeId) {
                 setState(prev => ({
                     ...prev,
                     isGenerating: false,

@@ -124,13 +124,13 @@ export default function DiscoveryChat({ session }: DiscoveryChatProps) {
                                 <AnimatePresence>
                                     {context.keyConcepts?.map((concept, idx) => (
                                         <motion.div
-                                            key={concept}
+                                            key={typeof concept === 'string' ? concept : concept.id}
                                             initial={{ opacity: 0, scale: 0 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0 }}
                                         >
                                             <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100">
-                                                {concept}
+                                                {typeof concept === 'string' ? concept : concept.name}
                                             </Badge>
                                         </motion.div>
                                     ))}

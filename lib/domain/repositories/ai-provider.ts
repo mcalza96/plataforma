@@ -1,4 +1,4 @@
-import { PlanningProposal } from '../services/ai-orchestrator-service';
+import { PlanningProposal } from '../../application/services/orchestrator/types';
 
 /**
  * Port for AI Capabilities.

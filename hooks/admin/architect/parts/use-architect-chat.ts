@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { type Message } from '../useArchitect'; // Let's keep the type there or move it to a shared place
+import { type Message } from '../use-architect'; // Let's keep the type there or move it to a shared place
 import { type PartialKnowledgeMap } from '@/lib/domain/architect';
 
 interface UseArchitectChatProps {

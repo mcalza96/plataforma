@@ -1,4 +1,4 @@
-import { getCourseService, getLessonService } from '@/lib/infrastructure/di';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import Breadcrumbs, { BreadcrumbItem } from '@/components/ui/Breadcrumbs';
 
 interface AdminBreadcrumbsResolverProps {
@@ -12,8 +12,7 @@ interface AdminBreadcrumbsResolverProps {
  * Provides a clean NavigationItem structure to the UI.
  */
 export default async function AdminBreadcrumbsResolver({ courseId, lessonId }: AdminBreadcrumbsResolverProps) {
-    const courseService = getCourseService();
-    const lessonService = getLessonService();
+    const supabase = await createClient();
 
     const items: BreadcrumbItem[] = [
         { label: 'Comando', href: '/admin' },
@@ -21,7 +20,12 @@ export default async function AdminBreadcrumbsResolver({ courseId, lessonId }: A
     ];
 
     if (courseId) {
-        const course = await courseService.getCourseById(courseId);
+        const { data: course } = await supabase
+            .from('courses')
+            .select('title')
+            .eq('id', courseId)
+            .single();
+
         if (course) {
             items.push({
                 label: course.title,
@@ -32,7 +36,12 @@ export default async function AdminBreadcrumbsResolver({ courseId, lessonId }: A
     }
 
     if (courseId && lessonId) {
-        const lesson = await lessonService.getLessonById(lessonId);
+        const { data: lesson } = await supabase
+            .from('lessons')
+            .select('title, order')
+            .eq('id', lessonId)
+            .single();
+
         if (lesson) {
             items.push({
                 label: `Fase ${lesson.order}: ${lesson.title}`,

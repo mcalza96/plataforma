@@ -1,4 +1,4 @@
-import { Course } from './course';
+import { Course } from '../schemas/course';
 
 /**
  * Student Entity - Rich Domain Model

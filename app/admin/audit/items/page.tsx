@@ -2,7 +2,10 @@ import { Suspense } from 'react';
 import ItemHealthMatrix from '@/components/admin/analytics/ItemHealthMatrix';
 import ItemCalibrationHeatmap from '@/components/admin/analytics/ItemCalibrationHeatmap';
 import IntegrityAlertFeed from '@/components/admin/analytics/IntegrityAlertFeed';
-import { getGlobalItemCalibration, getIntegrityAlerts } from '@/lib/actions/admin/admin-analytics-actions';
+import {
+    getGlobalItemCalibration,
+    getIntegrityAlerts
+} from '@/lib/actions/admin/analytics/item-actions';
 import { Activity, ShieldAlert, Zap, Settings, ShieldCheck, Factory } from 'lucide-react';
 
 export const metadata = {

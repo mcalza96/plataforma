@@ -1,4 +1,5 @@
 import type Groq from 'groq-sdk';
+import { z } from 'zod';
 
 /**
  * Modelo de Groq a utilizar para el Arquitecto
@@ -98,4 +99,23 @@ export const UPDATE_CONTEXT_TOOL: Groq.Chat.ChatCompletionTool = {
             required: [] // Allow partial updates
         }
     }
+};
+
+export const UPDATE_CONTEXT_TOOL_DEFINITION = {
+    description: 'Actualiza el blueprint del examen con nueva información identificada.',
+    parameters: z.object({
+        subject: z.string().optional(),
+        targetAudience: z.string().optional(),
+        pedagogicalGoal: z.string().optional(),
+        keyConcepts: z.array(z.string()).optional(),
+        identifiedMisconceptions: z.array(z.object({
+            error: z.string(),
+            distractor_artifact: z.string().optional(),
+            refutation: z.string().optional()
+        })).optional(),
+        examConfig: z.object({
+            questionCount: z.number().optional(),
+            durationMinutes: z.number().optional()
+        }).optional()
+    })
 };

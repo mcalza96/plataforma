@@ -1,7 +1,7 @@
 import { ChatGroq } from "@langchain/groq";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { IAIProvider } from "../domain/ports";
-import { PlanningProposal } from "../services/ai-orchestrator-service";
+import { IAIProvider } from "../domain/repositories/ai-provider";
+import { PlanningProposal } from "../application/services/orchestrator/types";
 
 /**
  * Adapter for LangChain + Groq/OpenAI.

@@ -13,10 +13,10 @@ import {
     Search,
     Zap
 } from 'lucide-react';
-import { KnowledgeGraphData } from '@/lib/actions/admin/admin-analytics-actions';
+import { KnowledgeGraph } from '@/lib/domain/analytics-types';
 
 interface GlobalKnowledgeHeatmapProps {
-    data: KnowledgeGraphData;
+    data: KnowledgeGraph;
     className?: string;
 }
 
@@ -111,11 +111,11 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                 >
                     {/* Edges */}
                     {data.edges.map((edge, i) => {
-                        const start = nodes.find(n => n.id === edge.source);
-                        const end = nodes.find(n => n.id === edge.target);
+                        const start = nodes.find(n => n.id === edge.from);
+                        const end = nodes.find(n => n.id === edge.to);
                         if (!start || !end) return null;
 
-                        const isDraftNode = start.student_count === 0 && end.student_count === 0;
+                        const isDraftNode = start.studentCount === 0 && end.studentCount === 0;
 
                         return (
                             <motion.line
@@ -123,7 +123,7 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                                 x1={start.x} y1={start.y}
                                 x2={end.x} y2={end.y}
                                 stroke="rgba(255,255,255,0.05)"
-                                strokeWidth={Math.max(edge.weight * 2, 0.5)}
+                                strokeWidth={Math.max((edge.weight || 0) * 2, 0.5)}
                                 opacity={isDraftNode ? 0.1 : 0.4}
                                 initial={{ pathLength: 0 }}
                                 animate={{ pathLength: 1 }}
@@ -134,9 +134,9 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                     {/* Nodes */}
                     {nodes.map((node) => {
                         const isSelected = selectedNodeId === node.id;
-                        const radius = 10 + Math.sqrt(node.student_count) * 2;
-                        const color = getHeatColor(node.average_mastery);
-                        const isCritical = node.average_mastery < 50 && node.student_count > 0;
+                        const radius = 10 + Math.sqrt(node.studentCount || 0) * 2;
+                        const color = getHeatColor(node.averageMastery || 0);
+                        const isCritical = (node.averageMastery || 0) < 50 && (node.studentCount || 0) > 0;
 
                         return (
                             <g
@@ -152,7 +152,7 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                                     cy={node.y}
                                     r={radius}
                                     fill={color}
-                                    opacity={node.student_count === 0 ? 0.2 : (isSelected ? 1 : 0.8)}
+                                    opacity={node.studentCount === 0 ? 0.2 : (isSelected ? 1 : 0.8)}
                                     className={`${isCritical ? 'animate-pulse' : ''}`}
                                     initial={{ scale: 0 }}
                                     animate={{
@@ -170,7 +170,7 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                                         fontSize="10"
                                         className={`font-medium tracking-tight pointer-events-none transition-opacity ${isSelected ? 'opacity-100' : 'opacity-40 group-hover:opacity-100'}`}
                                     >
-                                        {node.title}
+                                        {node.label}
                                     </text>
                                 )}
                             </g>
@@ -201,20 +201,20 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                                     <Zap className="w-4 h-4" />
                                     <span className="text-[10px] font-black uppercase tracking-widest">Atómico (KST)</span>
                                 </div>
-                                <h3 className="text-xl font-bold leading-tight">{selectedNode.title}</h3>
+                                <h3 className="text-xl font-bold leading-tight">{selectedNode.label}</h3>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
                                     <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Maestría Global</p>
-                                    <p className={`text-xl font-mono font-bold ${selectedNode.average_mastery < 50 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                                        {Math.round(selectedNode.average_mastery)}%
+                                    <p className={`text-xl font-mono font-bold ${(selectedNode.averageMastery || 0) < 50 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                        {Math.round(selectedNode.averageMastery || 0)}%
                                     </p>
                                 </div>
                                 <div className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl">
                                     <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Tráfico (N)</p>
                                     <p className="text-xl font-mono font-bold text-white">
-                                        {selectedNode.student_count}
+                                        {selectedNode.studentCount || 0}
                                     </p>
                                 </div>
                             </div>
@@ -223,30 +223,30 @@ export default function GlobalKnowledgeHeatmap({ data, className = '' }: GlobalK
                                 <div className="flex items-center justify-between">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase">Impacto de Bloqueo</p>
                                     <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20 font-bold">
-                                        Friction: {selectedNode.friction_score.toFixed(2)}
+                                        Friction: {(selectedNode.frictionScore || 0).toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all"
-                                        style={{ width: `${Math.min(selectedNode.friction_score * 20, 100)}%` }}
+                                        style={{ width: `${Math.min((selectedNode.frictionScore || 0) * 20, 100)}%` }}
                                     />
                                 </div>
                                 <p className="text-[11px] text-slate-500 leading-relaxed italic">
-                                    {selectedNode.friction_score > 2
+                                    {(selectedNode.frictionScore || 0) > 2
                                         ? `¡Crítico! Este nodo está impidiendo que más de la mitad de sus aprendices avancen al siguiente nivel.`
                                         : `Flujo nominal. El conocimiento fluye hacia los nodos dependientes.`}
                                 </p>
                             </div>
 
-                            {selectedNode.top_bugs.length > 0 && (
+                            {(selectedNode.topBugs || []).length > 0 && (
                                 <div className="space-y-4">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-2">
                                         <Bug className="w-3 h-3" />
                                         Principales Misconceptions
                                     </p>
                                     <div className="space-y-2">
-                                        {selectedNode.top_bugs.map((bug, i) => (
+                                        {(selectedNode.topBugs || []).map((bug, i) => (
                                             <div key={i} className="flex items-start gap-3 p-3 bg-rose-500/5 border border-rose-500/10 rounded-xl">
                                                 <div className="w-4 h-4 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-500 text-[9px] font-bold">
                                                     {i + 1}

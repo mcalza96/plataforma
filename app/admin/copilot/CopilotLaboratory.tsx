@@ -17,7 +17,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
-import { PathNode } from '@/lib/domain/course';
+// import { PathNode } from '@/lib/domain/course';
 
 export default function CopilotLaboratory({ initialNodes }: { initialNodes: any[] }) {
     const [nodes, setNodes] = useState(initialNodes);

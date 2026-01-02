@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getFairnessAuditData } from '@/lib/actions/admin/admin-analytics-actions';
+import { getFairnessAuditData } from '@/lib/actions/admin/analytics/fairness-actions';
 import FairnessAuditDashboard from '@/components/admin/analytics/FairnessAuditDashboard';
 import { Scale, ShieldCheck, Filter, Download, Info } from 'lucide-react';
 

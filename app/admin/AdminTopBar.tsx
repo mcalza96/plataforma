@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
-import { StudentDTO } from '@/lib/domain/course';
+import { StudentDTO } from '@/lib/domain/dtos/learner';
 
 interface AdminTopBarProps {
     user: User;

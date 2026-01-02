@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Lesson } from '@/lib/domain/course';
-import { upsertLesson } from '@/lib/admin-content-actions';
+import { upsertLesson } from '@/lib/actions/admin/course-actions';
 import { StepData } from '@/components/admin/StepCard';
 
 export function useContextController(initialLesson: Lesson) {
@@ -23,11 +23,15 @@ export function useContextController(initialLesson: Lesson) {
                 total_steps: steps.length
             };
 
-            const result = await upsertLesson(payload as any);
-            if (result.success) {
-                setStatus('success');
-                setTimeout(() => setStatus('idle'), 3000);
-            } else {
+            try {
+                const result = await upsertLesson(payload as any);
+                if (result) {
+                    setStatus('success');
+                    setLesson(result);
+                    setTimeout(() => setStatus('idle'), 3000);
+                }
+            } catch (error) {
+                console.error(error);
                 setStatus('error');
             }
         });

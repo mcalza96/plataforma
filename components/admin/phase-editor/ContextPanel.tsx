@@ -35,7 +35,7 @@ export function ContextPanel({ lesson, onUpdateField, errors }: ContextPanelProp
                     )}
                 </div>
                 <input
-                    value={lesson.video_url}
+                    value={lesson.video_url ?? ''}
                     onChange={(e) => onUpdateField('video_url', e.target.value)}
                     className={`w-full bg-black/20 border rounded-2xl p-4 text-xs text-white placeholder:text-gray-800 focus:ring-1 ring-amber-500 outline-none transition-all shadow-inner ${errors?.some(e => e.includes('video')) ? 'border-red-500/50 bg-red-500/[0.02]' : 'border-white/5'}`}
                     placeholder="URL de Loom o MP4..."

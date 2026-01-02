@@ -113,6 +113,7 @@ export const ResponseTelemetrySchema = z.object({
     hesitationCount: z.number(),  // Cantidad de veces que cambió de opción
     focusLostCount: z.number().default(0), // Cambios de ventana/tab
     hoverTimeMs: z.number().default(0),      // Tiempo de hover sobre la opción seleccionada
+    confidence: ConfidenceLevelSchema.optional(),
 
     // Mobile / Decision Latency Metrics
     ttft: z.number().optional(),             // Time To First Touch (ms)

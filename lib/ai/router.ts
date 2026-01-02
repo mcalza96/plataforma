@@ -1,31 +1,8 @@
-import { createGroq } from '@ai-sdk/groq';
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject, generateText } from 'ai';
-import { z } from 'zod';
+import { generateObject } from 'ai';
 import { RouterIntentSchema, RouterIntent } from './schemas';
 import { ROUTER_PROMPT } from './prompts';
 import { normalizeMessages } from './utils';
-
-
-/**
- * Lazily initializes the model to ensure environment variables are loaded.
- */
-function getModel() {
-    const groqApiKey = process.env.GROQ_API_KEY;
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-
-    if (groqApiKey) {
-        const groq = createGroq({ apiKey: groqApiKey });
-        return groq('llama-3.3-70b-versatile');
-    }
-
-    if (openaiApiKey) {
-        const openai = createOpenAI({ apiKey: openaiApiKey });
-        return openai('gpt-4o');
-    }
-
-    throw new Error('No AI provider API keys found (GROQ_API_KEY or OPENAI_API_KEY)');
-}
+import { AIProvider } from '@/lib/infrastructure/ai/ai-provider';
 
 /**
  * Classifies the user's intent based on their query and history.
@@ -41,33 +18,22 @@ export async function classifyIntent(
 ): Promise<{ intent: RouterIntent; reasoning: string }> {
     const coreMessages = normalizeMessages(messages);
     try {
-        const { text } = await generateText({
-            model: getModel(),
-            system: `${ROUTER_PROMPT}
-            
-            IMPORTANT: You must respond ONLY with a valid JSON object matching this schema:
-            {
-              "intent": "CHAT" | "CANVAS_ACTION" | "PEDAGOGICAL_QUERY",
-              "reasoning": "string"
-            }
-            
-            ${lessonId ? `\n\nCONTEXTO ACTUAL: Trabajando en la lección con ID: ${lessonId}` : ''}`,
+        const { object } = await generateObject({
+            model: AIProvider.getModel({ temperature: 0 }),
+            system: `${ROUTER_PROMPT} ${lessonId ? `\n\nCONTEXTO ACTUAL: Trabajando en la lección con ID: ${lessonId}` : ''}`,
             messages: coreMessages,
-            temperature: 0,
+            // @ts-ignore - The SDK version might have minor typing discrepancies in some environments
+            schema: RouterIntentSchema,
+            // @ts-ignore - Disable strict mode for Groq compatibility
+            experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
         });
 
-        // Clean the response from potential markdown code blocks
-        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const object = JSON.parse(cleanedText) as { intent: RouterIntent; reasoning: string };
+        const intent = (object as any).intent as RouterIntent;
+        const reasoning = (object as any).reasoning as string;
 
-        // Basic validation in case the model goes rogue
-        if (!['CHAT', 'CANVAS_ACTION', 'PEDAGOGICAL_QUERY'].includes(object.intent)) {
-            object.intent = 'CHAT';
-        }
+        console.log(`[Router] Intent: ${intent} | Reason: ${reasoning}`);
 
-        console.log(`[Router] Intent: ${object.intent} | Reason: ${object.reasoning}`);
-
-        return object;
+        return { intent, reasoning };
     } catch (error) {
         console.error('[Router] ❌ Error en clasificación:', error);
         return {

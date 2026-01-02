@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getStudentById } from '@/lib/data/courses';
+import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import { cookies } from 'next/headers';
 
 interface LessonHeaderProps {
@@ -9,7 +9,17 @@ interface LessonHeaderProps {
 export default async function LessonHeader({ courseTitle }: LessonHeaderProps) {
     const cookieStore = await cookies();
     const studentId = cookieStore.get('learner_id')?.value;
-    const student = studentId ? await getStudentById(studentId) : null;
+
+    let student = null;
+    if (studentId) {
+        const supabase = await createClient();
+        const { data } = await supabase
+            .from('profiles')
+            .select('display_name, avatar_url, level')
+            .eq('id', studentId)
+            .single();
+        student = data;
+    }
 
     return (
         <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 lg:px-10 shrink-0 bg-[#1A1A1A] z-20">

@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getGlobalKnowledgeMap } from '@/lib/actions/admin/admin-analytics-actions';
+import { getGlobalKnowledgeMap } from '@/lib/actions/admin/analytics/knowledge-actions';
 import GlobalKnowledgeHeatmap from '@/components/admin/analytics/GlobalKnowledgeHeatmap';
 import { Network, Search, Filter, Settings, Info } from 'lucide-react';
 
@@ -44,8 +44,8 @@ export default async function KnowledgeMapPage() {
                     {[
                         { label: 'Nodos Curriculares', value: graphData.nodes.length, icon: 'hub' },
                         { label: 'Relaciones (Edges)', value: graphData.edges.length, icon: 'mediation' },
-                        { label: 'Tráfico Acumulado', value: graphData.nodes.reduce((acc, n) => acc + n.student_count, 0), icon: 'trending_up' },
-                        { label: 'Salud Global', value: `${Math.round(graphData.nodes.reduce((acc, n) => acc + (n.average_mastery || 0), 0) / (graphData.nodes.length || 1))}%`, icon: 'clinical_notes' }
+                        { label: 'Tráfico Acumulado', value: graphData.nodes.reduce((acc, n) => acc + (n.studentCount || 0), 0), icon: 'trending_up' },
+                        { label: 'Salud Global', value: `${Math.round(graphData.nodes.reduce((acc, n) => acc + (n.averageMastery || 0), 0) / (graphData.nodes.length || 1))}%`, icon: 'clinical_notes' }
                     ].map((stat, i) => (
                         <div key={i} className="bg-[#252525] border border-white/5 p-5 rounded-2xl group hover:bg-white/[0.04] transition-all">
                             <div className="flex items-center justify-between mb-3 text-slate-500 group-hover:text-indigo-400 transition-colors">

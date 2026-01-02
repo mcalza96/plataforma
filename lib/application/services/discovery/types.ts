@@ -51,4 +51,5 @@ export interface DiscoveryResponse {
     role: 'assistant';
     content: string;
     toolCalls: ToolCallResult[];
+    updatedContext?: any;
 }

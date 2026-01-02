@@ -120,7 +120,8 @@ export function useTelemetry() {
             confidence,
             ttft,
             confirmationLatency,
-            hoverTimeMs: 0 // Mobile has no hover, explicitly 0
+            hoverTimeMs: 0, // Mobile has no hover, explicitly 0
+            revisitCount: 0
         };
     }, [hesitationCount, focusLostCount, confidence, getActiveTime]);
 

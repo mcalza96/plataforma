@@ -4,7 +4,7 @@ import TenantSelector from '@/components/admin/TenantSelector';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import { IntegrityAlertFeed } from '@/components/admin/dashboard/IntegrityAlertFeed';
 import { redirect } from 'next/navigation';
-import { getGlobalTelemetryStats } from '@/lib/actions/admin/admin-analytics-actions';
+import { getGlobalTelemetryStats } from '@/lib/actions/admin/analytics/telemetry-actions';
 import TelemetryDashboard from '@/components/admin/analytics/TelemetryDashboard';
 import { Suspense } from 'react';
 import { Activity } from 'lucide-react';

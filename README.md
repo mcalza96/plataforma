@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TeacherOS - Plataforma de Inteligencia Pedagógica
 
-## Getting Started
+TeacherOS es una infraestructura de "Cognitive Engineering" diseñada para transformar la evaluación educativa en un proceso forense y adaptativo.
 
-First, run the development server:
+## Arquitectura Base (Pilares)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+El proyecto se organiza en torno a 4 pilares fundamentales que guían la toma de decisiones algorítmicas:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. 🪞 Mirror (Inteligencia & Telemetría)
+- **Propósito**: Visualizar la salud cognitiva del aula.
+- **Componentes**: `TeacherDashboard`, `StudentReport`, `InferenceEngine`.
+- **Métricas**: ECE (Expected Calibration Error), Entropía de Respuesta.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. 👤 Shadow (Ingeniería Forense de Errores)
+- **Propósito**: Identificar y desinfectar malentendidos conceptuales.
+- **Componentes**: `ForensicLedger`, `MisconceptionExtractor`, `ShadowWorkFlow`.
+- **Acción**: Mutaciones automáticas del grafo de conocimiento ante la detección de sesgos persistentes.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 🧗 Adventure (Descubrimiento & Orquestación)
+- **Propósito**: Descubrir el modelo mental del experto y trazar rutas de aprendizaje.
+- **Componentes**: `DiscoveryService` (Arquitecto Curricular), `AIOrchestratorService`, `PathPlanner`.
+- **Mecánica**: Entrevistas socráticas para la co-creación de Blueprints de evaluación.
 
-## Learn More
+### 4. ⚓ Anchor (Grafo de Conocimiento & Persistencia)
+- **Propósito**: Estabilidad y verdad única del dominio.
+- **Componentes**: `KnowledgeGraphService`, `SupabaseRepository`, `IRT-Calibration`.
 
-To learn more about Next.js, take a look at the following resources:
+## Stack Tecnológico
+- **Frontend**: Next.js 16 (App Router), TailwindCSS, Framer Motion.
+- **IA**: Vercel AI SDK (centralizado vía `AIProvider`), Groq/OpenAI.
+- **Persistencia**: Supabase (PostgreSQL, Auth, RLS).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Calibración Empírica
+La plataforma utiliza un motor de calibración basado en IRT (Item Response Theory) que detecta automáticamente ítems ambiguos (`HIGH_SLIP`) o distractores inútiles basándose en el comportamiento real de la cohorte.

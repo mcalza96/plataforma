@@ -104,3 +104,39 @@ export async function resetDiscoveryContext() {
 
     return { success: true };
 }
+export async function continueDiscovery(
+    messages: any[],
+    stage: string,
+    currentContext: any,
+    selectedBlockId?: string | null
+) {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: "Unauthorized" };
+
+    try {
+        const { DiscoveryService } = await import("@/lib/application/services/discovery/discovery-service");
+        const response = await DiscoveryService.continueInterview(messages, stage, currentContext, selectedBlockId);
+
+        // Process context updates
+        if (response.toolCalls && response.toolCalls.length > 0) {
+            const { ContextReducer } = await import("@/lib/application/services/discovery/context-reducer");
+            let mergedContext = { ...currentContext };
+
+            response.toolCalls.forEach(tc => {
+                if (tc.toolName === 'updateContext') {
+                    mergedContext = ContextReducer.merge(mergedContext, tc.args as any);
+                }
+            });
+
+            // Save updated context
+            await saveDiscoveryContext('draft-exam', mergedContext);
+            response.updatedContext = mergedContext;
+        }
+
+        return { success: true, ...response };
+    } catch (error: any) {
+        console.error("[discovery-actions] continueDiscovery failed:", error);
+        return { success: false, error: error.message };
+    }
+}

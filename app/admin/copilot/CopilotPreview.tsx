@@ -1,6 +1,6 @@
 'use client';
 
-import { useObject } from 'ai/react';
+import { experimental_useObject as useObject } from '@ai-sdk/react';
 import { ProposalSchema } from '@/lib/validations';
 import { Skeleton } from '@/components/ui/skeletons'; // Asumiendo que existe o crearé uno simple
 

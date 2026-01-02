@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
-import { StudentDTO } from '@/lib/domain/course';
+import { StudentDTO } from '@/lib/domain/dtos/learner';
 import AdminSidebar from './AdminSidebar';
 import AdminTopBar from './AdminTopBar';
 

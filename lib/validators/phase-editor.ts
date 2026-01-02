@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Lesson } from '@/lib/domain/entities/course';
+import { Lesson } from '@/lib/domain/schemas/course';
 
 import { StepData } from '@/components/admin/StepCard';
 

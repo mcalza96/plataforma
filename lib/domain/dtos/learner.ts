@@ -36,8 +36,12 @@ export interface StudentAchievement {
     achievements: Achievement;
 }
 
-import { StudentProgress } from '../entities/course';
-export type { StudentProgress };
+export interface StudentProgress {
+    studentId: string;
+    courseId: string;
+    progress: number;
+    lastAccess: Date;
+}
 
 export interface StudentStats {
     totalProjects: number;

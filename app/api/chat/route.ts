@@ -43,11 +43,10 @@ export async function POST(req: Request) {
 
             case 'PEDAGOGICAL_QUERY':
                 // Use FSM-based dynamic prompt for Curriculum Architect
-                const { continueInterview } = await import('@/lib/application/services/discovery');
+                const { DiscoveryService } = await import('@/lib/application/services/discovery');
                 const { loadDraftExam } = await import('@/lib/actions/assessment/discovery-actions');
 
                 // Fetch current context from database (Única Fuente de Verdad)
-                // This ensures we always have the latest Blueprint state, even if the client is out of sync
                 const examId = 'draft-exam'; // TODO: Get from user session
                 const { success: dbSuccess, context: dbContext } = await loadDraftExam(examId);
 
@@ -55,9 +54,15 @@ export async function POST(req: Request) {
 
                 console.log(`[Chat API] Using dynamic prompt for stage: ${stage} | Selected Block: ${selectedBlockId}`);
                 console.log(`[Chat API] Context source: ${dbSuccess ? 'DATABASE (fresh)' : 'CLIENT (fallback)'}`);
-                console.log(`[Chat API] Current context:`, currentContext);
 
-                return await continueInterview(coreMessages, stage, currentContext, selectedBlockId);
+                const response = await DiscoveryService.continueInterview(coreMessages, stage, currentContext, selectedBlockId);
+
+                return new Response(JSON.stringify(response), {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-tool-calls': JSON.stringify(response.toolCalls)
+                    }
+                });
 
 
             case 'CHAT':

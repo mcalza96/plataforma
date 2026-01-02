@@ -100,7 +100,7 @@ export const ConversationTurnSchema = z.object({
     role: z.enum(['agent', 'student']),
     content: z.string(),
     timestamp: z.date(),
-    metadata: z.record(z.unknown()).optional(), // Datos adicionales (ej: intención detectada)
+    metadata: z.record(z.string(), z.unknown()).optional(), // Datos adicionales (ej: intención detectada)
 });
 
 export type ConversationTurn = z.infer<typeof ConversationTurnSchema>;

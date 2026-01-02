@@ -95,7 +95,7 @@ export default async function FacultyAuditPage({ params }: PageProps) {
                             </div>
                             <h2 className="text-xl font-bold">Distribución de Nodos de Fricción</h2>
                         </div>
-                        <CohortHeatmap data={analytics} />
+                        <CohortHeatmap items={analytics.frictionNodes} />
                     </section>
 
                 </div>

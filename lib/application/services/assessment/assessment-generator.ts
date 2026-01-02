@@ -1,34 +1,10 @@
-'use server';
-
-import { createGroq } from '@ai-sdk/groq';
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { CompetencyNode } from '../../../domain/competency';
 import { ProbeOption, ProbeType } from '../../../domain/assessment';
 import { type PartialKnowledgeMap } from '../../../domain/discovery';
 import { PrototypeSchema, type PrototypeGenerationResult, ProbeGenerationSchema, ProbeGenerationResult } from './schemas';
 import { buildCompetencyProbePrompt, buildContextProbePrompt } from './prompts';
-
-/**
- * Lazily initializes the model to ensure environment variables are loaded.
- */
-function getModel(useFallback: boolean = false) {
-    const groqApiKey = process.env.GROQ_API_KEY;
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-
-    if (groqApiKey) {
-        const groq = createGroq({ apiKey: groqApiKey });
-        // Usar modelos GPT-OSS de OpenAI disponibles en Groq - soportan json_schema
-        return groq(useFallback ? 'openai/gpt-oss-20b' : 'openai/gpt-oss-120b');
-    }
-
-    if (openaiApiKey) {
-        const openai = createOpenAI({ apiKey: openaiApiKey });
-        return openai('gpt-4o');
-    }
-
-    throw new Error('No AI provider API keys found (GROQ_API_KEY or OPENAI_API_KEY)');
-}
+import { AIProvider } from '@/lib/infrastructure/ai/ai-provider';
 
 /**
  * Genera un probe basado en una competencia y sus misconceptions
@@ -38,7 +14,7 @@ export async function generateProbe(
     misconceptions: CompetencyNode[]
 ) {
     const systemPrompt = buildCompetencyProbePrompt(competency, misconceptions);
-    const model = getModel();
+    const model = AIProvider.getModel();
 
     const { object } = await generateObject({
         model,
@@ -47,9 +23,7 @@ export async function generateProbe(
         prompt: `Genera un instrumento de evaluación de alta fidelidad para la competencia "${competency.title}".`,
         experimental_telemetry: { isEnabled: false },
         // @ts-ignore - Disable strict mode for Groq compatibility
-        experimental_providerMetadata: {
-            groq: { structuredOutputs: false }
-        }
+        experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
     });
 
     return {
@@ -73,7 +47,7 @@ export async function generateProbeFromContext(
     context: PartialKnowledgeMap
 ) {
     const systemPrompt = buildContextProbePrompt(context);
-    const model = getModel();
+    const model = AIProvider.getModel();
 
     try {
         const { object } = await generateObject({
@@ -84,9 +58,7 @@ export async function generateProbeFromContext(
             temperature: 0.1,
             experimental_telemetry: { isEnabled: false },
             // @ts-ignore - Disable strict mode for Groq compatibility
-            experimental_providerMetadata: {
-                groq: { structuredOutputs: false }
-            }
+            experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
         });
 
         return {
@@ -106,8 +78,8 @@ export async function generateProbeFromContext(
         };
     } catch (error: any) {
         if (error.status === 429) {
-            console.warn(`[Generator] Rate limit hit. Falling back to 8b...`);
-            const fallbackModel = getModel(true);
+            console.warn(`[Generator] Rate limit hit. Falling back to smaller model...`);
+            const fallbackModel = AIProvider.getModel({ useFallback: true });
             const { object } = await generateObject({
                 model: fallbackModel,
                 system: systemPrompt,
@@ -116,9 +88,7 @@ export async function generateProbeFromContext(
                 temperature: 0.1,
                 experimental_telemetry: { isEnabled: false },
                 // @ts-ignore - Disable strict mode for Groq compatibility
-                experimental_providerMetadata: {
-                    groq: { structuredOutputs: false }
-                }
+                experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
             });
             return {
                 type: object.type as ProbeType,
@@ -161,7 +131,7 @@ REQUISITOS:
 2. Debes incluir "rationale" para cada opción (por qué es correcta o por qué es un distractor).
 3. El tono debe ser adecuado para la audiencia especificada.`;
 
-    const model = getModel();
+    const model = AIProvider.getModel();
 
     try {
         const { object } = await generateObject({
@@ -172,16 +142,14 @@ REQUISITOS:
             temperature: 0.1,
             experimental_telemetry: { isEnabled: false },
             // @ts-ignore - Disable strict mode for Groq compatibility
-            experimental_providerMetadata: {
-                groq: { structuredOutputs: false }
-            }
+            experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
         });
 
         return object;
     } catch (error: any) {
         if (error.status === 429) {
-            console.warn(`[Generator] Rate limit hit in prototypes. Falling back to 8b...`);
-            const fallbackModel = getModel(true);
+            console.warn(`[Generator] Rate limit hit in prototypes. Falling back to smaller model...`);
+            const fallbackModel = AIProvider.getModel({ useFallback: true });
             const { object } = await generateObject({
                 model: fallbackModel,
                 system: systemPrompt,
@@ -190,9 +158,7 @@ REQUISITOS:
                 temperature: 0.1,
                 experimental_telemetry: { isEnabled: false },
                 // @ts-ignore - Disable strict mode for Groq compatibility
-                experimental_providerMetadata: {
-                    groq: { structuredOutputs: false }
-                }
+                experimental_providerMetadata: AIProvider.getGroqStructuredMetadata()
             });
             return object;
         }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BloomLevel } from '../entities/course';
+import { BloomLevel } from '../assessment';
 
 // --- Content Library (Brickyard) ---
 

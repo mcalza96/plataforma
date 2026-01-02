@@ -37,7 +37,7 @@ export default function AdminShell({ children, user, role, student }: AdminShell
                     onMenuClick={() => setSidebarOpen(true)}
                 />
 
-                <main className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col min-h-0">
+                <main className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar flex flex-col min-h-0">
                     {children}
                 </main>
             </div>

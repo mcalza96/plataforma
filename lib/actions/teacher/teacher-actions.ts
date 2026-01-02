@@ -17,13 +17,3 @@ export async function getStudentAchievements(studentId: string) {
     const service = getStudentService();
     return await service.getStudentAchievements(studentId);
 }
-
-export async function getKnowledgeDelta(studentId: string): Promise<KnowledgeDelta[]> {
-    const service = getStudentService();
-    return await service.calculateKnowledgeDelta(studentId);
-}
-
-export async function getLearningFrontier(studentId: string): Promise<LearningFrontier[]> {
-    const service = getStudentService();
-    return await service.getStudentFrontier(studentId);
-}

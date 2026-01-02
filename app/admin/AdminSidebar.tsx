@@ -26,12 +26,13 @@ export default function AdminSidebar({ isOpen, onOpenChange, role }: AdminSideba
     }, [isOpen]);
 
     const navLinks = [
-        { href: '/admin/courses', label: 'Gestión de Cursos', icon: 'school', visible: true },
-        { href: '/admin/exam-builder', label: 'Constructor', icon: 'rocket_launch', visible: role === 'admin' || role === 'instructor' || role === 'teacher' },
+        { href: '/admin/exam-builder', label: 'Constructor IA', icon: 'auto_awesome', visible: role === 'admin' || role === 'instructor' || role === 'teacher' },
         { href: '/admin/exams', label: 'Gestión de Exámenes', icon: 'description', visible: role === 'admin' || role === 'instructor' || role === 'teacher' },
-        { href: '/admin/users', label: 'Gestión de Estudiantes', icon: 'group', visible: true },
         { href: '/admin/submissions', label: 'Entregas y Feedback', icon: 'reviews', visible: true },
         { href: '/admin/stats', label: 'Estadísticas Globales', icon: 'analytics', visible: role === 'admin' },
+        { href: '/admin/audit/items', label: 'Salud de Ítems', icon: 'health_and_safety', visible: role === 'admin' },
+        { href: '/admin/audit/graph', label: 'Mapa de Calor KST', icon: 'network_node', visible: role === 'admin' },
+        { href: '/admin/audit/fairness', label: 'Torre de Equidad', icon: 'balance', visible: role === 'admin' },
     ].filter(link => link.visible);
 
     return (

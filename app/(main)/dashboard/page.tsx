@@ -1,12 +1,9 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getStudentById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/learner';
 import { Suspense } from 'react';
 import DashboardFeedback from '@/components/dashboard/DashboardFeedback';
-import DashboardActiveMissions from '@/components/dashboard/DashboardActiveMissions';
-import { GridSkeleton } from '@/components/ui/skeletons';
 import { ExecutiveIntelligenceSection } from '@/components/dashboard/ExecutiveIntelligenceSection';
-import { KnowledgeMapSection } from '@/components/dashboard/KnowledgeMapSection';
 import { InterfaceAdaptationService } from '@/lib/application/services/interface-adapter';
 import { ModeContainer } from '@/components/dashboard/adaptive/ModeContainer';
 
@@ -71,39 +68,22 @@ export default async function DashboardPage() {
                 </div>
             )}
 
-            {/* Knowledge Map - Central Hub */}
-            {/* In Dashboard/Explorer it takes prominent space, in Mission it's the main focus */}
-            <div className={`${uiMode === 'DASHBOARD' ? 'col-span-2 row-span-2' : ''}`}>
-                <Suspense fallback={<div className="h-96 bg-zinc-900/40 animate-pulse rounded-3xl border border-white/5" />}>
-                    <KnowledgeMapSection mode={uiMode} />
-                </Suspense>
-            </div>
-
-            {/* Insight & Feedback Column */}
-            <div className="flex flex-col gap-6">
+            {/* Insight Section - Central Focus */}
+            <div className="col-span-full">
                 {/* Executive Intelligence - Hidden for Mission Mode */}
                 {config?.showCognitiveMirror && (
-                    <Suspense fallback={<div className="h-64 bg-slate-800/30 animate-pulse rounded-2xl" />}>
+                    <Suspense fallback={<div className="h-96 bg-slate-800/30 animate-pulse rounded-[3rem]" />}>
                         <ExecutiveIntelligenceSection />
                     </Suspense>
                 )}
+            </div>
 
-                {/* Feedback Feed */}
-                <Suspense fallback={<div className="h-24 bg-white/5 animate-pulse rounded-2xl" />}>
+            {/* Feedback Feed - Secondary */}
+            <div className="col-span-full lg:col-span-2">
+                <Suspense fallback={<div className="h-32 bg-white/5 animate-pulse rounded-[2.5rem]" />}>
                     <DashboardFeedback studentId={studentId} />
                 </Suspense>
             </div>
-
-            {/* Missions List - Secondary for Dashboard, Primary for Mission? */}
-            {/* Actually in Mission Mode, the Map Section acts as the "Active Mission" CTA. 
-                 We might hide the generic list or simplify it. */}
-            {uiMode !== 'MISSION' && (
-                <div className={`${uiMode === 'DASHBOARD' ? 'col-span-full' : ''}`}>
-                    <Suspense fallback={<GridSkeleton count={3} />}>
-                        <DashboardActiveMissions studentId={studentId} />
-                    </Suspense>
-                </div>
-            )}
         </ModeContainer>
     );
 }

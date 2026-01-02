@@ -1,22 +1,15 @@
-import { SupabaseCourseRepository } from '@/lib/infrastructure/supabase/supabase-course-repository';
-import { SupabaseLessonRepository } from '@/lib/infrastructure/supabase/supabase-lesson-repository';
 import { SupabaseContentRepository } from '@/lib/infrastructure/supabase/supabase-content-repository';
 import { SupabaseCompetencyRepository } from '@/lib/infrastructure/supabase/supabase-competency-repository';
 import { SupabaseLearnerRepository } from '@/lib/infrastructure/supabase/supabase-learner-repository';
 import { SupabaseStatsRepository } from '@/lib/infrastructure/supabase/supabase-stats-repository';
+import { SupabaseSubmissionRepository } from '@/lib/infrastructure/supabase/supabase-submission-repository';
 
-import {
-    ICourseReader,
-    ICourseWriter
-} from '@/lib/domain/repositories/course-repository';
 import { IStudentRepository } from '@/lib/domain/repositories/learner-repository';
 import { IStatsRepository } from '@/lib/domain/repositories/stats-repository';
-import { ILessonRepository } from '@/lib/domain/repositories/lesson-repository';
 import { IContentRepository } from '@/lib/domain/repositories/content-repository';
 import { ICompetencyRepository } from '@/lib/domain/repositories/competency-repository';
+import { ISubmissionRepository } from '@/lib/domain/repositories/submission-repository';
 
-import { CourseService } from '@/lib/application/services/course-service';
-import { LessonService } from '@/lib/application/services/lesson-service';
 import { SubmissionService } from '@/lib/application/services/submission-service';
 import { FeedbackService } from '@/lib/application/services/feedback-service';
 import { MetadataService } from '@/lib/application/services/metadata';
@@ -35,17 +28,14 @@ import { LangChainAIAdapter } from '@/lib/adapters/ai-adapter';
  */
 
 // Repositories & Adapters
-let supabaseCourseRepo: SupabaseCourseRepository | null = null;
 let studentRepository: IStudentRepository | null = null;
 let statsRepository: IStatsRepository | null = null;
-let lessonRepository: ILessonRepository | null = null;
 let contentRepository: IContentRepository | null = null;
 let competencyRepository: ICompetencyRepository | null = null;
+let submissionRepository: ISubmissionRepository | null = null;
 let aiProvider: IAIProvider | null = null;
 
 // Services
-let courseService: CourseService | null = null;
-let lessonService: LessonService | null = null;
 let submissionService: SubmissionService | null = null;
 let feedbackService: FeedbackService | null = null;
 let metadataService: MetadataService | null = null;
@@ -53,19 +43,6 @@ let aiOrchestratorService: AIOrchestratorService | null = null;
 let studentService: StudentService | null = null;
 let teacherService: TeacherService | null = null;
 let adminService: AdminService | null = null;
-
-/**
- * Getters for Segregated Course Repositories
- */
-export function getCourseReader(): ICourseReader {
-    if (!supabaseCourseRepo) supabaseCourseRepo = new SupabaseCourseRepository();
-    return supabaseCourseRepo;
-}
-
-export function getCourseWriter(): ICourseWriter {
-    if (!supabaseCourseRepo) supabaseCourseRepo = new SupabaseCourseRepository();
-    return supabaseCourseRepo;
-}
 
 export function getStudentRepository(): IStudentRepository {
     if (!studentRepository) studentRepository = new SupabaseLearnerRepository();
@@ -77,14 +54,9 @@ export function getStatsRepository(): IStatsRepository {
     return statsRepository;
 }
 
-/**
- * Singleton instance of the Lesson Repository.
- */
-export function getLessonRepository(): ILessonRepository {
-    if (!lessonRepository) {
-        lessonRepository = new SupabaseLessonRepository();
-    }
-    return lessonRepository;
+export function getSubmissionRepository(): ISubmissionRepository {
+    if (!submissionRepository) submissionRepository = new SupabaseSubmissionRepository();
+    return submissionRepository;
 }
 
 /**
@@ -98,27 +70,13 @@ export function getCompetencyRepository(): ICompetencyRepository {
 }
 
 /**
- * Singleton instance of the Course Service.
- */
-export function getCourseService(): CourseService {
-    if (!courseService) {
-        courseService = new CourseService(
-            getCourseReader(),
-            getCourseWriter()
-        );
-    }
-    return courseService;
-}
-
-/**
  * Singleton instance of the Student Service.
  */
 export function getStudentService(): StudentService {
     if (!studentService) {
         studentService = new StudentService(
             getStudentRepository(),
-            getStatsRepository(),
-            getCourseReader()
+            getStatsRepository()
         );
     }
     return studentService;
@@ -145,16 +103,6 @@ export function getAdminService(): AdminService {
         );
     }
     return adminService;
-}
-
-/**
- * Singleton instance of the Lesson Service.
- */
-export function getLessonService(): LessonService {
-    if (!lessonService) {
-        lessonService = new LessonService(getLessonRepository(), getCourseReader());
-    }
-    return lessonService;
 }
 
 /**
@@ -207,7 +155,7 @@ export function getAIOrchestratorService(): AIOrchestratorService {
  */
 export function getSubmissionService(): SubmissionService {
     if (!submissionService) {
-        submissionService = new SubmissionService(getLessonRepository());
+        submissionService = new SubmissionService(getSubmissionRepository());
     }
     return submissionService;
 }
@@ -217,7 +165,7 @@ export function getSubmissionService(): SubmissionService {
  */
 export function getFeedbackService(): FeedbackService {
     if (!feedbackService) {
-        feedbackService = new FeedbackService(getLessonRepository());
+        feedbackService = new FeedbackService(getSubmissionRepository());
     }
     return feedbackService;
 }

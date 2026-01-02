@@ -1,0 +1,62 @@
+-- FINAL AUDIT VIEWS CONSOLIDATION
+-- teacher-os-methodology: Equidad Algorítmica
+
+-- 1. Actualizar vw_remediation_fairness para soportar todos los campos del dashboard
+DROP VIEW IF EXISTS vw_remediation_fairness CASCADE;
+
+CREATE OR REPLACE VIEW vw_remediation_fairness AS
+SELECT 
+    e.creator_id as teacher_id,
+    p.demographic_group,
+    p.access_type,
+    COUNT(DISTINCT ea.id) as total_attempts,
+    -- Failed attempts (score < 60)
+    COUNT(CASE WHEN (ea.results_cache->>'overallScore')::float < 60 THEN 1 END) as failed_attempts,
+    -- Avg Score
+    AVG((ea.results_cache->>'overallScore')::float) as avg_score,
+    -- Intervention Rate (Refutations / Total Attempts)
+    -- We assume 'applied_mutations' tracks AI interventions
+    ROUND(
+        COUNT(CASE WHEN m.value->>'action' = 'INSERT_NODE' THEN 1 END)::numeric / 
+        GREATEST(COUNT(DISTINCT ea.id), 1), 2
+    )::float as intervention_rate
+FROM 
+    public.exam_attempts ea
+JOIN 
+    public.exams e ON ea.exam_config_id = e.id
+JOIN 
+    public.profiles p ON ea.learner_id = p.id
+LEFT JOIN 
+    jsonb_array_elements(ea.applied_mutations) m ON true
+WHERE 
+    ea.status = 'COMPLETED'
+GROUP BY 
+    e.creator_id, p.demographic_group, p.access_type;
+
+-- 2. Diferencial Item Functioning (DIF) View
+-- Detecta si un ítem tiene tasas de éxito disparmente diferentes entre grupos
+CREATE OR REPLACE VIEW vw_item_dif AS
+WITH item_performance AS (
+    SELECT 
+        e.creator_id as teacher_id,
+        key as question_id,
+        p.demographic_group,
+        AVG(CASE WHEN (value->>'isCorrect')::boolean THEN 1 ELSE 0 END) as success_rate
+    FROM exam_attempts ea
+    JOIN exams e ON ea.exam_config_id = e.id
+    JOIN profiles p ON ea.learner_id = p.id
+    CROSS JOIN LATERAL jsonb_each(ea.current_state) as answers(key, value)
+    WHERE ea.status = 'COMPLETED'
+    GROUP BY e.creator_id, key, p.demographic_group
+)
+SELECT 
+    question_id,
+    MAX(success_rate) - MIN(success_rate) as gap,
+    CASE 
+        WHEN MAX(success_rate) - MIN(success_rate) > 0.2 THEN 'CRITICAL'
+        WHEN MAX(success_rate) - MIN(success_rate) > 0.1 THEN 'WARNING'
+        ELSE 'OPTIMAL'
+    END as status
+FROM item_performance
+GROUP BY question_id
+HAVING MAX(success_rate) - MIN(success_rate) > 0.1;

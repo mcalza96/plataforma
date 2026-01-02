@@ -1,20 +1,20 @@
-import { ILessonRepository } from '../../domain/repositories/lesson-repository';
+import { ISubmissionRepository } from '../../domain/repositories/submission-repository';
 
 /**
  * Service for managing student feedback
  */
 export class FeedbackService {
-    constructor(private lessonRepository: ILessonRepository) { }
+    constructor(private repository: ISubmissionRepository) { }
 
     async getStudentFeedback(studentId: string): Promise<any[]> {
-        return this.lessonRepository.getStudentFeedback(studentId);
+        return this.repository.getStudentFeedback(studentId);
     }
 
     async getUnreadFeedbackCount(studentId: string): Promise<number> {
-        return this.lessonRepository.getUnreadFeedbackCount(studentId);
+        return this.repository.getUnreadFeedbackCount(studentId);
     }
 
     async markFeedbackAsRead(messageId: string): Promise<void> {
-        return this.lessonRepository.markFeedbackAsRead(messageId);
+        return this.repository.markFeedbackAsRead(messageId);
     }
 }

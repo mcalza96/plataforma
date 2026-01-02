@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+export enum BloomLevel {
+    RECUERDO = 'Recordar',
+    COMPRENSION = 'Comprender',
+    APLICACION = 'Aplicar',
+    ANALISIS = 'Analizar',
+    EVALUACION = 'Evaluar',
+    CREACION = 'Crear'
+}
+
 /**
  * Assessment types for Diagnostic Probes
  */

@@ -1,4 +1,4 @@
-import { BloomLevel } from '../../../domain/entities/course';
+import { BloomLevel } from '@/lib/domain/assessment';
 
 /**
  * Resultado del análisis de contenido

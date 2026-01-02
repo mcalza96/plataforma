@@ -1,14 +1,10 @@
 import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import {
-    getStudentFullStats,
-    getTeacherFeedback,
-    getStudentAchievements,
-    getKnowledgeDelta,
-    getLearningFrontier
+    getStudentFullStats
 } from '@/lib/actions/teacher/teacher-actions';
-import { getStudentById } from '@/lib/data/courses';
-import Header from '@/components/layout/header';
+import { getTeacherAnalytics } from '@/lib/actions/teacher/teacher-analytics-actions';
+import { getStudentById } from '@/lib/data/learner';
 import TeacherDashboardView from '@/components/teacher/TeacherDashboardView';
 
 /**
@@ -27,27 +23,18 @@ export default async function TeacherDashboardPage() {
     const student = await getStudentById(studentId);
     if (!student) return redirect('/select-profile');
 
-    // Step 2: Parallel data resolution (Wayfinding/Stats/Feedback/Achievements)
-    const [stats, feedback, achievements, knowledgeDelta, frontier] = await Promise.all([
+    // Step 2: Parallel data resolution (Wayfinding/Stats/Analytics)
+    const [stats, analytics] = await Promise.all([
         getStudentFullStats(studentId),
-        getTeacherFeedback(studentId),
-        getStudentAchievements(studentId),
-        getKnowledgeDelta(studentId),
-        getLearningFrontier(studentId)
+        getTeacherAnalytics()
     ]);
 
     return (
         <div className="min-h-screen bg-[#1A1A1A] text-white flex flex-col">
             <TeacherDashboardView
                 student={student}
-                stats={{
-                    ...stats,
-                    skills: stats.skills.map(s => ({ ...s, description: '' })) // Ensure descriptions exist for tooltips
-                }}
-                feedback={feedback}
-                achievements={achievements}
-                knowledgeDelta={knowledgeDelta}
-                frontier={frontier}
+                stats={stats}
+                analytics={analytics}
             />
         </div>
     );

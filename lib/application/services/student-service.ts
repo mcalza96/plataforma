@@ -1,6 +1,5 @@
 import { IStudentRepository } from '../../domain/repositories/learner-repository';
 import { IStatsRepository } from '../../domain/repositories/stats-repository';
-import { ICourseReader } from '../../domain/repositories/course-repository';
 import { Student } from '../../domain/entities/learner';
 import { StudentStats, StudentAchievement, KnowledgeDelta, LearningFrontier } from '../../domain/dtos/learner';
 import { LearnerLevel } from '../../domain/value-objects';
@@ -12,10 +11,9 @@ export class StudentService {
 
     constructor(
         private learnerRepository: IStudentRepository,
-        private statsRepository: IStatsRepository,
-        private courseReader: ICourseReader
+        private statsRepository: IStatsRepository
     ) {
-        this.getStatsUC = new GetStudentStatsUseCase(this.statsRepository, this.courseReader);
+        this.getStatsUC = new GetStudentStatsUseCase(this.statsRepository);
     }
 
     async getStudentById(studentId: string): Promise<Student | null> {

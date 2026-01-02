@@ -7,6 +7,7 @@ export const createMockOption = (overrides: Partial<ProbeOption> = {}): ProbeOpt
         overrides.isCorrect ?? false,
         overrides.feedback || null,
         overrides.diagnosesMisconceptionId || null,
+        overrides.isGap ?? false,
         overrides.id || `opt-${Math.random().toString(36).substr(2, 9)}`
     );
 };
@@ -59,6 +60,7 @@ export const createMockResult = (
         overrides.learnerId || 'learner-001',
         selectedOptionId,
         overrides.timeSpentSeconds || 30,
+        overrides.attemptId || 'attempt-001',
         overrides.createdAt || new Date()
     );
 };

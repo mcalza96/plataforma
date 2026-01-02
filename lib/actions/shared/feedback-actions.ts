@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { getSubmissionService, getFeedbackService } from '@/lib/infrastructure/di';
 import { getUserRole } from '@/lib/infrastructure/auth-utils';
-import { FeedbackSchema } from '@/lib/validations';
+import { FeedbackSchema } from '@/lib/domain/schemas/course';
 
 /**
  * Obtiene las entregas filtradas para el administrador o profesor
@@ -45,7 +45,7 @@ export async function submitReview(data: z.infer<typeof FeedbackSchema>) {
 
         await service.submitReview({
             submissionId: validated.submissionId,
-            studentId: validated.learnerId, // Se mapea por compatibilidad con el schema actual
+            studentId: validated.studentId, // Se mapea por compatibilidad con el schema actual
             content: validated.content,
             badgeId: validated.badgeId
         }, role);

@@ -3,7 +3,7 @@ import { getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
 import { cookies } from 'next/headers';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import UserMenu from '@/components/layout/UserMenu';
-import { getStudentById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/learner';
 import HeaderNav from './HeaderNav';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 

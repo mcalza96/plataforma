@@ -4,6 +4,10 @@ import TenantSelector from '@/components/admin/TenantSelector';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
 import { IntegrityAlertFeed } from '@/components/admin/dashboard/IntegrityAlertFeed';
 import { redirect } from 'next/navigation';
+import { getGlobalTelemetryStats } from '@/lib/actions/admin/admin-analytics-actions';
+import TelemetryDashboard from '@/components/admin/analytics/TelemetryDashboard';
+import { Suspense } from 'react';
+import { Activity } from 'lucide-react';
 
 interface AdminStatsPageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -65,7 +69,26 @@ export default async function AdminStatsPage({ searchParams }: AdminStatsPagePro
             )}
 
             {/* Integrity Feed */}
-            <IntegrityAlertFeed teacherId={teacherId} />
+            <IntegrityAlertFeed teacherId={teacherId || ''} />
+
+            {/* Telemetry Dashboard Section */}
+            {!teacherId && (
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-indigo-500">analytics</span>
+                        <h2 className="text-2xl font-bold text-white">Eficiencia y Telemetría Global</h2>
+                    </div>
+                    <Suspense fallback={
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
+                            <div className="h-[400px] bg-white/[0.02] border border-white/5 animate-pulse rounded-3xl" />
+                            <div className="h-[400px] bg-white/[0.02] border border-white/5 animate-pulse rounded-3xl" />
+                            <div className="h-[200px] lg:col-span-2 bg-white/[0.02] border border-white/5 animate-pulse rounded-3xl" />
+                        </div>
+                    }>
+                        <TelemetryDataWrapper />
+                    </Suspense>
+                </div>
+            )}
 
             {/* Quick Actions / Insights placeholder */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -101,4 +124,9 @@ export default async function AdminStatsPage({ searchParams }: AdminStatsPagePro
             </div>
         </div>
     );
+}
+
+async function TelemetryDataWrapper() {
+    const stats = await getGlobalTelemetryStats();
+    return <TelemetryDashboard stats={stats} />;
 }

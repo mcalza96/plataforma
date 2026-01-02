@@ -1,26 +1,26 @@
-import { BloomLevel } from '../../../domain/entities/course';
+import { BloomLevel } from '@/lib/domain/assessment';
 import type { Diagnosis } from './types';
 
 /**
  * Genera el prompt para secuenciación de contenido
  */
 export function buildPlanningPrompt(
-    diagnosis: Diagnosis,
-    alosMetadata: Array<{
-        id: string;
-        title: string;
-        type: string;
-        level: string;
-        skills: string[];
-    }>
+  diagnosis: Diagnosis,
+  alosMetadata: Array<{
+    id: string;
+    title: string;
+    type: string;
+    level: string;
+    skills: string[];
+  }>
 ): string {
-    return `
+  return `
 Eres el "Secretario Técnico" de una academia EdTech LEGO. 
 Tu misión es diseñar un "Camino de Aprendizaje" personalizado.
 
 DIAGNÓSTICO DEL ALUMNO:
-- Edad: ${diagnosis.learner_profile.age}
-- Estilo: ${diagnosis.learner_profile.style}
+- Edad: ${diagnosis.student_profile.age}
+- Estilo: ${diagnosis.student_profile.style}
 - Materia: ${diagnosis.subject}
 - Brechas: ${diagnosis.identified_gaps.join(", ")}
 
@@ -47,7 +47,7 @@ Responde ÚNICAMENTE en formato JSON plano:
  * Genera el prompt para generación de quizzes
  */
 export function buildQuizPrompt(context: string): string {
-    return `
+  return `
 Genera un banco de 5 preguntas de opción múltiple (evaluación formativa) basadas en:
 ${context}
 

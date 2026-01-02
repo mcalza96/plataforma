@@ -6,68 +6,17 @@ export class SupabaseStatsRepository implements IStatsRepository {
     async getStudentFullStats(studentId: string): Promise<StudentStats> {
         const supabase = await createClient();
 
-        // 1. Total Completed Lessons
-        const { count: completedLections } = await supabase
-            .from('learner_progress')
-            .select('*', { count: 'exact', head: true })
-            .eq('learner_id', studentId)
-            .eq('is_completed', true);
-
-        // 2. Total Submissions (Projects)
-        const { count: totalProjects } = await supabase
+        // 1. Total Diagnostics (Submissions)
+        const { count: totalDiagnostics } = await supabase
             .from('submissions')
             .select('*', { count: 'exact', head: true })
             .eq('learner_id', studentId);
 
-        // 3. Estimated Hours
-        const { data: progressData } = await supabase
-            .from('learner_progress')
-            .select('completed_steps')
-            .eq('learner_id', studentId);
-
-        const totalSteps = progressData?.reduce((acc, curr) => acc + (curr.completed_steps || 0), 0) || 0;
-        const hoursPracticed = Math.round((totalSteps * 15) / 60);
-
-        // 4. Skills by Category
-        const { data: courses } = await supabase
-            .from('courses')
-            .select(`
-category,
-    lessons(
-        id,
-        total_steps,
-        learner_progress(
-            learner_id,
-            completed_steps
-        )
-    )
-        `);
-
-        const skillsMap: Record<string, { completed: number; total: number }> = {};
-
-        courses?.forEach(course => {
-            const cat = course.category || 'General';
-            if (!skillsMap[cat]) skillsMap[cat] = { completed: 0, total: 0 };
-
-            course.lessons?.forEach((lesson: any) => {
-                skillsMap[cat].total += lesson.total_steps;
-                const progress = lesson.learner_progress?.find((p: any) => p.learner_id === studentId);
-                skillsMap[cat].completed += progress?.completed_steps || 0;
-            });
-        });
-
-        const skillColors = ['#a855f7', '#0d93f2', '#10b981', '#f59e0b'];
-        const skills = Object.entries(skillsMap).map(([name, data], index) => ({
-            name,
-            percentage: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
-            color: skillColors[index % skillColors.length]
-        }));
-
         return {
-            totalProjects: totalProjects || 0,
-            hoursPracticed: hoursPracticed || 0,
-            completedLections: completedLections || 0,
-            skills
+            totalProjects: totalDiagnostics || 0,
+            hoursPracticed: 0,
+            completedLections: 0,
+            skills: []
         };
     }
 

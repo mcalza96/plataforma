@@ -1,6 +1,6 @@
 import { AtomicLearningObject } from '../../../domain/schemas/alo';
 import { z } from 'zod';
-import { DiagnosisSchema } from '../../../validations';
+import { DiagnosisSchema } from '@/lib/domain/assessment';
 
 export type Diagnosis = z.infer<typeof DiagnosisSchema>;
 

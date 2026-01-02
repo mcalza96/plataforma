@@ -1,7 +1,7 @@
 import { createGroq } from '@ai-sdk/groq';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { BloomLevel } from '../../../domain/entities/course';
+import { BloomLevel } from '@/lib/domain/assessment';
 import { MODEL_NAME, SYSTEM_PROMPT, buildAnalysisPrompt } from './constants';
 import { mapToBloomLevel } from './bloom-mapper';
 import type { ContentAnalysisResult } from './types';

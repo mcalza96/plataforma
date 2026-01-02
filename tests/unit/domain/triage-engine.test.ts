@@ -12,13 +12,15 @@ describe('TriageEngine', () => {
             // When: El motor evalúa el resultado
             const mutations = TriageEngine.evaluate(probe, result);
 
-            // Then: Debe haber una mutación de inserción antes con estado 'infected'
-            expect(mutations).toHaveLength(1);
+            // Then: Debe haber una mutación de inserción antes con estado 'infected' y un LOCK_DOWNSTREAM
+            expect(mutations).toHaveLength(2);
             expect(mutations[0].action).toBe('INSERT_NODE');
             expect(mutations[0].targetNodeId).toBe(probe.competencyId);
             expect(mutations[0].metadata.newStatus).toBe('infected');
             expect(mutations[0].metadata.contentId).toBe('error-masa-vs-peso');
-            expect(mutations[0].reason).toContain('Detectado error conceptual específico');
+
+            expect(mutations[1].action).toBe('LOCK_DOWNSTREAM');
+            expect(mutations[1].metadata.newStatus).toBe('locked');
         });
     });
 

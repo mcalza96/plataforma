@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getStudentSubmissions } from '@/lib/actions/shared/storage-actions';
-import { getStudentById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/learner';
 import { Submission } from '@/lib/domain/course';
 import UploadZone from '@/components/gallery/UploadZone';
 import Link from 'next/link';

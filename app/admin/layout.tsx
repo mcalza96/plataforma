@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { isAdmin, getAuthUser, getUserRole } from '@/lib/infrastructure/auth-utils';
-import { getStudentById } from '@/lib/data/courses';
+import { getStudentById } from '@/lib/data/learner';
 import AdminShell from './AdminShell';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,32 +1,33 @@
-import { CompetencyGraphSkeleton, DiagnosisCardSkeleton, GridSkeleton } from '@/components/ui/skeletons';
+'use client';
+
+import React from 'react';
 
 export default function AdminLoading() {
     return (
-        <div className="space-y-6 p-8 animate-in fade-in duration-500">
-            <div className="flex items-center justify-between mb-8">
-                <div className="h-8 w-64 bg-gray-100/50 rounded-md animate-pulse" />
-                <div className="h-10 w-32 bg-gray-100/50 rounded-md animate-pulse" />
-            </div>
+        <div className="flex-1 w-full p-6 animate-in fade-in duration-300 bg-background-dark">
+            {/* Dashboard Skeleton */}
+            <div className="space-y-8 max-w-7xl mx-auto">
+                {/* Header Skeleton */}
+                <div className="h-12 w-64 bg-surface/20 rounded-xl animate-pulse" />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Main Content Area - Graph */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
-                        <div className="h-6 w-48 bg-gray-100 rounded mb-4 animate-pulse" />
-                        <CompetencyGraphSkeleton />
-                    </div>
-
-                    {/* Insights Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DiagnosisCardSkeleton />
-                        <DiagnosisCardSkeleton />
-                    </div>
+                {/* Metrics Skeleton */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => (
+                        <div key={i} className="h-32 bg-surface/20 rounded-2xl animate-pulse" />
+                    ))}
                 </div>
 
-                {/* Sidebar / Secondary Stats */}
-                <div className="space-y-6">
-                    <GridSkeleton count={2} />
-                    <div className="h-64 bg-gray-50 rounded-xl border border-gray-100 animate-pulse" />
+                {/* Table/Content Skeleton */}
+                <div className="bg-surface/10 rounded-3xl border border-white/5 h-[600px] animate-pulse relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent h-12" />
+                </div>
+            </div>
+
+            {/* Floating Status Indicator */}
+            <div className="fixed bottom-12 right-12 flex flex-col items-end gap-2 text-primary">
+                <div className="flex items-center gap-3 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
+                    <div className="size-2 rounded-full bg-primary animate-ping" />
+                    <p className="text-xs font-black text-primary uppercase tracking-[0.2em] animate-pulse">Sincronizando Inteligencia...</p>
                 </div>
             </div>
         </div>

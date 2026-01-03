@@ -8,22 +8,22 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://procreatealpha.studio'),
-  title: 'Procreate Alpha Studio | Academia de Arte Digital para Niños',
-  description: 'Transforma el talento de tus hijos en maestría digital. Lecciones de Procreate aplicadas al dibujo tradicional para niños de 9 a 12 años.',
-  keywords: ['arte digital', 'niños', 'procreate', 'dibujo', 'academia', 'educación', 'iPad', 'clases de arte'],
-  authors: [{ name: 'Procreate Alpha Studio' }],
+  metadataBase: new URL('https://www.jitdata.cl'),
+  title: 'JIT Data Analytics | Inteligencia Artificial y Análisis de Datos Educativos',
+  description: 'Optimizando el aprendizaje a través del análisis de datos en tiempo real. Plataforma avanzada de telemetría y diagnóstico cognitivo.',
+  keywords: ['data analytics', 'educación', 'IA', 'telemetría', 'JIT Data', 'diagnóstico cognitivo', 'análisis de datos'],
+  authors: [{ name: 'JIT Data Team' }],
   openGraph: {
-    title: 'Procreate Alpha Studio | Academia de Arte Digital',
-    description: 'La primera academia de arte digital que enseña el proceso real. ¡Inscribe a tu pequeño artista hoy!',
-    url: 'https://procreatealpha.studio',
-    siteName: 'Procreate Alpha Studio',
+    title: 'JIT Data Analytics | Inteligencia Educativa',
+    description: 'Transformamos datos en decisiones pedagógicas accionables.',
+    url: 'https://www.jitdata.cl',
+    siteName: 'JIT Data Analytics',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'Procreate Alpha Studio - Academia de Arte Digital'
+        alt: 'JIT Data Analytics - Inteligencia Educativa'
       },
     ],
     locale: 'es_ES',
@@ -31,8 +31,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Procreate Alpha Studio | Academia de Arte Digital',
-    description: 'Transforma el talento de tus hijos en maestría digital.',
+    title: 'JIT Data Analytics | Data Driven Education',
+    description: 'La próxima generación de analítica de aprendizaje.',
     images: ['/og-image.jpg'],
   },
 };

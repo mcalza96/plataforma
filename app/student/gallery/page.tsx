@@ -13,11 +13,11 @@ export default async function GalleryPage() {
     const studentId = cookieStore.get('learner_id')?.value;
 
     if (!studentId) {
-        return redirect('/select-profile');
+        return redirect('/student');
     }
 
     const student = await getStudentById(studentId);
-    if (!student) return redirect('/select-profile');
+    if (!student) return redirect('/student');
 
     const submissions = await getStudentSubmissions(studentId);
 
@@ -38,11 +38,11 @@ export default async function GalleryPage() {
                         </div>
                     </div>
                     <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2">
-                        Galería de <span className="text-primary">{student.display_name}</span>
+                        Portafolio de <span className="text-primary">{student.display_name}</span>
                     </h1>
-                    <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-xs">Exhibición de Portfolio • Nivel {student.level}</p>
+                    <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-xs">Historial de Evidencia • Nivel {student.level}</p>
                     <p className="text-gray-400 mt-3 text-lg max-w-2xl">
-                        Aquí guardamos todas tus videos de Procreate. Cada trazo es un paso más hacia convertirte en un gran maestro digital.
+                        Repositorio centralizado de registros diagnósticos y evidencia de desempeño para cada sesión de análisis.
                     </p>
                 </section>
 
@@ -54,15 +54,15 @@ export default async function GalleryPage() {
                 {/* Grid Section */}
                 <section>
                     <div className="flex items-center gap-3 mb-8">
-                        <span className="material-symbols-outlined text-primary">collections</span>
-                        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Mis Obras Maestras</h2>
+                        <span className="material-symbols-outlined text-primary">database</span>
+                        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Registros de Desempeño</h2>
                     </div>
 
                     {submissions.length === 0 ? (
                         <EmptyState
-                            icon="movie"
-                            title="Tu galería está vacía"
-                            description="Sube tu primer video de Procreate para empezar a construir tu portfolio profesional."
+                            icon="analytics"
+                            title="Tu portafolio está vacío"
+                            description="Carga tu primer registro de análisis para iniciar tu historial de evidencia basada en datos."
                         />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -82,7 +82,7 @@ export default async function GalleryPage() {
 
                                         <div className="absolute bottom-4 left-4 right-4 z-10 transition-transform duration-500 group-hover:translate-x-1">
                                             <p className="text-[10px] font-black uppercase text-primary tracking-widest mb-1">
-                                                {submission.category || 'Obra Libre'}
+                                                {submission.category || 'Análisis Libre'}
                                             </p>
                                             <h3 className="text-white font-black italic uppercase tracking-tighter line-clamp-1">
                                                 {submission.title}

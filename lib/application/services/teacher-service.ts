@@ -11,7 +11,7 @@ export class TeacherService {
     }
 
     async getTeacherById(id: string, userRole: string): Promise<TeacherTenantDTO | null> {
-        AuthGuard.check(userRole, ['admin']);
+        AuthGuard.check(userRole, ['admin', 'teacher', 'instructor']);
         return this.learnerRepository.getTeacherById(id);
     }
 }

@@ -37,22 +37,22 @@ export default async function DashboardPage() {
     return (
         <ModeContainer mode={uiMode}>
             {/* Header Section - Adaptive Copy */}
-            <div className={`flex flex-wrap justify-between items-end gap-6 pb-4 border-b border-[#223949] ${uiMode === 'DASHBOARD' ? 'col-span-full' : ''}`}>
+            <div className={`flex flex-wrap justify-between items-end gap-6 pb-4 border-b border-white/5 ${uiMode === 'DASHBOARD' ? 'col-span-full' : ''}`}>
                 <div className="flex min-w-72 flex-col gap-2">
                     <h1 className="text-white text-4xl sm:text-5xl font-black leading-tight tracking-[-0.033em]">
                         {uiMode === 'MISSION' ? '¡Hola, ' : 'Bienvenido, '}
                         <span className="text-primary">{student.display_name}.</span>
                     </h1>
-                    <p className="text-[#90b2cb] text-lg font-normal leading-normal">
-                        {uiMode === 'MISSION' ? '¿Cuál es nuestra misión de hoy?' : 'Tu estudio creativo está listo.'}
+                    <p className="text-slate-400 text-lg font-normal leading-normal">
+                        {uiMode === 'MISSION' ? '¿Cuál es nuestro objetivo de análisis hoy?' : 'Tu estudio de datos JIT está listo.'}
                     </p>
                 </div>
                 {uiMode !== 'MISSION' && (
                     <div className="flex gap-4">
                         <div className="flex flex-col items-end">
-                            <span className="text-xs font-bold text-[#90b2cb] uppercase tracking-wider">Nivel Actual</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nivel Actual</span>
                             <span className="text-xl font-bold text-white flex items-center gap-1">
-                                <span className="material-symbols-outlined text-secondary fill-1">bolt</span>
+                                <span className="material-symbols-outlined text-secondary fill-1 animate-pulse">bolt</span>
                                 Estudiante Nvl. {student.level}
                             </span>
                         </div>
@@ -74,7 +74,7 @@ export default async function DashboardPage() {
             <div className="col-span-full">
                 {/* Executive Intelligence - Hidden for Mission Mode */}
                 {config?.showCognitiveMirror && (
-                    <Suspense fallback={<div className="h-96 bg-slate-800/30 animate-pulse rounded-[3rem]" />}>
+                    <Suspense fallback={<div className="h-96 bg-surface/20 animate-pulse rounded-[3rem]" />}>
                         <ExecutiveIntelligenceSection />
                     </Suspense>
                 )}
@@ -82,7 +82,7 @@ export default async function DashboardPage() {
 
             {/* Feedback Feed - Secondary */}
             <div className="col-span-full lg:col-span-2">
-                <Suspense fallback={<div className="h-32 bg-white/5 animate-pulse rounded-[2.5rem]" />}>
+                <Suspense fallback={<div className="h-32 bg-surface/10 animate-pulse rounded-[2.5rem]" />}>
                     <DashboardFeedback studentId={studentId} />
                 </Suspense>
             </div>

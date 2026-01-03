@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
         url.pathname.startsWith('/gallery') ||
         url.pathname.startsWith('/lessons') ||
         url.pathname.startsWith('/admin') ||
-        url.pathname.startsWith('/select-profile');
+        url.pathname.startsWith('/student');
 
     const isAdminRoute = url.pathname.startsWith('/admin');
 
@@ -60,9 +60,8 @@ export async function middleware(request: NextRequest) {
         return redirectResponse;
     };
 
-    // 1. Si el usuario está autenticado y trata de acceder a login/signup -> Redirigir a selección de perfil
     if (user && isAuthRoute) {
-        return redirectWithCookies('/select-profile');
+        return redirectWithCookies('/student');
     }
 
     // 2. Si el usuario NO está autenticado y trata de acceder a rutas protegidas -> Redirigir a /login

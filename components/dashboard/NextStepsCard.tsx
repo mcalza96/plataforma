@@ -99,7 +99,7 @@ export const NextStepsCard: React.FC<NextStepsCardProps> = ({ attemptId }) => {
                                                         ? "border-rose-500/30 text-rose-500 bg-rose-500/5"
                                                         : "border-amber-500/30 text-amber-500 bg-amber-500/5"}
                                                 >
-                                                    {item.diagnosis.state === 'MISCONCEPTION' ? 'MISIÓN: REPARACIÓN (BUG)' : 'MISIÓN: NIVELACIÓN (GAP)'}
+                                                    {item.diagnosis.state === 'MISCONCEPTION' ? 'DIAGNÓSTICO: REPARACIÓN' : 'DIAGNÓSTICO: NIVELACIÓN'}
                                                 </Badge>
                                             </div>
 

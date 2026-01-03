@@ -17,7 +17,7 @@ export default async function AdminUsersPage() {
                 <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Centro de Comando</p>
+                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em]">Gestión Operativa</p>
                     </div>
                     <h1 className="text-4xl font-black tracking-tighter text-white">Gestión de Identidades</h1>
                     <p className="text-gray-400 text-sm max-w-md">Administración de flota de docentes y despliegue de aprendices.</p>

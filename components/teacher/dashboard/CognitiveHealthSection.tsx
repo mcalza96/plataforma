@@ -31,12 +31,12 @@ export const CognitiveHealthSection = ({ analytics }: CognitiveHealthSectionProp
                 <ShadowBoard pathologies={analytics.pathologyRanking} />
             </div>
         ) : (
-            <div className="border-2 border-dashed border-white/5 p-16 rounded-[3rem] text-center bg-white/[0.01]">
-                <span className="material-symbols-outlined text-5xl text-gray-800 mb-4">analytics</span>
-                <p className="text-gray-400 italic font-bold max-w-xs mx-auto text-sm mb-4">
+            <div className="border-2 border-dashed border-white/5 p-16 rounded-3xl text-center bg-surface/20 backdrop-blur-sm">
+                <span className="material-symbols-outlined text-5xl text-slate-700 mb-4">analytics</span>
+                <p className="text-slate-400 italic font-bold max-w-xs mx-auto text-sm mb-4">
                     No hay datos de analítica forense todavía.
                 </p>
-                <p className="text-gray-600 text-xs italic">
+                <p className="text-slate-600 text-xs italic">
                     Asigna tu primer diagnóstico para activar la capa de inteligencia cognitiva.
                 </p>
             </div>

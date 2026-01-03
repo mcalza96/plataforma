@@ -18,7 +18,7 @@ const routeMap: Record<string, string> = {
     courses: 'Misiones',
     submissions: 'Correcciones',
     users: 'Artistas',
-    dashboard: 'Misión Control',
+    dashboard: 'Dashboard',
     gallery: 'Galería',
     'parent-dashboard': 'Padres',
     resources: 'Recursos',

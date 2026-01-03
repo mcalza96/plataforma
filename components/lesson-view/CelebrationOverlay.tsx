@@ -14,8 +14,8 @@ export default function CelebrationOverlay({ isVisible }: CelebrationOverlayProp
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500 pointer-events-none overflow-hidden">
             <div className="relative z-10 text-center animate-bounce-snappy">
                 <span className="material-symbols-outlined text-[120px] text-primary drop-shadow-[0_0_50px_rgba(13,147,242,0.8)]">emoji_events</span>
-                <h2 className="text-5xl font-black text-white mt-6 uppercase tracking-tighter drop-shadow-lg leading-none">¡Misión Cumplida!</h2>
-                <p className="text-primary font-bold tracking-[0.3em] uppercase mt-4 text-sm">Nivel Superado</p>
+                <h2 className="text-5xl font-black text-white mt-6 uppercase tracking-tighter drop-shadow-lg leading-none">¡Objetivo Logrado!</h2>
+                <p className="text-primary font-bold tracking-[0.3em] uppercase mt-4 text-sm">Análisis Completado</p>
             </div>
             {/* CSS Particles */}
             <div className="absolute inset-0 particles">

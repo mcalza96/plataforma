@@ -1,5 +1,5 @@
 -- ========================================================
--- PROCREATE ALPHA STUDIO - SCHEMA MAESTRO CONSOLIDADO
+-- JIT DATA ANALYTICS - SCHEMA MAESTRO CONSOLIDADO
 -- ========================================================
 
 -- 1. EXTENSIONES Y FUNCIONES AUXILIARES

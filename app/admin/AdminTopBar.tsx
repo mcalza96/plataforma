@@ -17,18 +17,18 @@ interface AdminTopBarProps {
 
 export default function AdminTopBar({ user, role, student, onMenuClick }: AdminTopBarProps) {
     return (
-        <div className="h-16 flex items-center justify-between px-6 xl:px-8 bg-[#1A1A1A]/50 border-b border-white/5 backdrop-blur-md sticky top-0 z-30">
+        <div className="h-16 flex items-center justify-between px-6 xl:px-8 bg-surface/50 border-b border-white/5 backdrop-blur-md sticky top-0 z-30">
             {/* Left: Mobile Toggle & Context */}
             <div className="flex items-center gap-4">
                 <button
                     onClick={onMenuClick}
-                    className="xl:hidden size-10 flex items-center justify-center text-gray-400 hover:text-white transition-all active:scale-90"
+                    className="xl:hidden size-10 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-90"
                 >
                     <span className="material-symbols-outlined text-2xl font-black">menu</span>
                 </button>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 italic">Puesto de Mando TeacherOS</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 italic">Puesto de Mando TeacherOS</span>
                 </div>
             </div>
 
@@ -36,7 +36,8 @@ export default function AdminTopBar({ user, role, student, onMenuClick }: AdminT
             <div className="flex items-center gap-4">
                 <Link
                     href="/dashboard"
-                    className="flex items-center gap-2 px-4 h-9 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-amber-500 transition-all active:scale-95"
+                    prefetch={true}
+                    className="flex items-center gap-2 px-4 h-9 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary transition-all active:scale-95 shadow-lg shadow-primary/10"
                 >
                     <span className="material-symbols-outlined text-[16px]">exit_to_app</span>
                     <span className="hidden sm:inline">Salir de Comando</span>

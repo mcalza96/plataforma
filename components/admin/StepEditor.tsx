@@ -7,7 +7,7 @@ interface StepEditorProps {
     label?: string;
 }
 
-export default function StepEditor({ value, onChange, max = 20, label = "Pasos de la Misión" }: StepEditorProps) {
+export default function StepEditor({ value, onChange, max = 20, label = "Niveles del Diagnóstico" }: StepEditorProps) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-end mb-2">
@@ -28,8 +28,8 @@ export default function StepEditor({ value, onChange, max = 20, label = "Pasos d
                         type="button"
                         onClick={() => onChange(i + 1)}
                         className={`group relative flex-1 rounded-sm transition-all duration-300 transform active:scale-90 ${i < value
-                                ? 'bg-amber-500 shadow-[0_5px_15px_rgba(245,158,11,0.2)]'
-                                : 'bg-white/5 hover:bg-white/10'
+                            ? 'bg-amber-500 shadow-[0_5px_15px_rgba(245,158,11,0.2)]'
+                            : 'bg-white/5 hover:bg-white/10'
                             }`}
                     >
                         {/* LEGO Stud */}

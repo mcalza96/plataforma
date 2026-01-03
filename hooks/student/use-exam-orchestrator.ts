@@ -75,8 +75,7 @@ export function useExamOrchestrator(questions: Question[], attemptId: string, ex
     }, [currentQuestionIndex]);
 
     const handleAnswer = useCallback((payload: AnswerPayload) => {
-        const currentRevisitCount = revisitCounts.get(payload.questionId) || 0;
-        const enrichedTelemetry = { ...payload.telemetry, revisitCount: currentRevisitCount };
+        const enrichedTelemetry = { ...payload.telemetry };
 
         trackAnswer(payload.questionId, payload.value, enrichedTelemetry);
         setAnswers((prev) => new Map(prev).set(payload.questionId, payload.value));
@@ -87,7 +86,7 @@ export function useExamOrchestrator(questions: Question[], attemptId: string, ex
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex((prev) => prev + 1);
         }
-    }, [questions.length, currentQuestionIndex, trackAnswer, revisitCounts]);
+    }, [questions.length, currentQuestionIndex, trackAnswer]);
 
     const toggleFlag = useCallback(() => {
         const currentQuestion = questions[currentQuestionIndex];

@@ -19,10 +19,10 @@ import { ResponseTelemetry, BehaviorProfile, StudentResponse } from '../assessme
 // CONFIGURACIÓN DE UMBRALES (Thresholds)
 // ============================================================================
 
-const RAPID_GUESSING_THRESHOLD_MS = 300; // Relaxed for Testing (was 2000)
-const RAPID_GUESSING_RTE_THRESHOLD = 0.05; // Relaxed for Testing (was 0.3)
+const RAPID_GUESSING_THRESHOLD_MS = 300; // Absolute fallback
 const HESITATION_THRESHOLD_CHANGES = 2;
 const HOVER_TIME_THRESHOLD_MS = 1500;
+const TUNNEL_VISION_RTE_THRESHOLD = 1.5; // High effort, high failure indicator
 
 // Mobile / Latency Factors
 const VOLATILITY_FACTOR = 0.5; // Multiplier for option changes
@@ -92,6 +92,7 @@ export function calculateBehaviorProfile(
             isImpulsive: false,
             isAnxious: false,
             isConsistent: true,
+            isTunnelVision: false,
         };
     }
 
@@ -121,10 +122,18 @@ export function calculateBehaviorProfile(
         return isHighConfidenceError || isLowConfidenceSuccess;
     }).length;
 
+    // 4. Tunnel Vision (Temporal Inefficiency)
+    // Detects students who spend excessive time but still fail.
+    const tunnelVisionCount = responses.filter((r) => {
+        const isInefficient = r.telemetry.rte !== undefined && r.telemetry.rte > TUNNEL_VISION_RTE_THRESHOLD;
+        return isInefficient && !r.isCorrect;
+    }).length;
+
     return {
         isImpulsive: impulsiveCount > responses.length * 0.3, // > 30% are rapid guesses
         isAnxious: anxiousCount > responses.length * 0.4,     // > 40% are anxious/doubtful
         isConsistent: inconsistentCount < responses.length * 0.2, // < 20% inconsistency allowed
+        isTunnelVision: tunnelVisionCount > responses.length * 0.2, // > 20% show tunnel vision
     };
 }
 

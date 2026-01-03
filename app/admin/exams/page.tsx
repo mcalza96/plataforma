@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/infrastructure/supabase/supabase-server";
 import { ExportButton } from "@/components/admin/ExportButton";
 import Link from "next/link";
-import { ChevronRight, FileJson, Rocket } from "lucide-react";
+import { ChevronRight, FileJson, Terminal } from "lucide-react";
 import { getStudentRepository } from "@/lib/infrastructure/di";
 import ExamAssignmentManager from "@/components/admin/ExamAssignmentManager";
 import { ExamActionsMenu } from "@/components/admin/ExamActionsMenu";
@@ -44,7 +44,7 @@ export default async function AdminExamsPage() {
                     href="/admin/exam-builder?reset=true"
                     className="flex items-center gap-2 bg-amber-500 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg active:scale-95"
                 >
-                    <Rocket size={16} />
+                    <Terminal size={16} />
                     NUEVO EXAMEN
                 </Link>
             </div>

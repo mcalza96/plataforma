@@ -4,7 +4,7 @@ interface StatCardProps {
     value: string | number;
     label: string;
     icon?: string;
-    variant?: 'default' | 'primary' | 'amber' | 'violet';
+    variant?: 'default' | 'primary' | 'secondary' | 'violet';
     trend?: {
         value: number;
         isPositive: boolean;
@@ -21,17 +21,17 @@ export default function StatCard({
     className = ''
 }: StatCardProps) {
     const variants = {
-        default: 'bg-white/[0.03] border-white/5 hover:bg-white/5 text-white',
-        primary: 'bg-primary/5 border-primary/20 hover:bg-primary/10 text-primary',
-        amber: 'bg-amber-500/5 border-amber-500/20 hover:bg-amber-500/10 text-amber-500',
-        violet: 'bg-neon-violet/5 border-neon-violet/20 hover:bg-neon-violet/10 text-neon-violet',
+        default: 'bg-surface/50 border-white/5 hover:bg-surface/80 text-white',
+        primary: 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary',
+        secondary: 'bg-secondary/10 border-secondary/20 hover:bg-secondary/20 text-secondary',
+        violet: 'bg-primary/10 border-primary/20 hover:bg-primary/20 text-primary',
     };
 
     const textColors = {
         default: 'text-white',
         primary: 'text-primary',
-        amber: 'text-amber-500',
-        violet: 'text-neon-violet',
+        secondary: 'text-secondary',
+        violet: 'text-primary',
     };
 
     return (
@@ -44,8 +44,8 @@ export default function StatCard({
             <div className={`absolute -right-6 -top-6 h-24 w-24 rounded-full blur-3xl opacity-20 transition-opacity group-hover:opacity-40
                 ${variant === 'default' ? 'bg-white' : ''}
                 ${variant === 'primary' ? 'bg-primary' : ''}
-                ${variant === 'amber' ? 'bg-amber-500' : ''}
-                ${variant === 'violet' ? 'bg-neon-violet' : ''}
+                ${variant === 'secondary' ? 'bg-secondary' : ''}
+                ${variant === 'violet' ? 'bg-primary' : ''}
             `} />
 
             <div className="relative z-10 flex flex-col justify-between h-full gap-4">

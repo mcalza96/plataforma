@@ -31,7 +31,7 @@ const MENU_GROUPS: NavGroup[] = [
         items: [
             { href: '/admin/stats', label: 'Monitor de Cohorte', icon: 'monitoring' },
             { href: '/admin/submissions', label: 'Sala de Corrección', icon: 'assignment_turned_in' },
-            { href: '/admin/users', label: 'Directorio de Artistas', icon: 'group' },
+            { href: '/admin/users', label: 'Gestión de Usuarios', icon: 'group' },
         ]
     },
     {
@@ -71,18 +71,18 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
 
             {/* Sidebar Container */}
             <aside className={`
-                fixed top-0 bottom-0 left-0 w-72 bg-[#1A1A1A] border-r border-white/5 z-[160]
+                fixed top-0 bottom-0 left-0 w-72 bg-surface/50 backdrop-blur-md border-r border-white/5 z-[160]
                 flex flex-col shadow-2xl xl:shadow-none
-                transition-transform duration-300 ease-in-out
+                transition-transform duration-200 cubic-bezier(0.2, 1, 0.2, 1)
                 ${isOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}
             `}>
                 {/* Branding / Space */}
-                <div className="h-20 flex items-center px-8 border-b border-white/5 bg-[#1A1A1A]">
-                    <div className="size-10 bg-amber-500 rounded-xl flex items-center justify-center avatar-glow">
-                        <span className="material-symbols-outlined text-black text-2xl font-bold">terminal</span>
+                <div className="h-20 flex items-center px-8 border-b border-white/5 bg-surface/30">
+                    <div className="size-10 bg-primary rounded-xl flex items-center justify-center avatar-glow">
+                        <span className="material-symbols-outlined text-white text-2xl font-black">terminal</span>
                     </div>
                     <div className="ml-4 flex flex-col">
-                        <span className="font-black text-[10px] uppercase tracking-[0.3em] text-amber-500">TeacherOS</span>
+                        <span className="font-black text-[10px] uppercase tracking-[0.3em] text-primary">TeacherOS</span>
                         <span className="font-bold text-xs text-white">HUB TÁCTICO</span>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
                 <div className="flex-1 overflow-y-auto custom-scrollbar px-3 py-6 space-y-8">
                     {MENU_GROUPS.map((group) => (
                         <div key={group.title} className="space-y-3">
-                            <h3 className="px-4 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+                            <h3 className="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
                                 {group.title}
                             </h3>
                             <div className="space-y-1">
@@ -101,16 +101,17 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            prefetch={true}
                                             className={`
-                                                flex items-center gap-4 px-4 min-h-[44px] rounded-2xl transition-all group relative overflow-hidden
+                                                flex items-center gap-4 px-4 min-h-[44px] rounded-2xl transition-all duration-200 cubic-bezier(0.2, 1, 0.2, 1) group relative overflow-hidden active:scale-[0.98]
                                                 ${isActive
-                                                    ? 'bg-amber-500/10 text-amber-500'
-                                                    : 'text-gray-400 hover:bg-white/5 hover:text-white'}
+                                                    ? 'bg-primary/10 text-primary'
+                                                    : 'text-slate-400 hover:bg-white/5 hover:text-white'}
                                             `}
                                         >
                                             <span className={`
-                                                material-symbols-outlined transition-all duration-300
-                                                ${isActive ? 'text-amber-400 scale-110' : 'text-gray-600 group-hover:text-amber-500 group-hover:scale-110'}
+                                                material-symbols-outlined transition-all duration-200
+                                                ${isActive ? 'text-primary scale-110' : 'text-slate-600 group-hover:text-primary group-hover:scale-110'}
                                             `}>
                                                 {item.icon}
                                             </span>
@@ -120,7 +121,7 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
 
                                             {/* Active Indicator Chip */}
                                             {isActive && (
-                                                <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                                                <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
                                             )}
                                         </Link>
                                     );
@@ -130,10 +131,11 @@ export default function AdminSidebar({ isOpen, onOpenChange }: AdminSidebarProps
                     ))}
                 </div>
 
-                <div className="p-6 border-t border-white/5 bg-[#1A1A1A]">
+                <div className="p-6 border-t border-white/5 bg-surface/30">
                     <Link
                         href="/dashboard"
-                        className="flex items-center gap-3 px-4 min-h-[44px] rounded-xl hover:bg-white/5 transition-colors text-xs text-gray-500 font-bold group"
+                        prefetch={true}
+                        className="flex items-center gap-3 px-4 min-h-[44px] rounded-xl hover:bg-white/5 transition-colors text-xs text-slate-500 font-bold group"
                     >
                         <span className="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform">arrow_back</span>
                         VOLVER AL DASHBOARD

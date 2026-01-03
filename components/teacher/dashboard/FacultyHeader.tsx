@@ -20,17 +20,17 @@ export default function FacultyHeader({ teacherName, cohortSize }: FacultyHeader
             transition={{ duration: 0.4 }}
             className="mb-8"
         >
-            <div className="bg-gradient-to-r from-[#252525] to-[#1A1A1A] border border-white/5 rounded-2xl p-8">
+            <div className="bg-surface/50 backdrop-blur-md border border-white/5 rounded-2xl p-8 shadow-xl">
                 {/* Title Section */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <div className="flex items-center gap-3 mb-2">
-                            <span className="material-symbols-outlined text-emerald-500 text-2xl">school</span>
+                            <span className="material-symbols-outlined text-primary text-2xl">school</span>
                             <h1 className="text-3xl font-black text-white tracking-tight">
                                 Centro de Inteligencia de Facultad
                             </h1>
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-slate-400 text-sm">
                             Profesor: <span className="text-white font-bold">{teacherName}</span>
                         </p>
                     </div>
@@ -47,36 +47,36 @@ export default function FacultyHeader({ teacherName, cohortSize }: FacultyHeader
                 {/* Metrics Bar */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Cohort Size */}
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-xl p-4">
+                    <div className="bg-surface/40 border border-white/5 rounded-xl p-4 hover:bg-surface/60 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-amber-500 text-lg">groups</span>
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-secondary text-lg">groups</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                 Cohorte Activa
                             </span>
                         </div>
                         <p className="text-2xl font-black text-white font-mono">
-                            {cohortSize} <span className="text-sm font-normal text-gray-400">estudiantes</span>
+                            {cohortSize} <span className="text-sm font-normal text-slate-400">estudiantes</span>
                         </p>
                     </div>
 
                     {/* KPIs Placeholder */}
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-xl p-4">
+                    <div className="bg-surface/40 border border-white/5 rounded-xl p-4 hover:bg-surface/60 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-blue-500 text-lg">analytics</span>
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-primary text-lg">analytics</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                 Salud Curricular
                             </span>
                         </div>
                         <p className="text-2xl font-black text-white font-mono">
-                            --<span className="text-sm font-normal text-gray-400"> KPI</span>
+                            --<span className="text-sm font-normal text-slate-400"> KPI</span>
                         </p>
                     </div>
 
                     {/* Synchronization Status */}
-                    <div className="bg-[#1A1A1A] border border-white/5 rounded-xl p-4">
+                    <div className="bg-surface/40 border border-white/5 rounded-xl p-4 hover:bg-surface/60 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="material-symbols-outlined text-purple-500 text-lg">sync</span>
-                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-indigo-400 text-lg">sync</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                 Última Sincronización
                             </span>
                         </div>

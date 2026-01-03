@@ -69,7 +69,7 @@ export default function PhaseNavigator({ courseId, adjacent }: PhaseNavigatorPro
                         <div className="size-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-800">
                             <span className="material-symbols-outlined text-[20px]">last_page</span>
                         </div>
-                        <p className="text-[9px] font-black text-gray-800 uppercase tracking-widest hidden sm:block">Misión Completa</p>
+                        <p className="text-[9px] font-black text-gray-800 uppercase tracking-widest hidden sm:block">Diagnóstico Finalizado</p>
                     </div>
                 )}
             </div>

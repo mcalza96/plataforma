@@ -33,7 +33,7 @@ export function PhaseHeader({
                 <Link
                     href={`/admin/courses/${courseId}?tab=curriculum`}
                     className="size-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 transition-all active:scale-95"
-                    title="Volver a la Misión"
+                    title="Volver al Diagnóstico"
                 >
                     <span className="material-symbols-outlined text-[20px]">arrow_back</span>
                 </Link>

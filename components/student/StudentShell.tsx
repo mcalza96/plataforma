@@ -28,30 +28,30 @@ export default function StudentShell({ children, user, role, student }: StudentS
     }, [pathname]);
 
     return (
-        <div className="flex flex-col xl:flex-row h-screen bg-[#1A1A1A] overflow-hidden">
+        <div className="flex flex-col xl:flex-row h-screen bg-background-dark overflow-hidden">
             {/* Sidebar with controlled state */}
             <StudentSidebar isOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
 
             {/* Main Content Area */}
-            <div className="flex-1 xl:ml-64 flex flex-col h-screen relative bg-[#1A1A1A] overflow-hidden min-h-0">
+            <div className="flex-1 xl:ml-64 flex flex-col h-screen relative bg-background-dark overflow-hidden min-h-0 will-change-transform">
                 {/* Top Bar */}
-                <header className="flex-shrink-0 h-20 border-b border-white/5 flex items-center justify-between px-6 bg-[#1A1A1A]">
+                <header className="flex-shrink-0 h-20 border-b border-white/5 flex items-center justify-between px-6 bg-surface/30 backdrop-blur-md z-50">
                     {/* Mobile Menu Toggle */}
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="xl:hidden p-2 hover:bg-white/5 rounded-lg transition-colors"
+                        className="xl:hidden p-2 hover:bg-white/5 rounded-lg transition-colors active:scale-90"
                         aria-label="Menu"
                     >
-                        <span className="material-symbols-outlined text-white text-2xl">menu</span>
+                        <span className="material-symbols-outlined text-white text-2xl font-black">menu</span>
                     </button>
 
-                    {/* Level Display / Gamification (Placeholder) */}
+                    {/* Level Display / Gamification */}
                     <div className="hidden md:flex items-center gap-4">
                         {student && (
-                            <div className="px-4 py-1.5 rounded-full bg-surface/50 border border-white/10 flex items-center gap-3">
-                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Nivel {student.level}</span>
-                                <div className="w-24 h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                                    <div className="h-full bg-primary w-2/3" />
+                            <div className="px-5 py-2 rounded-full bg-surface/50 border border-white/5 flex items-center gap-3 shadow-lg shadow-black/20">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estudiante Nivel {student.level}</span>
+                                <div className="w-24 h-1.5 bg-background-dark rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary w-2/3 shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
                                 </div>
                             </div>
                         )}

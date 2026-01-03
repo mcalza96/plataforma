@@ -25,7 +25,7 @@ export class SupabaseSubmissionRepository implements ISubmissionRepository {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('submissions')
-            .select('*, student:profiles(display_name, level, avatar_url)')
+            .select('*, student:learners(display_name, level, avatar_url)')
             .eq('learner_id', studentId)
             .order('created_at', { ascending: false });
 
@@ -55,7 +55,7 @@ export class SupabaseSubmissionRepository implements ISubmissionRepository {
         const supabase = await createClient();
         const { data, error } = await supabase
             .from('submissions')
-            .select('*, student:profiles(id, display_name, level, avatar_url)')
+            .select('*, student:learners(id, display_name, level, avatar_url)')
             .eq('id', id)
             .single();
 

@@ -36,9 +36,15 @@ export class AssessmentService {
         const responses = questions.map(q => {
             const studentValue = state[q.id];
             const qLogs = logs?.filter(l => l.payload.questionId === q.id) || [];
+
+            // Get the last valid answer update for this question
             const answerLog = [...qLogs].reverse().find(l => l.event_type === 'ANSWER_UPDATE');
+
             const selectedOption = q.options?.find((o: any) => o.id === studentValue);
             const isCorrect = selectedOption?.isCorrect === true;
+
+            // We count HESITATION events directly from the log for absolute fidelity
+            const hesitationCount = qLogs.filter(l => l.event_type === 'HESITATION').length;
 
             return {
                 questionId: q.id,
@@ -48,7 +54,7 @@ export class AssessmentService {
                 telemetry: {
                     timeMs: answerLog?.payload?.telemetry?.timeMs || 0,
                     expectedTime: q.expected_time_seconds || 60,
-                    hesitationCount: qLogs.filter(l => l.event_type === 'HESITATION').length,
+                    hesitationCount: hesitationCount,
                     focusLostCount: qLogs.filter(l => l.event_type === 'FOCUS_LOST').length,
                     revisitCount: (answerLog?.payload?.telemetry?.revisitCount || 0) as number,
                     hoverTimeMs: 0,
@@ -57,14 +63,19 @@ export class AssessmentService {
         });
 
         const qMatrix = questions.map(q => {
-            const misconception = examData.matrix?.misconceptions?.find((m: any) =>
-                m.description.includes(q.stem) || q.options?.some((o: any) => o.id === m.trapOptionId)
-            );
+            // Shadow Nodes: Find if ANY option selected by student handles a specific misconception
+            const studentValue = state[q.id];
+            const selectedOption = q.options?.find((o: any) => o.id === studentValue);
+
+            // Logic: A question is a Trap if it has options with diagnosesMisconceptionId
+            const trapOption = q.options?.find((o: any) => !!o.diagnosesMisconceptionId);
+
             return {
                 questionId: q.id,
                 competencyId: q.competencyId || 'generic',
-                isTrap: !!misconception,
-                trapOptionId: misconception?.trapOptionId || q.options?.find((o: any) => !o.isCorrect && !o.isGap)?.id,
+                isTrap: !!trapOption,
+                trapOptionId: trapOption?.id,
+                misconceptionId: selectedOption?.diagnosesMisconceptionId || undefined,
                 idDontKnowOptionId: q.options?.find((o: any) => o.isGap === true)?.id
             };
         });

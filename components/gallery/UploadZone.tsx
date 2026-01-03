@@ -31,7 +31,7 @@ export default function UploadZone({ studentId, courseId, lessonId }: UploadZone
         formData.append('studentId', studentId);
         if (lessonId) formData.append('lessonId', lessonId);
         formData.append('title', file.name.split('.')[0]);
-        formData.append('category', 'Procreate Time-lapse');
+        formData.append('category', 'Registro de Telemetría');
 
         try {
             setProgress(40);
@@ -91,10 +91,10 @@ export default function UploadZone({ studentId, courseId, lessonId }: UploadZone
                 </div>
 
                 <h3 className="text-2xl font-bold text-white mb-2">
-                    {uploading ? 'Subiendo tu obra...' : status === 'success' ? '¡Obra Subida!' : '¡Muestra tu Arte!'}
+                    {uploading ? 'Sincronizando registro...' : status === 'success' ? '¡Registro Cargado!' : 'Cargar Evidencia'}
                 </h3>
                 <p className="text-gray-400 max-w-xs mx-auto mb-6">
-                    {uploading ? 'Estamos guardando tu creación en la galería...' : 'Arrastra tu video exportado de Procreate o haz clic para buscarlo.'}
+                    {uploading ? 'Estamos vinculando tu registro al portafolio de datos...' : 'Arrastra tu archivo de evidencia o haz clic para seleccionarlo.'}
                 </p>
 
                 {/* Progress Bar */}
@@ -112,7 +112,7 @@ export default function UploadZone({ studentId, courseId, lessonId }: UploadZone
                         <span className="material-symbols-outlined text-sm">movie</span> MP4 / MOV
                     </span>
                     <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">timer</span> TIME-LAPSE
+                        <span className="material-symbols-outlined text-sm">monitoring</span> TELEMETRÍA
                     </span>
                 </div>
             </div>

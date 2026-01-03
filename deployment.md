@@ -1,13 +1,13 @@
-# Guía de Despliegue: Lanzamiento de Procreate Alpha Studio
+# Guía de Despliegue: Lanzamiento de JIT Data Analytics
 
-Para que tu academia sea accesible en todo el mundo, usaremos **Vercel** por su integración nativa con Next.js.
+Para que tu plataforma sea accesible en todo el mundo, usaremos **Vercel** por su integración nativa con Next.js.
 
 ## 1. Preparación en GitHub
-1. Crea un nuevo repositorio en GitHub (ej: `procreate-alpha-studio`).
+1. Crea un nuevo repositorio en GitHub (ej: `jit-data-analytics`).
 2. Sube tu código:
    ```bash
    git add .
-   git commit -m "Lanzamiento V2 - Landing & Admin"
+   git commit -m "Identity Shift - JIT Data Analytics"
    git push origin main
    ```
 
@@ -19,7 +19,7 @@ Para que tu academia sea accesible en todo el mundo, usaremos **Vercel** por su 
 | :--- | :--- |
 | `NEXT_PUBLIC_SUPABASE_URL` | La URL de tu proyecto en Supabase. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | La llave pública anónima de Supabase. |
-| `SUPABASE_SERVICE_ROLE_KEY` | (Opcional) Para acciones administrativas de alta seguridad. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Para acciones administrativas de alta seguridad. |
 | `ADMIN_EMAIL` | El email que tendrá acceso al panel `/admin` (ej: `mca@test.com`). |
 
 3. Haz clic en **Deploy**. ¡Vercel generará una URL pública para ti!
@@ -33,8 +33,8 @@ Para que el login funcione en producción, debes añadir la URL de Vercel a la l
 
 ## 🚀 Checklist de Lanzamiento
 - [ ] ¿Están las tablas SQL creadas en Supabase?
-- [ ] ¿Está creado el bucket `art-portfolio` en Storage?
+- [ ] ¿Están configuradas las políticas RLS para JIT Data?
 - [ ] ¿Has configurado el `ADMIN_EMAIL` correcto?
-- [ ] ¿Has probado el flujo de Magic Link en el dominio de producción?
+- [ ] ¿Has probado el flujo de Magic Link en el dominio de producción (`jitdata.cl`)?
 
-¡Felicidades por lanzar tu propia academia de arte digital! 🎨✨
+¡Felicidades por lanzar la plataforma de JIT Data Analytics! 📊⚡️

@@ -25,12 +25,12 @@ export default function AdminShell({ children, user, role, student }: AdminShell
     }, [pathname]);
 
     return (
-        <div className="flex flex-col xl:flex-row h-screen bg-[#1A1A1A] overflow-hidden">
+        <div className="flex flex-col xl:flex-row h-screen bg-background-dark overflow-hidden">
             {/* Sidebar with controlled state */}
-            <AdminSidebar isOpen={sidebarOpen} onOpenChange={setSidebarOpen} role={role} />
+            <AdminSidebar isOpen={sidebarOpen} onOpenChange={setSidebarOpen} />
 
             {/* Main Content Area - Fixed height to prevent overflow */}
-            <div className="flex-1 xl:ml-64 flex flex-col h-screen relative bg-[#1A1A1A] overflow-hidden min-h-0">
+            <div className="flex-1 xl:ml-64 flex flex-col h-screen relative bg-background-dark overflow-hidden min-h-0 will-change-transform">
                 <AdminTopBar
                     user={user}
                     role={role}

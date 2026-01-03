@@ -15,7 +15,7 @@ export default async function AssessmentPage({ params }: AssessmentPageProps) {
 
     // 1. Session Validation Shield
     if (!studentId) {
-        redirect('/select-profile');
+        redirect('/student');
     }
 
     // 2. Fetch Exam Configuration via Server Action 

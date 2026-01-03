@@ -23,7 +23,7 @@ export default function NotFound() {
                 href="/dashboard"
                 className="px-10 py-4 bg-amber-500 text-black font-black rounded-2xl text-xs uppercase tracking-[0.2em] shadow-xl shadow-amber-500/20 active:scale-95 transition-all hover:bg-amber-400"
             >
-                Regresar a la Misión
+                Volver al Dashboard
             </Link>
         </div>
     );

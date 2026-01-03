@@ -20,21 +20,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
     let student = null;
     if (studentId) {
         student = await getStudentById(studentId);
-    } else if (role === 'admin') {
-        // For admin development: try to get first available student or allow null
-        const { createClient } = await import('@/lib/infrastructure/supabase/supabase-server');
-        const supabase = await createClient();
-        const { data: firstStudent } = await supabase
-            .from('learners')
-            .select('*')
-            .limit(1)
-            .single();
-
-        if (firstStudent) {
-            student = firstStudent;
-            // Optionally set cookie for convenience
-            cookieStore.set('learner_id', firstStudent.id);
-        }
+        // Fallback si la cookie es inválida o el estudiante ya no existe
+        if (!student) return redirect('/api/student/init');
+    } else {
+        // Redirigir al inicializador de sesión si no hay cookie
+        return redirect('/api/student/init');
     }
 
     return (

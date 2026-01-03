@@ -203,6 +203,7 @@ export const BehaviorProfileSchema = z.object({
     isImpulsive: z.boolean(), // Tendencia a responder demasiado rápido
     isAnxious: z.boolean(),   // Tendencia a dudar mucho (hesitation)
     isConsistent: z.boolean(), // Congruencia entre confianza y acierto
+    isTunnelVision: z.boolean().default(false), // Ineficiencia temporal extrema (>1.5 RTE)
 });
 
 export type BehaviorProfile = z.infer<typeof BehaviorProfileSchema>;

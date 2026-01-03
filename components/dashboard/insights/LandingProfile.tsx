@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Zap, Clock, BrainCircuit, Target, ShieldCheck } from 'lucide-react';
+import { Shield, Zap, Clock, BrainCircuit, Target, ShieldCheck } from 'lucide-react';
 import { BehaviorProfile } from '@/lib/domain/assessment';
 
 interface LandingProfileProps {
@@ -79,7 +79,7 @@ export const LandingProfile: React.FC<LandingProfileProps> = ({ profile }) => {
 
                 <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
                     <div className="flex items-center gap-2 mb-2 text-slate-300 font-semibold text-sm">
-                        <Rocket className="w-4 h-4 text-emerald-400" />
+                        <Shield className="w-4 h-4 text-emerald-400" />
                         Recomendación de Contenido
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">

@@ -27,7 +27,7 @@ export default function LessonFooter({
                         className="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 px-6 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_4px_20px_rgba(34,197,94,0.4)] animate-in slide-in-from-bottom-2 btn-shine"
                     >
                         <span className="material-symbols-outlined font-bold">celebration</span>
-                        <span className="text-lg uppercase">¡Misión Cumplida! {nextLessonId ? 'Siguiente Lección' : 'Volver a Base'}</span>
+                        <span className="text-lg uppercase">¡Diagnóstico Completado! {nextLessonId ? 'Siguiente Lección' : 'Volver al Inicio'}</span>
                     </button>
                     <Link
                         href="/gallery"

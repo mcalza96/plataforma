@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArchitectLayout } from '@/components/admin/architect/ArchitectLayout';
 import { DiagnosticBlueprint } from '@/components/admin/architect/DiagnosticBlueprint';
 import { useArchitect } from '@/hooks/admin/architect/use-architect';
-import { MessageSquareCode, Sparkles, Send, User, Bot, Loader2, ChevronLeft, Rocket } from 'lucide-react';
+import { MessageSquareCode, Sparkles, Send, User, Bot, Loader2, ChevronLeft, Terminal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -120,7 +120,7 @@ export default function ExamBuilderPage() {
                     {state.isGenerating ? (
                         <Loader2 className="size-4 animate-spin" />
                     ) : (
-                        <Rocket size={16} />
+                        <Terminal size={16} />
                     )}
                     Publicar Evaluación
                 </Button>

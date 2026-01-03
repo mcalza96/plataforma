@@ -2,7 +2,7 @@ import React from 'react';
 
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${className}`}>
+        <div className={`bg-surface/50 backdrop-blur-md rounded-2xl border border-white/5 shadow-xl ${className}`}>
             {children}
         </div>
     );
@@ -10,7 +10,7 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 
 export function CardHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`p-4 border-b border-gray-100 ${className}`}>
+        <div className={`p-6 border-b border-white/5 ${className}`}>
             {children}
         </div>
     );
@@ -18,7 +18,7 @@ export function CardHeader({ children, className = '' }: { children: React.React
 
 export function CardTitle({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <h3 className={`font-semibold text-gray-900 ${className}`}>
+        <h3 className={`text-xl font-black tracking-tight text-white ${className}`}>
             {children}
         </h3>
     );
@@ -26,7 +26,7 @@ export function CardTitle({ children, className = '' }: { children: React.ReactN
 
 export function CardContent({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`p-4 ${className}`}>
+        <div className={`p-6 ${className}`}>
             {children}
         </div>
     );

@@ -8,7 +8,7 @@ const TOUR_STEPS = [
     {
         id: 'welcome',
         title: 'Bienvenido a TeacherOS',
-        content: 'Este es tu Centro de Comando Pedagógico. Vamos a dar un paseo rápido para que domines tus superpoderes.',
+        content: 'Este es tu Hub de Inteligencia Educativa. Vamos a dar un paseo rápido para que domines tus nuevas herramientas.',
         icon: <Map className="w-10 h-10 text-blue-500" />
     },
     {

@@ -59,7 +59,7 @@ export default function UserMenu({ user, student, role }: UserMenuProps) {
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 mt-4 w-72 bg-[#1F1F1F] border border-white/10 rounded-3xl shadow-2xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="absolute right-0 mt-4 w-72 bg-[#1F1F1F] border border-white/10 rounded-3xl shadow-2xl overflow-hidden z-[999] animate-in fade-in slide-in-from-top-4 duration-300">
                     {/* Header */}
                     <div className="p-6 bg-white/[0.02] border-b border-white/5">
                         <div className="flex flex-col gap-1">
@@ -99,14 +99,14 @@ export default function UserMenu({ user, student, role }: UserMenuProps) {
                                     className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
                                 >
                                     <span className="material-symbols-outlined text-[20px] text-amber-500 group-hover:scale-110 transition-transform">admin_panel_settings</span>
-                                    <span className="text-xs font-black uppercase tracking-widest">Panel de Control</span>
+                                    <span className="text-xs font-black uppercase tracking-widest">Monitor de Operaciones</span>
                                 </Link>
                                 <Link
                                     href="/student"
                                     onClick={() => setIsOpen(false)}
                                     className="w-full h-12 flex items-center gap-3 px-4 rounded-2xl hover:bg-white/5 text-gray-300 hover:text-white transition-all group"
                                 >
-                                    <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">palette</span>
+                                    <span className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform">monitoring</span>
                                     <span className="text-xs font-black uppercase tracking-widest">Vista Estudiante</span>
                                 </Link>
                             </>

@@ -41,7 +41,7 @@ export default async function AdminStatsPage({ searchParams }: AdminStatsPagePro
             <div className="flex flex-col gap-6 md:flex-row md:items-end justify-between">
                 <div className="flex flex-col gap-2">
                     <span className="text-xs font-black text-amber-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                        Centro de Comando
+                        Monitor de Operaciones
                         {teacherId && (
                             <span className="bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded text-[9px] border border-amber-500/20 animate-pulse">
                                 MODO AUDITORÍA

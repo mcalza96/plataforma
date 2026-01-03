@@ -2,9 +2,10 @@ import React, { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getUserId, validateStaff } from '@/lib/infrastructure/auth-utils';
 import { getTeacherAnalytics } from '@/lib/actions/teacher/teacher-analytics-actions';
-import { getTeacherIntegrityAlerts } from '@/lib/actions/teacher/analytics/integrity-actions';
 import TeacherDashboardView from '@/components/teacher/TeacherDashboardView';
 import { createClient } from '@/lib/infrastructure/supabase/supabase-server';
+import { getProactiveAlerts } from '@/lib/actions/teacher/pedagogical-actions';
+import { getGlobalItemHealth } from '@/lib/actions/admin/admin-analytics-actions';
 
 /**
  * TeacherDashboardPage: Faculty Intelligence Center
@@ -30,11 +31,13 @@ export default async function TeacherDashboardPage({
     // Step 2 & 3 & 4 & 6: Parallel Data Fetching
     const supabase = await createClient();
 
-    const [analytics, profileRes, studentsRes, cohortListRes] = await Promise.all([
+    const [analytics, profileRes, studentsRes, cohortListRes, proactiveAlerts, itemHealth] = await Promise.all([
         getTeacherAnalytics(),
         supabase.from('profiles').select('display_name, email').eq('id', teacherId).single(),
         supabase.from('learners').select('id', { count: 'exact', head: true }).eq('teacher_id', teacherId),
-        supabase.from('learners').select('id, display_name, level').eq('teacher_id', teacherId).order('display_name')
+        supabase.from('learners').select('id, display_name, level').eq('teacher_id', teacherId).order('display_name'),
+        getProactiveAlerts(),
+        getGlobalItemHealth()
     ]);
 
     const { data: profile } = profileRes;
@@ -72,6 +75,8 @@ export default async function TeacherDashboardPage({
                     analytics={analytics}
                     selectedStudent={selectedStudent}
                     cohortList={cohortList || []}
+                    proactiveAlerts={proactiveAlerts}
+                    itemHealth={itemHealth}
                 />
             </Suspense>
         </div>

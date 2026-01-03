@@ -18,6 +18,17 @@ export const AuthSchema = z.object({
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres.'),
 });
 
+export const ProposalSchema = z.object({
+    suggested_title: z.string(),
+    rationale: z.string(),
+    modules: z.array(z.object({
+        content_id: z.string().uuid(),
+        order: z.number(),
+        reason: z.string(),
+    })),
+});
+
 export type TeacherCreationInput = z.infer<typeof TeacherCreationSchema>;
 export type StudentCreationInput = z.infer<typeof StudentCreationSchema>;
 export type AuthInput = z.infer<typeof AuthSchema>;
+export type Proposal = z.infer<typeof ProposalSchema>;

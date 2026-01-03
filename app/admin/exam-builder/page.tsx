@@ -15,6 +15,7 @@ import { BuilderLayout, type BuilderMode } from '@/components/admin/builder/Buil
 import { BuilderModeToggle } from '@/components/admin/builder/BuilderModeToggle';
 import { CoverageHUD } from '@/components/admin/builder/CoverageHUD';
 import { ConfigChat } from '@/components/admin/builder/ConfigChat';
+import { ShadowNodeIntegrator } from '@/components/admin/builder/ShadowNodeIntegrator';
 
 /**
  * ExamBuilderPage (Constructor IA)
@@ -94,12 +95,13 @@ export default function ExamBuilderPage() {
                 <div className="flex items-center gap-4">
                     <div className="space-y-0.5">
                         <Input
+                            placeholder="Competencia Terminal a Auditar"
                             value={examTitle}
                             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExamTitle(e.target.value)}
                             className="bg-transparent border-none text-base font-black text-white p-0 h-auto focus:ring-0 w-[400px]"
                         />
                         <div className="flex items-center gap-2">
-                            <span className="text-[9px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase font-bold">Modo Constructor Unificado</span>
+                            <span className="text-[9px] font-mono text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 uppercase font-bold text-glow">Diseño de Sonda de Calibración</span>
                         </div>
                     </div>
                 </div>
@@ -113,7 +115,20 @@ export default function ExamBuilderPage() {
                 />
                 <Button
                     disabled={!state.readiness.isValid || state.isGenerating}
-                    onClick={handlePublish}
+                    onClick={() => {
+                        const probes = (state.context as any).probes || [];
+                        const hasUnmappedDistractors = probes.some((p: any) =>
+                            p.type === 'quiz' && p.payload.questions.some((q: any) =>
+                                q.options.some((opt: any) => !opt.is_correct && !opt.diagnoses_misconception_id)
+                            )
+                        );
+
+                        if (hasUnmappedDistractors) {
+                            alert("Error de Integridad Forense: Cada distractor debe mapear a un error conceptual específico para permitir la auditoría de modelos mentales.");
+                            return;
+                        }
+                        handlePublish();
+                    }}
                     size="sm"
                     className="h-10 px-6 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-[11px] font-black uppercase tracking-widest gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-20 transition-all"
                 >
@@ -134,7 +149,17 @@ export default function ExamBuilderPage() {
             <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
                 <BuilderLayout
                     mode={mode}
-                    chatPanel={chatPanel}
+                    chatPanel={
+                        <div className="flex flex-col gap-4 h-full">
+                            {chatPanel}
+                            <div className="px-4 pb-4">
+                                <ShadowNodeIntegrator
+                                    shadowNodes={state.context.identifiedMisconceptions || []}
+                                    onIntegrate={(node) => console.log('Integrate node:', node)}
+                                />
+                            </div>
+                        </div>
+                    }
                     hudPanel={<CoverageHUD state={state} />}
                     contentPanel={
                         <div className="h-full overflow-y-auto min-h-0 flex flex-col">

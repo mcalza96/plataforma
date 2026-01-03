@@ -14,7 +14,9 @@ export const ProbeGenerationSchema = z.object({
     })),
     observer_guide: z.string().describe(
         "A short, actionable tip for the parent/supervisor observing the student. It must be based on the provided 'Observable Symptom'. Explain what behavior to watch for (e.g., 'Watch if he counts with fingers', 'Notice if he writes without pausing to think about the common denominator')."
-    )
+    ),
+    expected_time_seconds: z.number().min(5).max(360).describe("Tiempo esperado para resolver el ítem en segundos."),
+    min_viable_time: z.number().min(3).max(180).describe("Tiempo mínimo viable antes de considerarse adivinanza (Regra NT10)."),
 });
 
 export type ProbeGenerationResult = z.infer<typeof ProbeGenerationSchema>;

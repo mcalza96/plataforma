@@ -11,35 +11,44 @@ export class TeacherAnalyticsService {
     constructor(private supabase: SupabaseClient) { }
 
     async getTeacherAnalytics(teacherId: string, examId?: string): Promise<TeacherAnalyticsResult> {
-        const queries = [
-            this.supabase
-                .from('vw_cohort_radar')
-                .select('*')
-                .eq('teacher_id', teacherId),
+        // 1. Fetch Cohort Radar (Now includes Forensic Archetypes)
+        const radarQuery = this.supabase
+            .from('vw_cohort_radar')
+            .select('*')
+            .eq('teacher_id', teacherId);
 
-            this.supabase
-                .from('vw_pathology_ranking')
-                .select('*')
-                .eq('teacher_id', teacherId)
-                .order('total_occurrences', { ascending: false })
-                .limit(5)
-        ];
+        // 2. Fetch Pathology Ranking (Misconceptions)
+        const pathologyQuery = this.supabase
+            .from('vw_pathology_ranking')
+            .select('*')
+            .eq('teacher_id', teacherId)
+            .order('total_occurrences', { ascending: false })
+            .limit(5);
+
+        // 3. Fetch Equity Audit (Bias Monitor)
+        const equityQuery = this.supabase
+            .from('vw_remediation_fairness')
+            .select('*')
+            .eq('teacher_id', teacherId);
 
         if (examId) {
-            // @ts-ignore
-            queries[0] = queries[0].eq('exam_id', examId);
-            // @ts-ignore
-            queries[1] = queries[1].eq('exam_id', examId);
+            radarQuery.eq('exam_id', examId);
+            pathologyQuery.eq('exam_id', examId);
+            equityQuery.eq('exam_id', examId);
         }
 
-        const [radarResponse, pathologyResponse] = await Promise.all(queries);
+        const [radarResponse, pathologyResponse, equityResponse] = await Promise.all([
+            radarQuery,
+            pathologyQuery,
+            equityQuery
+        ]);
 
         const cohortRadar: CohortMember[] = (radarResponse.data || []).map((row: CohortRadarRow) => ({
             studentId: row.student_id,
             examId: row.exam_id,
-            overallScore: row.overall_score,
-            eceScore: row.ece_score,
-            studentArchetype: row.student_archetype,
+            overallScore: row.overall_score || 0,
+            eceScore: row.ece_score || 0,
+            studentArchetype: row.student_archetype || 'DEVELOPING',
             isImpulsive: !!row.is_impulsive,
             isAnxious: !!row.is_anxious,
         }));
@@ -53,9 +62,14 @@ export class TeacherAnalyticsService {
             reason: row.reason || '',
         }));
 
+        // @ts-ignore - Adding equity data to result for the Forensic Command Center
+        const equityAudit = equityResponse.data || [];
+
         return {
             cohortRadar,
-            pathologyRanking
+            pathologyRanking,
+            // @ts-ignore
+            equityAudit
         };
     }
 }

@@ -74,7 +74,9 @@ export async function generateProbeFromContext(
                 generatedFromArchitect: true,
                 pedagogicalGoal: context.pedagogicalGoal,
                 observerGuide: object.observer_guide
-            }
+            },
+            expected_time_seconds: object.expected_time_seconds,
+            min_viable_time: object.min_viable_time
         };
     } catch (error: any) {
         if (error.status === 429) {
@@ -103,7 +105,9 @@ export async function generateProbeFromContext(
                     generatedFromArchitect: true,
                     pedagogicalGoal: context.pedagogicalGoal,
                     observerGuide: object.observer_guide
-                }
+                },
+                expected_time_seconds: object.expected_time_seconds,
+                min_viable_time: object.min_viable_time
             };
         }
         throw error;

@@ -14,7 +14,7 @@ export async function GET() {
     let { data: learners } = await supabase
         .from('learners')
         .select('id')
-        .eq('parent_id', user.id)
+        .eq('teacher_id', user.id)
         .limit(1);
 
     // Admin Fallback: If no learners for this parent but user is admin, get any learner

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getStudentLatestDiagnostic } from '@/lib/actions/teacher/student-diagnostic-actions';
 import { getStudentById } from '@/lib/data/learner';
-import TacticalStudentBridge from '@/components/teacher/student/TacticalStudentBridge';
+import TacticalStudentBridge from '@/components/teacher/TacticalStudentBridge';
 
 interface TriagePageProps {
     params: {
@@ -45,5 +45,17 @@ export default async function TriagePage({ params }: TriagePageProps) {
         );
     }
 
-    return <TacticalStudentBridge diagnostic={diagnostic} studentName={student.display_name} />;
+    return (
+        <div className="p-8">
+            <TacticalStudentBridge
+                student={{
+                    id: student.id,
+                    display_name: student.display_name,
+                    level: student.level || 1,
+                    avatar_url: student.avatar_url
+                }}
+                onClose={() => { }}
+            />
+        </div>
+    );
 }

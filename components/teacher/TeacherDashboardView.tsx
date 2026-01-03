@@ -7,6 +7,10 @@ import dynamic from 'next/dynamic';
 import FacultyHeader from './dashboard/FacultyHeader';
 import { CognitiveHealthSection } from './dashboard/CognitiveHealthSection';
 import StudentSelector from './dashboard/StudentSelector';
+import ProactiveAlertBanner from './notifications/ProactiveAlertBanner';
+import TeacherItemHealthMatrix from './analytics/ItemHealthMatrix';
+import { PedagogicalAlert } from '@/lib/application/services/notifications/pedagogical-advisor';
+import { GlobalItemHealth } from '@/lib/actions/admin/admin-analytics-actions';
 
 // Dynamic imports for heavy components
 const TacticalStudentBridge = dynamic(() => import('./TacticalStudentBridge'), {
@@ -32,6 +36,8 @@ interface TeacherDashboardViewProps {
         display_name: string;
         level: number;
     }>;
+    proactiveAlerts?: PedagogicalAlert[];
+    itemHealth?: GlobalItemHealth[];
 }
 
 /**
@@ -43,7 +49,9 @@ export default function TeacherDashboardView({
     cohortSize,
     analytics,
     selectedStudent,
-    cohortList
+    cohortList,
+    proactiveAlerts = [],
+    itemHealth = []
 }: TeacherDashboardViewProps) {
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -58,9 +66,6 @@ export default function TeacherDashboardView({
         }
     };
 
-    // Empty state for analytics
-    const hasAnalyticsData = analytics && Object.keys(analytics).length > 0;
-
 
     return (
         <motion.main
@@ -72,7 +77,10 @@ export default function TeacherDashboardView({
             <FacultyHeader teacherName={teacherName} cohortSize={cohortSize} />
 
             {/* Student Selector in header area */}
-            <div className="mb-6 flex justify-end">
+            <div className="mb-6 flex justify-between items-center">
+                <div className="flex-1 mr-4">
+                    <ProactiveAlertBanner alerts={proactiveAlerts} />
+                </div>
                 <StudentSelector students={cohortList} selectedStudentId={selectedStudent?.id} />
             </div>
 
@@ -91,9 +99,10 @@ export default function TeacherDashboardView({
                             hidden: { y: 10, opacity: 0 },
                             visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 30 } }
                         }}
-                        className="mb-24"
+                        className="mb-24 space-y-24"
                     >
                         <MetacognitiveMirror />
+                        <TeacherItemHealthMatrix data={itemHealth} />
                     </motion.div>
                 </div>
             )}

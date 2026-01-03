@@ -29,6 +29,7 @@ const MENU_GROUPS: NavGroup[] = [
     {
         title: 'GESTIÓN DE FLOTA',
         items: [
+            { href: '/admin/deploy', label: 'Sala de Máquinas', icon: 'settings_input_component' },
             { href: '/admin/stats', label: 'Monitor de Cohorte', icon: 'monitoring' },
             { href: '/admin/submissions', label: 'Sala de Corrección', icon: 'assignment_turned_in' },
             { href: '/admin/users', label: 'Gestión de Usuarios', icon: 'group' },

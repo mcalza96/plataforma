@@ -16,6 +16,14 @@ export type AtomicLearningObject = {
     };
     created_by: string;
     created_at: string;
+    competency_id?: string;
+    expected_time_seconds?: number;
+    min_viable_time?: number;
+};
+
+export type DiagnosticProbe = AtomicLearningObject & {
+    type: 'quiz';
+    competency_id: string;
 };
 
 export const ALOSchema = z.object({
@@ -28,7 +36,11 @@ export const ALOSchema = z.object({
         bloom_level: z.string(),
         estimated_duration: z.coerce.number().optional(),
         skills: z.array(z.string()),
+        expected_time_seconds: z.coerce.number().min(10).optional(),
+        min_viable_time: z.coerce.number().min(5).optional(),
+        misconception_id: z.string().uuid({ message: "Error de Integridad Forense: El Nodo Sombra (misconception_id) es obligatorio para sondas diagnósticas" }).optional(),
     }).optional(),
+    competency_id: z.string().uuid().optional(),
     is_public: z.boolean().optional(),
 }).refine((data) => {
     if (data.type === 'video') {

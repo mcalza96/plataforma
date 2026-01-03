@@ -13,7 +13,7 @@ export async function compileDiagnosticProbe(state: ArchitectState) {
         const service = new ArchitectService(supabase);
         const result = await service.compileDiagnostic(state);
 
-        revalidatePath('/admin/architect');
+        revalidatePath('/admin/inventory');
         return { success: true, ...result };
     } catch (error: any) {
         console.error("[ArchitectAction] Compilation failed:", error);
@@ -33,4 +33,31 @@ export async function generatePrototypes(state: ArchitectState) {
         console.error("[ArchitectAction] Prototype generation failed:", error);
         return { success: false, error: error.message || "Error al generar prototipos" };
     }
+}
+
+export async function getCompetencyInventory() {
+    const supabase = await createClient();
+
+    const { data: nodes, error } = await supabase
+        .from('competency_nodes')
+        .select(`
+            id,
+            title,
+            description,
+            node_type,
+            metadata,
+            diagnostic_probes (
+                id,
+                type
+            )
+        `)
+        .eq('node_type', 'competency')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error("[ArchitectAction] Failed to fetch inventory:", error);
+        return { success: false, error: error.message };
+    }
+
+    return { success: true, nodes: nodes || [] };
 }

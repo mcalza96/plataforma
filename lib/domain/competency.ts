@@ -11,6 +11,9 @@ export interface CompetencyMetadata {
     errorLogic?: string;
     diagnosticPrompt?: string;
     isRoot?: boolean;
+    healthScore?: number;
+    shadowNodesCount?: number;
+    activeProbeId?: string;
     [key: string]: any;
 }
 

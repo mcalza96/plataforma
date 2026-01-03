@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   email TEXT NOT NULL,
   full_name TEXT,
   avatar_url TEXT,
-  role TEXT DEFAULT 'family',
+  role public.app_role DEFAULT 'teacher',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -44,7 +44,7 @@ WITH CHECK (auth.uid() = id OR public.is_admin());
 -- 4. TABLA DE ALUMNOS (LEARNERS)
 CREATE TABLE IF NOT EXISTS public.learners (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   display_name TEXT NOT NULL,
   avatar_url TEXT,
   level INT DEFAULT 1,
@@ -54,13 +54,13 @@ CREATE TABLE IF NOT EXISTS public.learners (
 
 ALTER TABLE public.learners ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Los padres pueden ver sus propios alumnos" 
+CREATE POLICY "Los profesores pueden ver sus propios alumnos" 
 ON public.learners FOR SELECT 
-USING (auth.uid() = parent_id OR public.is_admin());
+USING (auth.uid() = teacher_id OR public.is_admin());
 
-CREATE POLICY "Los padres pueden gestionar sus propios alumnos" 
+CREATE POLICY "Los profesores pueden gestionar sus propios alumnos" 
 ON public.learners FOR ALL
-USING (auth.uid() = parent_id OR public.is_admin());
+USING (auth.uid() = teacher_id OR public.is_admin());
 
 -- 5. MOTOR DE COMPETENCIAS (KNOWLEDGE GRAPH)
 DO $$ 
@@ -213,7 +213,7 @@ ALTER TABLE public.ai_usage_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Gestion de progreso" 
 ON public.learner_progress FOR ALL 
-USING (learner_id IN (SELECT id FROM public.learners WHERE parent_id = auth.uid() OR public.is_admin()));
+USING (learner_id IN (SELECT id FROM public.learners WHERE teacher_id = auth.uid() OR public.is_admin()));
 
 CREATE POLICY "Admins can view all logs" ON public.ai_usage_logs 
 FOR SELECT USING (public.is_admin());
@@ -228,7 +228,7 @@ BEGIN
     new.email, 
     new.raw_user_meta_data->>'full_name', 
     new.raw_user_meta_data->>'avatar_url',
-    COALESCE(new.raw_user_meta_data->>'role', 'family')
+    COALESCE(new.raw_user_meta_data->>'role', 'teacher')
   );
   RETURN NEW;
 END;
